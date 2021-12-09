@@ -1,0 +1,18 @@
+<html>
+    <head>
+        <title>Automatic Interaction</title>
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+        <script src="constants.js"></script>
+        <script src="event_handler.js"></script>
+        <link rel="stylesheet" href="../style/bar_chart.css">
+    </head>
+    <body>
+        <svg id="bar_chart" width="600" height="500"></svg>
+        <script src="../visualizations/bar_chart.js"></script>
+        <script>
+            event_handler = new EventHandler();
+            event_handler.print_svg_information();
+            event_handler.bind_interaction();
+        </script>
+    </body>
+</html>
