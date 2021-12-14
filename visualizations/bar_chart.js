@@ -43,7 +43,8 @@ d3.csv("../data/XYZ.csv").then(function(data) {
         .attr("stroke", "black")
         .text("Stock Price");
 
-    g.selectAll(".bar")
+    g.append("g")
+        .selectAll(".bar")
         .data(data)
         .enter().append("rect")
         .attr("class", "bar")
@@ -51,4 +52,8 @@ d3.csv("../data/XYZ.csv").then(function(data) {
         .attr("y", function(d) { return yScale(d.value); })
         .attr("width", xScale.bandwidth())
         .attr("height", function(d) { return height - yScale(d.value); });
+
+    event_handler = new EventHandler();
+    // event_handler.print_svg_information();
+    event_handler.bind_interaction();
 });

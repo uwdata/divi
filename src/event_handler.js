@@ -6,9 +6,6 @@ class EventHandler {
         this.walk_svg(document.body);
     }
 
-    // TO-DO: Was obvious after inspecting console.log() that 
-    // D3 dynamically udpates the SVG, so this may not retrieve
-    // all the nodes.
     walk_svg(el) {
         if (el == null) {
             return;
@@ -28,9 +25,24 @@ class EventHandler {
     }
     
     add_event_listener(el, event) {
-        el.addEventListener(event, () => {
-            console.log(el);
-        });
+        let svg = d3.select("#" + el.id);
+        let g = svg.selectAll("circle");
+
+        let extent = [[0, 0], [el.getAttribute("width"), el.getAttribute("height")]];
+        // svg.call(d3.zoom().extent(extent).translateExtent(extent).scaleExtent([1, 8]).on("zoom", function({transform}) {
+        //     g.attr("transform", transform);
+        // }));
+
+        svg.call(d3.brush()                    
+        .extent([[0,0], [el.getAttribute("width"), el.getAttribute("height")]]));
+
+        // el.addEventListener(event, () => {
+        //     let svg = d3.select(el.id);
+        //     console.log(svg);
+        //     svg.call(d3.zoom().on("zoom", function () {
+        //         svg.attr("transform", d3.event.transform)
+        //     }));
+        // });
     }
 
     print_svg_information() {

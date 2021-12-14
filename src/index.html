@@ -2,17 +2,39 @@
     <head>
         <title>Automatic Interaction</title>
         <script src="https://d3js.org/d3.v7.min.js"></script>
-        <script src="constants.js"></script>
         <script src="event_handler.js"></script>
+        <script src="constants.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <script src="myParser.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/vega@5.21.0"></script>
+        <script src="https://cdn.jsdelivr.net/npm/vega-lite@5.2.0"></script>
+        <script src="https://cdn.jsdelivr.net/npm/vega-embed@6.20.2"></script>
         <link rel="stylesheet" href="../style/bar_chart.css">
+        <link rel="stylesheet" href="../style/prism.css">
+        <link rel="stylesheet" href="../style/agency.css">
     </head>
     <body>
-        <svg id="bar_chart" width="600" height="500"></svg>
-        <script src="../visualizations/bar_chart.js"></script>
+        <!-- <svg id="scatter_plot" width="600" height="500"></svg> -->
+        <div style="position:relative;">
+            <div id="scatter_plot" style="border:1px solid black; float:left; margin-right:10px;"></div>
+            <script src="../visualizations/scatter_plot.js" id="js-code"></script>
+            <div id="controls">
+                <button>Test</button>
+            </div>
+        </div>
+        <div>
+            <pre class="language-js">
+                <code id="js-brushChange" contenteditable="true" class=" language-js">
+                </code>
+            </pre>
+        </div>
         <script>
-            event_handler = new EventHandler();
-            event_handler.print_svg_information();
-            event_handler.bind_interaction();
+            $("#js-brushChange").load("../visualizations/scatter_plot.js");
+            let editable = document.getElementById("js-brushChange");
+            editable.addEventListener('input', function() {
+                document.getElementById("scatter_plot").innerHTML = "";
+                myJSParser("js-brushChange", "scatter_plot");
+            });
         </script>
     </body>
 </html>
