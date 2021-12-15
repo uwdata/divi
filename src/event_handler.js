@@ -23,6 +23,9 @@ class EventHandler {
 
         if (el.nodeName == SVG_TYPE.SVG_CONTAINER) {
             this.svg_container = el;
+            if (!this.svg_container.hasAttribute("id")) {
+                this.svg_container.setAttribute("id", "svg_plot");
+            }
         }
 
         if (el.nodeName == SVG_TYPE.SVG_GROUP) {
@@ -45,6 +48,7 @@ class EventHandler {
         for (const [type, identifier] of Object.entries(INTERACTION_TYPES)) {
             this.enabled_interactions[identifier] = true;
         }
+        this.enabled_interactions[INTERACTION_TYPES.BRUSH] = false;
     }
 
     toggle_interaction(interaction_type) {
@@ -56,6 +60,7 @@ class EventHandler {
         let svg = d3.select("#" + this.svg_container.id);
         let g = svg.selectAll(SVG_TYPE.SVG_MARK.join());
         svg.call(d3.zoom().on("zoom", null));
+        svg.call(d3.brush(), null);
     }
     
     add_event_listener(el, interaction_type, event) {
@@ -77,7 +82,9 @@ class EventHandler {
                         for (const mark of this.svg_marks) {
                             mark.addEventListener(event, (event) => {
                                 let data = "";
-                                for (const [key, value] of Object.entries(mark.__data__)) {
+                                let iterable = "datum" in mark.__data__ ? mark.__data__.datum : mark.__data__;
+
+                                for (const [key, value] of Object.entries(iterable)) {
                                     data += String(key) + ": " + String(value);
                                     data += "<br/>";
                                 }
@@ -130,7 +137,8 @@ class EventHandler {
                 }
                 break;
             case INTERACTION_TYPES.BRUSH:
-                // svg.call(d3.brush().extent(extent));
+                svg.call(d3.brush().extent(extent));
+                break;
             default:
                 break;
         }

@@ -18,17 +18,17 @@
         <div style="position:relative;">
             <div id="vis"></div>
             <div id="controls" style="position:relative">
-                <input type="checkbox" value="Selection" checked onchange="checkbox_onchange(this);">Selection
-                <input type="checkbox" value="Zoom" checked onchange="checkbox_onchange(this);">Zoom
-                <input type="checkbox" value="Pan" checked onchange="checkbox_onchange(this);">Pan
-                <input type="checkbox" value="Brush" checked onchange="checkbox_onchange(this);">Brush
+                <input type="checkbox" value="Selection" id="Selection" checked onchange="checkbox_onchange(this);">Selection
+                <input type="checkbox" value="Zoom" id="Zoom" checked onchange="checkbox_onchange(this);">Zoom
+                <input type="checkbox" value="Pan" id="Pan" checked onchange="checkbox_onchange(this);">Pan
+                <input type="checkbox" value="Brush" id="Brush" onchange="checkbox_onchange(this);">Brush
                 <br/>
 
-                <label for="click_drag">Click and drag:</label>
+                <!-- <label for="click_drag">Click and drag:</label>
                 <select name="click_drag" id="click_drag" onchange="dropdown_onchange(this);">
                     <option value="Pan">Pan</option>
                     <option value="Brush">Brush</option>
-                </select>
+                </select> -->
             </div>
         </div>
         <div>
@@ -64,12 +64,20 @@
 
             let checkbox_onchange = function(el) {
                 event_handler.toggle_interaction(el.value);
+                if (el.value == INTERACTION_TYPES.PAN && document.getElementById(INTERACTION_TYPES.PAN).checked) {
+                    event_handler.toggle_interaction(INTERACTION_TYPES.BRUSH);
+                    document.getElementById(INTERACTION_TYPES.BRUSH).checked = false;
+                }
+                else if (el.value == INTERACTION_TYPES.BRUSH && document.getElementById(INTERACTION_TYPES.BRUSH).checked) {
+                    event_handler.toggle_interaction(INTERACTION_TYPES.PAN);
+                    document.getElementById(INTERACTION_TYPES.PAN).checked = false;
+                }
+
                 event_handler.bind_interactions();
             }
 
-            let dropdown_onchange = function(el) {
-                
-            }
+            // let dropdown_onchange = function(el) {     
+            // }
         </script>
     </body>
 </html>
