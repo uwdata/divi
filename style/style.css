@@ -14,8 +14,8 @@
     padding: 5px;
 }
 
-#scatter_plot {
+#vis {
     border: 1px solid black; 
     float:left; 
-    margin-right:10px;
+    margin-right:20px;
 }

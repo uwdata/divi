@@ -16,13 +16,18 @@
     <body>
         <div id="tooltip"></div>
         <div style="position:relative;">
-            <div id="scatter_plot"></div>
+            <div id="vis"></div>
             <div id="controls" style="position:relative">
-                <label for="inputs">Click and drag:</label>
-                <select name="inputs" id="inputs">
-                    <option value="pan">Pan</option>
-                    <option value="zoom">Zoom</option>
-                    <option value="brush">Brush</option>
+                <input type="checkbox" value="Selection" checked onchange="checkbox_onchange(this);">Selection
+                <input type="checkbox" value="Zoom" checked onchange="checkbox_onchange(this);">Zoom
+                <input type="checkbox" value="Pan" checked onchange="checkbox_onchange(this);">Pan
+                <input type="checkbox" value="Brush" checked onchange="checkbox_onchange(this);">Brush
+                <br/>
+
+                <label for="click_drag">Click and drag:</label>
+                <select name="click_drag" id="click_drag" onchange="dropdown_onchange(this);">
+                    <option value="Pan">Pan</option>
+                    <option value="Brush">Brush</option>
                 </select>
             </div>
         </div>
@@ -51,11 +56,20 @@
             });
 
             editable.addEventListener('input', function() {
-                document.getElementById("scatter_plot").innerText = "";
-                that.eval(myJSParser("js-brushChange", "scatter_plot")).then(function() {
+                document.getElementById("vis").innerText = "";
+                that.eval(myJSParser("js-brushChange", "vis")).then(function() {
                     update_event_handler();
                 });
             });
+
+            let checkbox_onchange = function(el) {
+                event_handler.toggle_interaction(el.value);
+                event_handler.bind_interactions();
+            }
+
+            let dropdown_onchange = function(el) {
+                
+            }
         </script>
     </body>
 </html>

@@ -4,7 +4,10 @@ class EventHandler {
         this.svg_container = null;
         this.svg_groups = [];
         this.svg_marks = [];
+        this.enabled_interactions = new Map();
+
         this.walk_svg(document.body);
+        this.enable_interactions();
     }
 
     clear_svg() {
@@ -37,9 +40,31 @@ class EventHandler {
             this.walk_svg(child);
         }
     }
+
+    enable_interactions() {
+        for (const [type, identifier] of Object.entries(INTERACTION_TYPES)) {
+            this.enabled_interactions[identifier] = true;
+        }
+    }
+
+    toggle_interaction(interaction_type) {
+        this.enabled_interactions[interaction_type] = !this.enabled_interactions[interaction_type];
+        this.remove_interactions();
+    }
+
+    remove_interactions() {
+        let svg = d3.select("#" + this.svg_container.id);
+        let g = svg.selectAll(SVG_TYPE.SVG_MARK.join());
+        svg.call(d3.zoom().on("zoom", null));
+    }
     
     add_event_listener(el, interaction_type, event) {
+        if (!this.enabled_interactions[interaction_type]) {
+            return;
+        }
+
         let svg = d3.select("#" + el.id);
+        let g = svg.selectAll(SVG_TYPE.SVG_MARK.join());
         let width = el.getAttribute("width");
         let height = el.getAttribute("height");
         let extent = [[0, 0], [width, height]];
@@ -73,12 +98,36 @@ class EventHandler {
                         }
                         break;
                 }
+                break;
             case INTERACTION_TYPES.ZOOM:
-                let g = svg.selectAll(SVG_TYPE.SVG_MARK.join());
-                svg.call(d3.zoom().extent(extent).translateExtent(extent).on("zoom", function({transform}) {
-                    g.attr("transform", transform);
-                }));
+                if (this.enabled_interactions[INTERACTION_TYPES.ZOOM] && this.enabled_interactions[INTERACTION_TYPES.PAN]) {
+                    svg.call(d3.zoom().extent(extent).translateExtent(extent).on("zoom", function({transform}) {
+                        g.attr("transform", transform);
+                    }));
+                }
+                else {
+                    svg.call(d3.zoom().extent(extent).translateExtent(extent).on("zoom", function({transform}) {
+                        g.attr("transform", transform);
+                    }))
+                    .on("mousedown.zoom", null)
+                    .on("touchstart.zoom", null)
+                    .on("touchmove.zoom", null)
+                    .on("touchend.zoom", null);
+                }
+                break;
             case INTERACTION_TYPES.PAN:
+                if (this.enabled_interactions[INTERACTION_TYPES.ZOOM] && this.enabled_interactions[INTERACTION_TYPES.PAN]) {
+                    svg.call(d3.zoom().extent(extent).translateExtent(extent).on("zoom", function({transform}) {
+                        g.attr("transform", transform);
+                    }));
+                }
+                else {
+                    svg.call(d3.zoom().extent(extent).translateExtent(extent).on("zoom", function({transform}) {
+                        g.attr("transform", transform);
+                    }))
+                    .on("wheel.zoom", null)
+                    .on("dblclick.zoom", null);
+                }
                 break;
             case INTERACTION_TYPES.BRUSH:
                 // svg.call(d3.brush().extent(extent));

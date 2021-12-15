@@ -4,7 +4,7 @@ const width = 600
       height = 600;
     
 // append the svg object to the body of the page
-const svg = d3.select("#scatter_plot")
+const svg = d3.select("#vis")
     .append("svg")
     .attr("id", "svg_plot")
     .attr("width", width)
