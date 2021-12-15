@@ -9,17 +9,21 @@
         <script src="https://cdn.jsdelivr.net/npm/vega@5.21.0"></script>
         <script src="https://cdn.jsdelivr.net/npm/vega-lite@5.2.0"></script>
         <script src="https://cdn.jsdelivr.net/npm/vega-embed@6.20.2"></script>
-        <link rel="stylesheet" href="../style/bar_chart.css">
+        <link rel="stylesheet" href="../style/style.css">
         <link rel="stylesheet" href="../style/prism.css">
         <link rel="stylesheet" href="../style/agency.css">
     </head>
     <body>
-        <!-- <svg id="scatter_plot" width="600" height="500"></svg> -->
+        <div id="tooltip"></div>
         <div style="position:relative;">
-            <div id="scatter_plot" style="border:1px solid black; float:left; margin-right:10px;"></div>
-            <script src="../visualizations/scatter_plot.js" id="js-code"></script>
-            <div id="controls">
-                <button>Test</button>
+            <div id="scatter_plot"></div>
+            <div id="controls" style="position:relative">
+                <label for="inputs">Click and drag:</label>
+                <select name="inputs" id="inputs">
+                    <option value="pan">Pan</option>
+                    <option value="zoom">Zoom</option>
+                    <option value="brush">Brush</option>
+                </select>
             </div>
         </div>
         <div>
@@ -29,11 +33,28 @@
             </pre>
         </div>
         <script>
-            $("#js-brushChange").load("../visualizations/scatter_plot.js");
+            event_handler = new EventHandler();
+            let update_event_handler = function() {
+                event_handler.clear_svg();
+                event_handler.walk_svg(document.body);
+                event_handler.bind_interactions();
+                // event_handler.print_svg_information();
+            };
+
             let editable = document.getElementById("js-brushChange");
+            let that = this;
+            
+            $("#js-brushChange").load("../visualizations/scatter_plot.js", function() {
+                that.eval(editable.innerText).then(function() {
+                    update_event_handler();
+                });
+            });
+
             editable.addEventListener('input', function() {
-                document.getElementById("scatter_plot").innerHTML = "";
-                myJSParser("js-brushChange", "scatter_plot");
+                document.getElementById("scatter_plot").innerText = "";
+                that.eval(myJSParser("js-brushChange", "scatter_plot")).then(function() {
+                    update_event_handler();
+                });
             });
         </script>
     </body>

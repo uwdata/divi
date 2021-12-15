@@ -18,7 +18,8 @@ function myHtmlParser(divFrom, divTo){
     // remove the xmp tag and the script tags
     command = command.replace(/<xmp>/,"").replace(/<.xmp>/,"").replace(/<script>/,"").replace(/<.script>/,"").replace(/<\/?span[^>]*>/g,"");
     // run the JS code
-    gvar.eval(command);
+    return command;
+    // gvar.eval(command);
   }
   
   // Same as the previous one, but with no HTML before.

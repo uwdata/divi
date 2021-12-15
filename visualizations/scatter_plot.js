@@ -1,7 +1,7 @@
 
 // set the dimensions and margins of the graph
-const width = 500
-      height = 500;
+const width = 600
+      height = 600;
     
 // append the svg object to the body of the page
 const svg = d3.select("#scatter_plot")
@@ -32,7 +32,4 @@ d3.csv("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_data
         .attr("cy", function (d) { return y(d.SalePrice); } )
         .attr("r", 1.5)
         .style("fill", "#69b3a2")
-
-    event_handler = new EventHandler();
-    event_handler.bind_interaction();
 });

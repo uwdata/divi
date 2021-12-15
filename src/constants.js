@@ -28,23 +28,42 @@ const INPUT_EVENTS = {
     MOUSE_DOWN: 'mousedown',
     MOUSE_UP: 'mouseup',
     SHIFT: 'shift',
-    HOVER: 'hover'
+    HOVER_OVER: 'mouseover',
+    HOVER_LEAVE: 'mouseleave'
 }
 
 const INTERACTION_MECHANISMS = {
-    'Zoom': [
+    [INTERACTION_TYPES.SELECTION]: [
+        // INPUT_EVENTS.MOUSE_DOWN
+        INPUT_EVENTS.HOVER_OVER,
+        INPUT_EVENTS.HOVER_LEAVE
+    ],
+    [INTERACTION_TYPES.ZOOM]: [
         // INPUT_EVENTS.SCROLL,
         // [INPUT_EVENTS.LEFT_CLICK, INPUT_EVENTS.SCROLL],
         // [INPUT_EVENTS.SHIFT, INPUT_EVENTS.SCROLL],
         INPUT_EVENTS.DBL_CLICK,
         // [INPUT_EVENTS.LEFT_CLICK, INPUT_EVENTS.DRAG]
     ],
-    'Pan': [
+    [INTERACTION_TYPES.PAN]: [
+        INPUT_EVENTS.MOUSE_DOWN
+    ],
+    [INTERACTION_TYPES.FILTER]: [
+        INPUT_EVENTS.MOUSE_DOWN
+    ],
+    [INTERACTION_TYPES.SORT]: [
+        INPUT_EVENTS.MOUSE_DOWN
+    ],
+    [INTERACTION_TYPES.BRUSH]: [
+        INPUT_EVENTS.MOUSE_DOWN
+    ],
+    [INTERACTION_TYPES.HIGHLIGHT]: [
         INPUT_EVENTS.MOUSE_DOWN
     ]
 };
 
 const SVG_TYPE = {
     SVG_CONTAINER: "svg",
-    SVG_ELEMENT: "g"
+    SVG_GROUP: "g",
+    SVG_MARK: ["circle", "ellipse", "line", "polygon", "polyline", "rect"]
 }
