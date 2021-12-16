@@ -82,7 +82,9 @@ class EventHandler {
                         for (const mark of this.svg_marks) {
                             mark.addEventListener(event, (event) => {
                                 let data = "";
-                                let iterable = "datum" in mark.__data__ ? mark.__data__.datum : mark.__data__;
+                                let iterable = "datum" in mark.__data__ ? 
+                                    mark.__data__.datum : 
+                                    ("data" in mark.__data__ ? mark.__data__.data : mark.__data__);
 
                                 for (const [key, value] of Object.entries(iterable)) {
                                     data += String(key) + ": " + String(value);
