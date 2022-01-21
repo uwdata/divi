@@ -2,6 +2,7 @@
     <head>
         <title>Automatic Interaction</title>
         <script src="https://d3js.org/d3.v7.min.js"></script>
+        <!-- <script src="https://d3js.org/d3.v4.js"></script> -->
         <script src="event_handler.js"></script>
         <script src="constants.js"></script>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
@@ -49,7 +50,7 @@
             let editable = document.getElementById("js-brushChange");
             let that = this;
             
-            $("#js-brushChange").load("../visualizations/scatter_plot.js", function() {
+            $("#js-brushChange").load("../visualizations/scatter_plot_2.js", function() {
                 that.eval(editable.innerText).then(function() {
                     update_event_handler();
                 });

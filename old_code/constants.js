@@ -65,5 +65,6 @@ const INTERACTION_MECHANISMS = {
 const SVG_TYPE = {
     SVG_CONTAINER: "svg",
     SVG_GROUP: "g",
-    SVG_MARK: ["circle", "ellipse", "line", "polygon", "polyline", "rect", "path"]
+    SVG_MARK: ["circle", "ellipse", "polygon"]
+    // SVG_MARK: ["circle", "ellipse", "line", "polygon", "polyline", "rect", "path"]
 }

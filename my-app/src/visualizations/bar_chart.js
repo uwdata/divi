@@ -1,7 +1,11 @@
-var svg = d3.select("#bar_chart"),
+var svg = d3.select("#vis")
+        .append("svg")
+        .attr("id", "svg_plot")
+        .attr("width", 600)
+        .attr("height", 600),
     margin = 200,
-    width = svg.attr("width") - margin,
-    height = svg.attr("height") - margin
+    width = 600 - margin,
+    height = 600 - margin
 
 svg.append("text")
     .attr("transform", "translate(100,0)")
