@@ -5,7 +5,7 @@ import AutomaticInteraction from './interaction/AutomaticInteraction';
 
 function App() {
   return (
-    <div style={{borderStyle:'solid', position:'absolute', margin:'10px 0px 0px 10px'}}>
+    <div style={{position: 'absolute', top: '50%', left: '50%', marginRight: '-50%', transform: 'translate(-50%, -50%)'}}>
       <AutomaticInteraction>
         <ScatterPlot />
       </AutomaticInteraction>
