@@ -1,0 +1,23 @@
+{
+  "name": "automatic-interaction",
+  "version": "1.0.0",
+  "description": "Automatic interaction library for SVG visualizations",
+  "main": "index.js",
+  "repository": "https://github.com/Luke-S-Snyder/AutomaticInteraction.git",
+  "author": "Luke S. Snyder",
+  "license": "MIT",
+  "scripts": {
+    "prebuild": "rimraf dist && mkdir dist",
+    "build": "rollup -c",
+    "test": "mocha 'test/**/*-test.js' && eslint src test",
+    "prepublishOnly": "yarn test && yarn build"
+  },
+  "devDependencies": {
+    "rollup": "^2.66.1",
+    "rollup-plugin-bundle-size": "^1.0.3",
+    "rollup-plugin-terser": "^7.0.2"
+  },
+  "dependencies": {
+    "rimraf": "^3.0.2"
+  }
+}
