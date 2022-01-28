@@ -11,6 +11,7 @@ var svg = d3.select("#vis")
     .attr("id", "chart")
     .append("g")
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+    .attr("id", "main")
 
 //Read the data
 d3.csv("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/iris.csv").then(function(data) {
@@ -61,6 +62,7 @@ d3.csv("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/ir
 
     // Add dots
     svg.append('g')
+        .attr("id", "dots")
         .selectAll("dot")
         .data(data)
         .enter()
@@ -70,5 +72,5 @@ d3.csv("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/ir
         .attr("r", 5)
         .style("fill", function (d) { return color(d.Species) } );
 
-    let control = AutomaticInteraction.hydrate("#chart");
+    AutomaticInteraction.hydrate("#chart", "#control");
 })

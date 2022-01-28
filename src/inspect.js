@@ -1,3 +1,8 @@
+import { INTERACTION_CONSTANTS } from './constants.js';
+
+let svg_container = null;
+let svg_groups = [];
+let svg_marks = [];
 
 function traverse(element) {
     if (element == null) {
@@ -5,14 +10,14 @@ function traverse(element) {
     }
 
     if (element.nodeName == INTERACTION_CONSTANTS.SVG_TYPE.SVG_CONTAINER) {
-        svg_container = el;
+        svg_container = element;
         if (!svg_container.hasAttribute("id")) {
             svg_container.setAttribute("id", "svg_plot");
         }
     }
 
     if (element.nodeName == INTERACTION_CONSTANTS.SVG_TYPE.SVG_GROUP) {
-        svg_groups.push(el);
+        svg_groups.push(element);
     }
 
     for (const mark_type of INTERACTION_CONSTANTS.SVG_TYPE.SVG_MARK) {
@@ -23,10 +28,13 @@ function traverse(element) {
     }
     
     for (const child of element.childNodes) {
-        walk_svg(child);
+        traverse(child);
     }
 }
 
-export function inspect(element) {
+function inspect(element) {
     
+    traverse(element);
 }
+
+export { inspect, svg_container, svg_groups, svg_marks };
