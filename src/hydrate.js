@@ -4,18 +4,19 @@ import { filter } from './filter.js';
 import { sort } from './sort.js';
 import { select } from './select.js';
 import { hover, mouseover, mouseleave } from './hover.js';
-import { inspect, svg_container, svg_groups, svg_marks } from './inspect.js';
+import { inspect } from './inspect.js';
 import { INTERACTION_CONSTANTS } from './constants.js';
 
 function add_control_callbacks() {
 
 }
 
-function add_interactions(id, checkbox_id) {
+function add_interactions(id, checkbox_id, svg_objects) {
+    let t = svg_objects;
     let flag = document.getElementById("Zoom");
     flag.addEventListener('change', function() {
         if (this.checked) {
-            zoom(id);
+            zoom(id, svg_objects);
         }
         else {
             let svg = d3.select(id);
@@ -53,11 +54,11 @@ function add_interactions(id, checkbox_id) {
 
     // zoom(id);
     // brush(id);
-    hover();
+    // hover();
 }
 
 export function hydrate(svg_id, checkbox_id) {
     const svg = document.querySelector(svg_id);
-    inspect(svg);
-    add_interactions(svg_id, checkbox_id);
+    let svg_objects = inspect(svg);
+    add_interactions(svg_id, checkbox_id, svg_objects);
 }

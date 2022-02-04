@@ -11,7 +11,6 @@ var svg = d3.select("#vis")
     .attr("id", "chart")
     .append("g")
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
-    .attr("id", "main")
 
 //Read the data
 d3.csv("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/iris.csv").then(function(data) {
@@ -21,7 +20,6 @@ d3.csv("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/ir
         .range([ 0, width ]);
 
     svg.append("g")
-        .attr("id", "x-axis")
         .attr("transform", "translate(0," + height + ")")
         .call(d3.axisBottom(x).tickSize(-height*1.3).ticks(10))
         .select(".domain").remove();
@@ -33,7 +31,6 @@ d3.csv("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/ir
         .nice();
 
     svg.append("g")
-        .attr("id", "y-axis")
         .call(d3.axisLeft(y).tickSize(-width*1.3).ticks(7))
         .select(".domain").remove();
 
@@ -62,7 +59,6 @@ d3.csv("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/ir
 
     // Add dots
     svg.append('g')
-        .attr("id", "dots")
         .selectAll("dot")
         .data(data)
         .enter()

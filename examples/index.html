@@ -19,12 +19,14 @@
             "
         >
     </div>   
-        <div style=
+        <!-- <div style=
             "position:absolute; 
             top:50%; 
             left:50%; 
             margin-right:-50%;
-            transform:translate(-50%, -50%);"
+            transform:translate(-50%, -50%);
+            overflow: scroll;" -->
+        <div style= "position: absolute;"
         >
             <div id="control">
                 <input type="checkbox" value="Selection" id="Selection" 
@@ -36,13 +38,16 @@
                     checked />Pan
                 <input type="checkbox" value="Brush" id="Brush" 
                     />Brush
-                <input type="text" id="Filter" />
+                <input style="margin-left:5px;" type="text" id="Filter" />
                   Filter
                   <br />
             </div>
             <div id="vis"></div>
+            <div id="linevis"></div>
         </div>
 
-        <script src="visualizations/scatter_plot_2.js"></script>
+        <!-- <script src="visualizations/scatter_plot_2.js"></script> -->
+        <!-- <script src="visualizations/line_chart.js"></script> -->
+        <script src="visualizations/stacked_chart.js"></script> 
     </body>
 </html>

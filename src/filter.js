@@ -1,5 +1,5 @@
 import { INTERACTION_CONSTANTS } from "./constants";
-import { svg_marks } from "./inspect";
+// import { svg_objects } from "./inspect";
 
 export function filter(condition) {
     console.log('filter');
