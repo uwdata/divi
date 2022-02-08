@@ -1,11 +1,11 @@
-
-const spec = {
+function createVegaLineChart() {
+  const spec = {
     "$schema": "https://vega.github.io/schema/vega/v5.json",
     "description": "A basic scatter plot example depicting automobile statistics.",
-    "width": 200,
-    "height": 200,
+    "width": 720,
+    "height": 720,
     "padding": 5,
-  
+
     "data": [
       {
         "name": "source",
@@ -18,7 +18,7 @@ const spec = {
         ]
       }
     ],
-  
+
     "scales": [
       {
         "name": "x",
@@ -48,7 +48,7 @@ const spec = {
         "range": [4,361]
       }
     ],
-  
+
     "axes": [
       {
         "scale": "x",
@@ -67,7 +67,7 @@ const spec = {
         "title": "Miles_per_Gallon"
       }
     ],
-  
+
     "legends": [
       {
         "size": "size",
@@ -79,7 +79,7 @@ const spec = {
         "symbolType": "circle"
       }
     ],
-  
+
     "marks": [
       {
         "name": "marks",
@@ -100,5 +100,6 @@ const spec = {
       }
     ]
   }
-  vegaEmbed("#vis", spec, {renderer: "svg"});
-  
+  vegaEmbed("#vega", spec, {renderer: "svg"});
+  AutomaticInteraction.hydrate("#vega", "#control");
+}
