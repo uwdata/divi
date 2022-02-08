@@ -36,7 +36,6 @@ const INTERACTION_CONSTANTS = {
         SVG_TICK: "tick",
         TICK_DOMAIN: "domain",
         DEFAULT_ID: "svg_plot",
-        // SVG_MARK: ["circle", "ellipse", "polygon"]
         SVG_MARK: ["circle", "ellipse", "line", "polygon", "polyline", "rect", "path"]
     }
     
