@@ -1,20 +1,6 @@
 import { INTERACTION_CONSTANTS } from './constants.js';
 
-let svg_objects = {
-    has_domain: false,
-    svg: null,
-    svg_marks: [],
-    x_axis: {
-        domain: [null, null],
-        ticks: []
-    },
-    y_axis: {
-        domain: [null, null],
-        ticks: []
-    } 
-}
-
-function traverse_DOM_tree(element) {
+function traverse_DOM_tree(element, svg_objects) {
     if (element == null) {
         return;
     }
@@ -75,12 +61,26 @@ function traverse_DOM_tree(element) {
             break;
         }
        
-        traverse_DOM_tree(child);
+        traverse_DOM_tree(child, svg_objects);
     }
 }
 
 function inspect(element) {
-    traverse_DOM_tree(element);
+    let svg_objects = {
+        has_domain: false,
+        svg: null,
+        svg_marks: [],
+        x_axis: {
+            domain: [null, null],
+            ticks: []
+        },
+        y_axis: {
+            domain: [null, null],
+            ticks: []
+        } 
+    }
+
+    traverse_DOM_tree(element, svg_objects);
     return svg_objects;
 }
 
