@@ -1,55 +1,84 @@
 import { INTERACTION_CONSTANTS } from './constants.js';
+import SVG from './SVG.js';
+import { parseSVG } from 'svg-path-parser';
+import { min, max } from 'd3-array';
 
-function traverse_DOM_tree(element, svg_objects) {
-    if (element == null) {
+function traverse_DOM_tree(element, SVG, transform) {
+    if (element === null) {
         return;
     }
 
-    if (element.nodeName == INTERACTION_CONSTANTS.SVG_TYPE.SVG_CONTAINER) {
-        svg_objects.svg = element;
-        if (!svg_objects.svg.id) {
-            svg_objects.svg.id = INTERACTION_CONSTANTS.SVG_TYPE.DEFAULT_ID;
+    if (element.nodeName === INTERACTION_CONSTANTS.SVG_TYPE.SVG_CONTAINER) {
+        SVG.set_svg(element);
+        // if (!SVG.get_svg().id) {
+        //     SVG.get_svg().id = INTERACTION_CONSTANTS.SVG_TYPE.DEFAULT_ID;
+        // }
+    }
+
+    element._global_transform = [...transform];
+    if (element.nodeName === INTERACTION_CONSTANTS.SVG_TYPE.SVG_GROUP) {
+        let t = element.getAttribute("transform");
+        if (t) {
+            transform[0] += +t.match(/(\d+\.?\d*)/g)[0];
+            transform[1] += +t.match(/(\d+\.?\d*)/g)[1];
         }
     }
 
     if (element.className &&
-        element.nodeName == INTERACTION_CONSTANTS.SVG_TYPE.SVG_GROUP && 
-        element.className.animVal == INTERACTION_CONSTANTS.SVG_TYPE.SVG_TICK) {
+        element.nodeName === INTERACTION_CONSTANTS.SVG_TYPE.SVG_GROUP && 
+        element.className.animVal === INTERACTION_CONSTANTS.SVG_TYPE.SVG_TICK) {
         if (element.getAttribute("transform").match(/(\d+)/g)[0] > 0) {
-            svg_objects.x_axis.ticks.push(element);
-            svg_objects.x_axis.domain[0] = (
-                svg_objects.x_axis.domain[0] == null ? 
-                element.__data__ :
-                d3.min([svg_objects.x_axis.domain[0], element.__data__])
+            SVG.add_x_axis_tick(element);
+            let domain = SVG.get_x_axis_domain();
+
+            domain[0] = (
+                domain[0] == null ? element.__data__ : min([domain[0], element.__data__])
             );
-            svg_objects.x_axis.domain[1] = (
-                svg_objects.x_axis.domain[1] == null ? 
-                element.__data__ :
-                d3.max([svg_objects.x_axis.domain[1], element.__data__])
+            domain[1] = (
+                domain[1] == null ? element.__data__ : max([domain[1], element.__data__])
             );
+            SVG.set_x_axis_domain(domain);
         } else {
-            svg_objects.y_axis.ticks.push(element);
-            svg_objects.y_axis.domain[0] = (
-                svg_objects.y_axis.domain[0] == null ? 
-                element.__data__ :
-                d3.min([svg_objects.y_axis.domain[0], element.__data__])
+            SVG.add_y_axis_tick(element);
+            let domain = SVG.get_y_axis_domain();
+
+            domain[0] = (
+                domain[0] == null ? element.__data__ : min([domain[0], element.__data__])
             );
-            svg_objects.y_axis.domain[1] = (
-                svg_objects.y_axis.domain[1] == null ? 
-                element.__data__ :
-                d3.max([svg_objects.y_axis.domain[1], element.__data__])
+            domain[1] = (
+                domain[1] == null ? element.__data__ : max([domain[1], element.__data__])
             );
+            SVG.set_y_axis_domain(domain);
         }
     }
 
     for (const mark_type of INTERACTION_CONSTANTS.SVG_TYPE.SVG_MARK) {
-        if (element.nodeName == mark_type) {
-            if (element.className.animVal == INTERACTION_CONSTANTS.SVG_TYPE.TICK_DOMAIN) {
-                svg_objects.has_domain = true;
+        if (element.nodeName === mark_type) {
+            element.contour = null;
+
+            if (mark_type === "path") {
+                let commands = parseSVG(element.getAttribute("d"));
+
+                if (commands.length) {
+                    let start_cmd = commands[0];
+                    let end_cmd = commands[commands.length - 1];
+
+                    if (end_cmd.code === "Z" || (
+                        end_cmd.code === "A" && end_cmd.x === start_cmd.x && end_cmd.y === start_cmd.y
+                    )) {
+                        element.contour = commands;
+                        // element.contour = commands.map((d) => { return [d.x, d.y]; });
+                        // element.contour[element.contour.length - 1] = element.contour[0];
+                    }
+                } 
+            }
+
+            if (element.className.animVal === INTERACTION_CONSTANTS.SVG_TYPE.TICK_DOMAIN) {
+                SVG.set_domain(true);
             } else {
                 // element.__mark__ = true;
                 element.setAttribute("__mark__", "true");
-                svg_objects.svg_marks.push(element);
+                SVG.add_svg_mark(element);
                 break;
             }
         }
@@ -57,31 +86,19 @@ function traverse_DOM_tree(element, svg_objects) {
     
     for (const child of element.childNodes) {
         if (element.className && 
-            element.className.animVal == INTERACTION_CONSTANTS.SVG_TYPE.SVG_TICK) {
+            element.className.animVal === INTERACTION_CONSTANTS.SVG_TYPE.SVG_TICK) {
             break;
         }
        
-        traverse_DOM_tree(child, svg_objects);
+        traverse_DOM_tree(child, SVG, [...transform]);
     }
 }
 
 function inspect(element) {
-    let svg_objects = {
-        has_domain: false,
-        svg: null,
-        svg_marks: [],
-        x_axis: {
-            domain: [null, null],
-            ticks: []
-        },
-        y_axis: {
-            domain: [null, null],
-            ticks: []
-        } 
-    }
-
-    traverse_DOM_tree(element, svg_objects);
-    return svg_objects;
+    let svg = new SVG();
+    traverse_DOM_tree(element, svg, [0, 0]);
+    svg.infer_view();
+    return svg;
 }
 
 export { inspect };
