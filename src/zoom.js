@@ -2,150 +2,111 @@ import { INTERACTION_CONSTANTS } from "./constants";
 // import { svg_objects } from "./inspect";
 import { axisBottom, axisLeft } from "./d3/axis_old";
 // import { ticks } from "d3";
+// import { ZoomTransform } from 'd3-zoom';
 
-export function zoom(id, svg_objects) {
-    const svg = d3.select("#" + svg_objects.svg.id);
-    // const marks = svg.selectAll(INTERACTION_CONSTANTS.SVG_TYPE.SVG_MARK.join());
-    const marks = svg.selectAll('[__mark__="true"]');
-    const width = parseInt(svg_objects.svg.getAttribute("width"));
-    const height = parseInt(svg_objects.svg.getAttribute("height"));
-    const extent = [[0, 0], [width, height]];
+export function zoom(SVG) {
+    const svg = d3.select("#" + SVG.get_svg().id);
 
-    let x_tick_min = d3.min(svg_objects.x_axis.ticks.map(function(el) {
-        return +el.getAttribute("transform").match(/(\d+\.?\d*)/g)[0];
-    }));
-    let x_tick_max = d3.max(svg_objects.x_axis.ticks.map(function(el) {
-        return +el.getAttribute("transform").match(/(\d+\.?\d*)/g)[0];
-    }));
-    let y_tick_min = d3.min(svg_objects.y_axis.ticks.map(function(el) {
-        return +el.getAttribute("transform").match(/(\d+\.?\d*)/g)[1];
-    }));
-    let y_tick_max = d3.max(svg_objects.y_axis.ticks.map(function(el) {
-        return +el.getAttribute("transform").match(/(\d+\.?\d*)/g)[1];
-    }));
-    
-    const x_scale = (svg_objects.x_axis.domain[0] instanceof Date ? d3.scaleTime() : d3.scaleLinear()) 
-        .domain([svg_objects.x_axis.domain[0], svg_objects.x_axis.domain[1]])
-        // .range([0, width]);
-        .range([x_tick_min, x_tick_max]);
-        // .range([0, width]);
-    const y_scale = d3.scaleLinear()
-        .domain([svg_objects.y_axis.domain[0], svg_objects.y_axis.domain[1]])
-        // .range([height, 0]);
-        .range([y_tick_max, y_tick_min]);
-    const xAxis = d3.
-        axisBottom(x_scale)
-        .tickSize(svg_objects.x_axis.ticks[1].children[0].getAttribute("y2"))
-        .ticks(svg_objects.x_axis.ticks.length);
-    // console.log(xAxis.values);
-    const yAxis = d3.
-        axisLeft(y_scale)
-        .tickSize(-svg_objects.y_axis.ticks[1].children[0].getAttribute("x2"))
-        .ticks(svg_objects.y_axis.ticks.length);
+    SVG.get_x_axis_ticks()[1].parentElement.setAttribute("id", "x-axis-tmp");
+    SVG.get_y_axis_ticks()[1].parentElement.setAttribute("id", "y-axis-tmp");
 
-    // svg_objects.x_axis.ticks.forEach((tick) => {
-    //     let pos = tick.getAttribute("transform").match(/(\d+\.?\d*)/g)[0];
-    //     // tick.__datatmp__ = tick.__data__;
-    //     tick.__pos__ = pos;
-    // });
-
-    // svg_objects.y_axis.ticks.forEach((tick) => {
-    //     let pos = tick.getAttribute("transform").match(/(\d+\.?\d*)/g)[1];
-    //     // tick.__datatmp__ = tick.__data__;
-    //     tick.__pos__ = pos;
-    // });
-
-    svg_objects.x_axis.ticks[1].parentElement.setAttribute("id", "x-axis-tmp");
-    svg_objects.y_axis.ticks[1].parentElement.setAttribute("id", "y-axis-tmp");
+    SVG.get_x_axis_ticks().forEach((d) => {
+        d.__transform = d.getAttribute("transform");
+    });
+    SVG.get_y_axis_ticks().forEach((d) => {
+        d.__transform = d.getAttribute("transform");
+    });
 
     let g_x_axis = svg.selectAll("#x-axis-tmp");
-    g_x_axis.call(xAxis);
+    g_x_axis.call(SVG.get_x_axis());
 
     let g_y_axis = svg.selectAll("#y-axis-tmp");
-    g_y_axis.call(yAxis);
+    g_y_axis.call(SVG.get_y_axis());
 
-    if (!svg_objects.has_domain) {
+    // Infer original X-axis domain
+    let tick_left = SVG.get_x_axis_ticks()[0];
+    let tick_right = SVG.get_x_axis_ticks()[SVG.get_x_axis_ticks().length - 1];
+
+    let coord_shift_x =+SVG.get_x_axis_ticks()[1].__transform.match(/(\d+\.?\d*)/g)[0] - 
+        +SVG.get_x_axis_ticks()[0].__transform.match(/(\d+\.?\d*)/g)[0];
+    let data_shift_x =SVG.get_x_axis_ticks()[1].__data__ - SVG.get_x_axis_ticks()[0].__data__;
+
+    let prptn_x = Math.abs(coord_shift_x) / Math.abs(data_shift_x);
+    let x_range_left = SVG.get_x_axis_range()[0];
+    let x_range_right = SVG.get_x_axis_range()[1];
+
+    x_range_left = Math.abs(x_range_left - +tick_left.__transform.match(/(\d+\.?\d*)/g)[0]);
+    x_range_right = Math.abs(x_range_right - +tick_right.__transform.match(/(\d+\.?\d*)/g)[0]);
+    
+    let data_rng_left = x_range_left / prptn_x;
+    let data_rng_right = x_range_right / prptn_x;
+
+    if (SVG.get_x_axis_domain()[0] instanceof Date) {
+        var new_domain = [
+            new Date(SVG.get_x_axis_domain()[0].getTime() - data_rng_left),
+            new Date(SVG.get_x_axis_domain()[1].getTime() + data_rng_right)
+        ];
+    } else {
+        var new_domain = [
+            SVG.get_x_axis_domain()[0] - data_rng_left,
+            SVG.get_x_axis_domain()[1] + data_rng_right
+        ];
+    }
+
+    SVG.set_x_scale(SVG.get_x_scale().copy().domain(new_domain));
+    g_x_axis.call(SVG.get_x_axis().scale(SVG.get_x_scale()));
+
+    // Infer original Y-axis domain
+    let tick_bottom = SVG.get_y_axis_ticks()[0];
+    let tick_top = SVG.get_y_axis_ticks()[SVG.get_y_axis_ticks().length - 1];
+
+    let coord_shift_y =+SVG.get_y_axis_ticks()[1].__transform.match(/(\d+\.?\d*)/g)[1] - 
+        +SVG.get_y_axis_ticks()[0].__transform.match(/(\d+\.?\d*)/g)[1];
+    let data_shift_y =SVG.get_y_axis_ticks()[1].__data__ - SVG.get_y_axis_ticks()[0].__data__;
+
+    let prptn_y = Math.abs(coord_shift_y) / Math.abs(data_shift_y);
+    let y_range_bottom = SVG.get_y_axis_range()[0];
+    let y_range_top = SVG.get_y_axis_range()[1];
+
+    y_range_top = Math.abs(y_range_top - +tick_top.__transform.match(/(\d+\.?\d*)/g)[1]);
+    y_range_bottom = Math.abs(y_range_bottom - +tick_bottom.__transform.match(/(\d+\.?\d*)/g)[1]);
+    
+    let data_rng_top = y_range_top / prptn_y;
+    let data_rng_bottom = y_range_bottom / prptn_y;
+
+    SVG.set_y_scale(SVG.get_y_scale().copy().domain([
+        SVG.get_y_axis_domain()[0] - data_rng_bottom,
+        SVG.get_y_axis_domain()[1] + data_rng_top
+    ]));
+    g_y_axis.call(SVG.get_y_axis().scale(SVG.get_y_scale()));
+
+    if (!SVG.has_domain()) {
         g_x_axis.select(".domain").attr("display", "none");
         g_y_axis.select(".domain").attr("display", "none");
     }
+        
+    svg.append('defs')
+        .append('clipPath')
+        .attr('id', 'clip-' + SVG.get_svg().id)
+        .append('rect')
+        .attr('x', SVG.get_x_axis_range()[0])
+        .attr('y', SVG.get_y_axis_range()[1])
+        .attr('width', Math.abs(SVG.get_x_axis_range()[1] - SVG.get_x_axis_range()[0]))
+        .attr('height', Math.abs(SVG.get_y_axis_range()[0] - SVG.get_y_axis_range()[1]));
+    
+    const marks = svg.selectAll('[__mark__="true"]');
+    marks.nodes()[0].parentElement.setAttribute('clip-path', 'url(#clip-' + SVG.get_svg().id + ')');
 
     svg.call(d3.zoom().on("zoom", function({transform}) {
-        marks.attr("transform", transform); 
-        // svg_objects.x_axis.ticks.attr("transform", transform);
+        marks.attr("transform", transform);
+        if (marks.node().nodeName === 'circle') {
+            marks.attr("r", 5 / transform.k);
+        }
+        else if (marks.node().nodeName === 'path') {
+            marks.attr('vector-effect', 'non-scaling-stroke');
+        }
 
-        // console.log(x_scale(5));
-        // console.log(transform.rescaleX(x_scale)(5));
-        // let new_x_scale = d3.scaleLinear()
-        // .domain([svg_objects.x_axis.domain[0], svg_objects.x_axis.domain[1]])
-        // .range([0, width]);
-        g_x_axis.call(xAxis.scale(transform.rescaleX(x_scale)));
-        g_y_axis.call(yAxis.scale(transform.rescaleY(y_scale)));
-        // g_x_axis.call(xAxis.transform_cb(transform));
-        // g_y_axis.call(yAxis.transform_cb(transform));
+        g_x_axis.call(SVG.get_x_axis().scale(transform.rescaleX(SVG.get_x_scale())));
+        g_y_axis.call(SVG.get_y_axis().scale(transform.rescaleY(SVG.get_y_scale())));
     }));
-    // Clipping
-    // let element = marks.nodes()[0];
-    // element.parentElement.id = "test"
-    (marks.nodes()[0]).parentElement.id = "mark-g";
-    // // `element` is the element you want to wrap
-    // let parent = element.parentNode;
-    // parent.removeChild(element);
-    // let wrapper = document.createElement('g');
-    // let new_path = document.createElement('path');
-    // new_path.setAttribute("d", element.getAttribute("d"))
-    // new_path.setAttribute("fill", "none");
-    // new_path.setAttribute("stroke", "steelblue");
-    // new_path.setAttribute("stroke-width", 1.5);
-    // parent.insertBefore(wrapper, null);
-    // wrapper.insertBefore(new_path, null);
-
-    // set the wrapper as child (instead of the element)
-    // parent.replaceChild(wrapper, element);
-    // wrapper.id = "mark-g";
-    // // set element as child of wrapper
-    // wrapper.appendChild(element);
-    let mark_g = svg.selectAll("#mark-g");
-    // let mark_g = element;
-    let height_translation = svg_objects
-        .x_axis
-        .ticks[0]
-        .parentElement
-        .getAttribute("transform")
-        .match(/(\d+)/g)[1];
-    console.log(height_translation);
-    console.log(svg_objects.x_axis.ticks[0].children[1].getAttribute("y"));
-    let height_translation_marks = height_translation - 
-        svg_objects.x_axis.ticks[0].children[1].getAttribute("y");
-
-    mark_g.selectAll("defs").remove();
-    mark_g.append('defs')
-        .append('clipPath')
-        .attr('id', 'clip')
-        .append('rect')
-        .attr('x', 0)
-        .attr('y', 0)
-        .attr('width', width)
-        .attr('height', height_translation_marks + 7);
-    mark_g
-        .attr('clip-path', 'url(#clip)');
-
-    let width_start = svg_objects
-        .y_axis
-        .ticks[0]
-        .children[1]
-        .getAttribute("x");
-    // console.log(height_translation);
-    // console.log(width_start * 4);
-return;
-    g_y_axis.selectAll("defs").remove();
-    g_y_axis.append('defs')
-        .append('clipPath')
-        .attr('id', 'clip2')
-        .append('rect')
-        .attr('x', width_start * 8)
-        .attr('y', -100)
-        .attr('width', width)
-        .attr('height', height_translation + 10);
-    g_y_axis
-        .attr('clip-path', 'url(#clip2)');
 }
