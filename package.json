@@ -8,7 +8,7 @@
   "license": "MIT",
   "scripts": {
     "prebuild": "rimraf dist && mkdir dist",
-    "build": "rollup -c",
+    "build": "rollup -c -w",
     "test": "mocha 'test/**/*-test.js' && eslint src test",
     "prepublishOnly": "yarn test && yarn build"
   },
@@ -18,7 +18,18 @@
     "rollup-plugin-terser": "^7.0.2"
   },
   "dependencies": {
+    "@babel/core": "^7.17.0",
+    "@rollup/plugin-commonjs": "^21.0.1",
+    "@rollup/plugin-node-resolve": "^13.1.3",
+    "@types/svg-path-parser": "^1.1.3",
+    "babel": "^6.23.0",
     "d3": "^7.3.0",
-    "rimraf": "^3.0.2"
+    "parse-svg-path": "^0.1.2",
+    "rimraf": "^3.0.2",
+    "rollup-plugin-babel": "^4.4.0",
+    "rollup-plugin-bundle-imports": "^1.5.1",
+    "rollup-plugin-commonjs": "^10.1.0",
+    "rollup-plugin-node-resolve": "^5.2.0",
+    "svg-path-parser": "^1.1.0"
   }
 }
