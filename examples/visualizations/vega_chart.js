@@ -100,6 +100,8 @@ function createVegaLineChart() {
       }
     ]
   }
-  vegaEmbed("#vega", spec, {renderer: "svg"});
-  AutomaticInteraction.hydrate("#vega", "#control");
+  vegaEmbed("#vega", spec, {renderer: "svg"}).then(function() {
+    document.querySelector("#vega svg").id = "vegachart";
+    AutomaticInteraction.hydrate("#vegachart", "#control");
+  });
 }
