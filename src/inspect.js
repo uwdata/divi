@@ -27,8 +27,16 @@ function traverse_DOM_tree(element, SVG, transform) {
     if (element.className &&
         element.nodeName === INTERACTION_CONSTANTS.SVG_TYPE.SVG_GROUP && 
         element.className.animVal === INTERACTION_CONSTANTS.SVG_TYPE.SVG_TICK) {
-        if (element.getAttribute("transform").match(/(\d+)/g)[0] > 0) {
+        let x_shift = +element.getAttribute("transform").match(/(\d+)/g)[0];
+        let y_shift = +element.getAttribute("transform").match(/(\d+)/g)[1];
+
+        if (x_shift > 0 || (x_shift === 0 && y_shift === 0 && element.childNodes[1].hasAttribute("y"))) {
             SVG.add_x_axis_tick(element);
+
+            if (typeof element.__data__ === "string") {
+                SVG.add_x_ordinal(element.__data__);
+            }
+
             let domain = SVG.get_x_axis_domain();
 
             domain[0] = (
@@ -40,6 +48,11 @@ function traverse_DOM_tree(element, SVG, transform) {
             SVG.set_x_axis_domain(domain);
         } else {
             SVG.add_y_axis_tick(element);
+
+            if (typeof element.__data__ === "string") {
+                SVG.add_y_ordinal(element.__data__);
+            }
+
             let domain = SVG.get_y_axis_domain();
 
             domain[0] = (
