@@ -6,6 +6,7 @@ export default function() {
         svg_marks = [],
         x_axis = {
             domain: [null, null],
+            ordinal: [],
             range: [null, null],
             ticks: [],
             scale: null,
@@ -13,6 +14,7 @@ export default function() {
         },
         y_axis = {
             domain: [null, null],
+            ordinal: [],
             range: [null, null],
             ticks: [],
             scale: null,
@@ -113,11 +115,25 @@ export default function() {
         return y_axis.scale;
     }
 
+    SVG.add_x_ordinal = function(_x_ordinal) {
+        x_axis.ordinal.push(_x_ordinal);
+    }
+
+    SVG.add_y_ordinal = function(_y_ordinal) {
+        y_axis.ordinal.push(_y_ordinal);
+    }
+
     SVG.infer_view = function() {
         const _svg = d3.select("#" + svg.id);
         const marks = _svg.selectAll('[__mark__="true"]');
         const width = parseInt(svg.getAttribute("width"));
         const height = parseInt(svg.getAttribute("height"));
+
+        if (!x_axis.ticks.length && !y_axis.ticks.length) {
+            x_axis.range = [0, width];
+            y_axis.range = [height, 0];
+            return;
+        }
 
         if (has_domain) {
             let axes = [].slice.call(svg.querySelectorAll(".domain")).map((d) => { return d.getBoundingClientRect() });
@@ -161,20 +177,77 @@ export default function() {
         //     return +el.childNodes[0].getBoundingClientRect().left;
         // }));
 
-        x_axis.scale = (x_axis.domain[0] instanceof Date ? d3.scaleTime() : d3.scaleLinear()) 
-            .domain(x_axis.domain)
-            .range(x_axis.range);
-        y_axis.scale = d3.scaleLinear()
-            .domain(y_axis.domain)
-            .range(y_axis.range);
-        x_axis.axis = d3.
-            axisBottom(x_axis.scale)
-            .tickSize(x_axis.ticks[1].children[0].getAttribute("y2"))
-            .ticks(x_axis.ticks.length);
-        y_axis.axis = d3.
-            axisLeft(y_axis.scale)
-            .tickSize(-y_axis.ticks[1].children[0].getAttribute("x2"))
-            .ticks(y_axis.ticks.length);
+        let diff_1_y = y_axis.ticks[1].__data__ - y_axis.ticks[0].__data__;
+        let diff_2_y = y_axis.ticks[2].__data__ - y_axis.ticks[1].__data__;
+    
+        let diff_1_x = x_axis.ticks[1].__data__ - x_axis.ticks[0].__data__;
+        let diff_2_x = x_axis.ticks[2].__data__ - x_axis.ticks[1].__data__;
+
+        if (Math.abs(diff_1_x - diff_2_x) > 5e-1) {
+            let tick_diff_1 = x_axis.ticks[1].getBoundingClientRect().left - x_axis.ticks[0].getBoundingClientRect().left;
+            let tick_diff_2 = x_axis.ticks[2].getBoundingClientRect().left - x_axis.ticks[1].getBoundingClientRect().left;
+
+            if (Math.abs(tick_diff_1 - tick_diff_2) < 5e-1) {
+                let format = x_axis.ticks[0].childNodes[1].innerHTML;
+                if (format != x_axis.ticks[0].__data__ && typeof format === "string") { 
+                    var exponent = format.match(/^(e|\d+)\^(e|\d+)$/);
+                    var superscript = format.match(/^(e|d+)([\u2070-\u209F\u00B2\u00B3\u00B9])$/);
+                    if (exponent) {
+                        var base = exponent[1];
+                        base = (base === 'e' ? Math.E : parseInt(base));
+                    } else if (superscript) {
+                        var base = superscript[1];
+                        base = (base === 'e' ? Math.E : parseInt(base));
+                    }
+                }
+            }
+
+            function format(d) {
+                function digitToSuperscript(superChar) {
+                    let table = "⁰¹²³⁴⁵⁶⁷⁸⁹";
+                    return table[superChar];
+                }
+
+                let exp = Math.log(d) / Math.log(base);
+                return superscript ? 'e' + String(exp).replace(/\d/g, digitToSuperscript) : d + '^' + exp;
+            }
+
+            x_axis.scale = d3.scaleLog()
+                .base(base)
+                .domain(x_axis.domain)
+                .range(x_axis.range);
+            x_axis.axis = d3.
+                axisBottom(x_axis.scale)
+                .tickSize(x_axis.ticks[1].children[0].getAttribute("y2"))
+                .ticks(x_axis.ticks.length)
+                .tickFormat(d => exponent || superscript ? format(d) : d);
+        } else {
+            x_axis.scale = (x_axis.domain[0] instanceof Date ? d3.scaleTime() : (x_axis.ordinal.length ? d3.scaleBand() : d3.scaleLinear()))
+                .domain(typeof x_axis.ticks[0].__data__ === "string" ? x_axis.ordinal : x_axis.domain)
+                .range(x_axis.range);
+            x_axis.axis = d3.
+                axisBottom(x_axis.scale)
+                .tickSize(x_axis.ticks[1].children[0].getAttribute("y2"))
+                .ticks(typeof x_axis.ticks[0].__data__ === "string" ? x_axis.ordinal.length : x_axis.ticks.length);
+        }
+
+        if (Math.abs(diff_1_y - diff_2_y) > 5e-1) {
+            y_axis.scale = d3.scaleLog()
+                .domain(y_axis.domain)
+                .range(y_axis.range);
+            y_axis.axis = d3.
+                axisLeft(y_axis.scale)
+                .tickSize(-y_axis.ticks[1].children[0].getAttribute("x2"))
+                .ticks(y_axis.ticks.length);
+        } else {
+            y_axis.scale = (y_axis.domain[0] instanceof Date ? d3.scaleTime() : (y_axis.ordinal.length ? d3.scaleBand() : d3.scaleLinear()))
+                .domain(typeof y_axis.ticks[0].__data__ === "string" ? y_axis.ordinal : y_axis.domain)
+                .range(y_axis.range);
+            y_axis.axis = d3.
+                axisLeft(y_axis.scale)
+                .tickSize(-y_axis.ticks[1].children[0].getAttribute("x2"))
+                .ticks(typeof y_axis.ticks[0].__data__ === "string" ? y_axis.ordinal.length : y_axis.ticks.length);
+        }
     }
 
     return SVG;
