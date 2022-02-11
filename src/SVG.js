@@ -123,6 +123,26 @@ export default function() {
         y_axis.ordinal.push(_y_ordinal);
     }
 
+    SVG.filter = function(x, y, width, height) {
+        for (const mark of svg_marks) {
+            if (+mark.getBoundingClientRect().right < x ||
+                +mark.getBoundingClientRect().left > x + +width ||
+                +mark.getBoundingClientRect().bottom < y ||
+                +mark.getBoundingClientRect().top > y + +height) {
+                // console.log(mark.getBoundingClientRect());
+                // console.log(mark);
+                // console.log(x)
+                // console.log(width);
+                // console.log(y);
+                // console.log(height);
+                // console.log('')
+                mark.setAttribute("opacity", 0.25);
+            } else {
+                mark.setAttribute("opacity", 1);
+            }
+        }
+    }
+
     SVG.infer_view = function() {
         const _svg = d3.select("#" + svg.id);
         const marks = _svg.selectAll('[__mark__="true"]');
@@ -183,7 +203,10 @@ export default function() {
         let diff_1_x = x_axis.ticks[1].__data__ - x_axis.ticks[0].__data__;
         let diff_2_x = x_axis.ticks[2].__data__ - x_axis.ticks[1].__data__;
 
-        if (Math.abs(diff_1_x - diff_2_x) > 5e-1) {
+        let diff_tick_a = x_axis.ticks[1].childNodes[0].getBoundingClientRect().left - x_axis.ticks[0].childNodes[0].getBoundingClientRect().left;
+        let diff_tick_b = x_axis.ticks[2].childNodes[0].getBoundingClientRect().left - x_axis.ticks[1].childNodes[0].getBoundingClientRect().left;
+
+        if (Math.abs(diff_1_x - diff_2_x) > 5e-1 || Math.abs(diff_tick_a - diff_tick_b) > 5e-1) {
             let tick_diff_1 = x_axis.ticks[1].getBoundingClientRect().left - x_axis.ticks[0].getBoundingClientRect().left;
             let tick_diff_2 = x_axis.ticks[2].getBoundingClientRect().left - x_axis.ticks[1].getBoundingClientRect().left;
 
@@ -200,8 +223,8 @@ export default function() {
                         base = (base === 'e' ? Math.E : parseInt(base));
                     }
                 }
-            }
-
+            } 
+            
             function format(d) {
                 function digitToSuperscript(superChar) {
                     let table = "⁰¹²³⁴⁵⁶⁷⁸⁹";
@@ -213,14 +236,16 @@ export default function() {
             }
 
             x_axis.scale = d3.scaleLog()
-                .base(base)
                 .domain(x_axis.domain)
                 .range(x_axis.range);
             x_axis.axis = d3.
                 axisBottom(x_axis.scale)
                 .tickSize(x_axis.ticks[1].children[0].getAttribute("y2"))
-                .ticks(x_axis.ticks.length)
-                .tickFormat(d => exponent || superscript ? format(d) : d);
+                .ticks(x_axis.ticks.filter(d => d.childNodes[1].innerHTML).length)
+            if (base) {
+                x_axis.scale = x_axis.scale.base(base);
+                x_axis.axis = x_axis.axis.tickFormat(d => exponent || superscript ? format(d) : d);
+            }
         } else {
             x_axis.scale = (x_axis.domain[0] instanceof Date ? d3.scaleTime() : (x_axis.ordinal.length ? d3.scaleBand() : d3.scaleLinear()))
                 .domain(typeof x_axis.ticks[0].__data__ === "string" ? x_axis.ordinal : x_axis.domain)
