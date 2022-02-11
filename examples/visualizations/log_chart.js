@@ -6,21 +6,33 @@ function createLogChart() {
         width = 720 - margin.left - margin.right,
         height = 720 - margin.top - margin.bottom;
 
-    var x = d3.scaleLinear()
-        .domain([0, 100])
-        .range([0, width]);
+    // var x = d3.scaleLinear()
+    //     .domain([0, 100])
+    //     .range([0, width]);
 
-    var y = d3.scaleLog()
+    // var y = d3.scaleLog()
+    //     .base(Math.E)
+    //     .domain([Math.exp(0), Math.exp(9)])
+    //     .range([height, 0]);
+
+    let data = d3.range(10).map(function(x) { return [Math.exp(x), x * Math.exp(2.5)]; });
+ 
+    var x = d3.scaleLog()
         .base(Math.E)
         .domain([Math.exp(0), Math.exp(9)])
+        .range([0, width]);
+
+    var y = d3.scaleLinear()
+        .domain(d3.extent(data.map(d => d[1])))
         .range([height, 0]);
 
+
     var xAxis = d3.axisBottom()
-        .scale(x);
+        .scale(x)
+        .tickFormat(function(d) { return "e" + formatPower(Math.round(Math.log(d))); });
 
     var yAxis = d3.axisLeft()
-        .scale(y)
-        .tickFormat(function(d) { return "e" + formatPower(Math.round(Math.log(d))); });
+        .scale(y);
 
     var line = d3.line()
         .x(function(d) { return x(d[0]); })
@@ -43,8 +55,9 @@ function createLogChart() {
         .attr("transform", "translate(0," + (height + 10) + ")")
         .call(xAxis);
 
+
     svg.append("path")
-        .datum(d3.range(100).map(function(x) { return [x, x * x + x + 1]; }))
+        .datum(data)
         .attr("class", "line")
         .attr("d", line)
         .attr("fill", "none")
