@@ -10,16 +10,15 @@ export function zoom(SVG) {
 
     if (SVG.state().x_axis.scale && SVG.state().x_axis.domain.length === 2) {
         // Infer original X-axis domain
-        let tick_left = +SVG.state().x_axis.ticks[0]['ticks'][0].getAttribute("transform").match(/(-?\d+\.?-?\d*)/g)[0];
-        let tick_right = +SVG.state().x_axis.ticks[SVG.state().x_axis.ticks.length - 1]['ticks'][0].getAttribute("transform").match(/(-?\d+\.?-?\d*)/g)[0];
-        // console.log([tick_left, tick_right]);
+        let tick_left = SVG.state().x_axis.ticks[0]['ticks'][0];
+        let tick_right = SVG.state().x_axis.ticks[SVG.state().x_axis.ticks.length - 1]['ticks'][0];
+        
+        tick_left = +(tick_left.hasAttribute("transform") ? tick_left.getAttribute("transform").match(/(-?\d+\.?-?\d*)/g)[0] : tick_left._global_transform[0] - SVG.state().x_axis.global_range[0]);
+        tick_right = +(tick_right.hasAttribute("transform") ? tick_right.getAttribute("transform").match(/(-?\d+\.?-?\d*)/g)[0] : tick_right._global_transform[0] - SVG.state().x_axis.global_range[0]);
+
         let new_domain_x = SVG.state().x_axis.range.map(
             SVG.state().x_axis.scale.copy().range([tick_left, tick_right]).invert, SVG.state().x_axis.scale
         );
-        // console.log(SVG.state().x_axis.scale.copy().range([tick_left, tick_right]).invert(tick_left))
-        // console.log(SVG.state().x_axis.scale.copy().range([tick_left, tick_right]).invert(tick_right))
-        // // console.log(new_domain_x);
-        // console.log("")
 
         SVG.state().x_axis.scale.domain(new_domain_x);
         SVG.state().x_axis.axis.scale(SVG.state().x_axis.scale)();
@@ -27,8 +26,11 @@ export function zoom(SVG) {
 
     if (SVG.state().y_axis.scale && SVG.state().y_axis.domain.length === 2) {
         // Infer original Y-axis domain
-        let tick_bottom = +SVG.state().y_axis.ticks[0]['ticks'][0].getAttribute("transform").match(/(-?\d+\.?-?\d*)/g)[1];
-        let tick_top = +SVG.state().y_axis.ticks[SVG.state().y_axis.ticks.length - 1]['ticks'][0].getAttribute("transform").match(/(-?\d+\.?-?\d*)/g)[1];
+        let tick_bottom = SVG.state().y_axis.ticks[0]['ticks'][0];
+        let tick_top = SVG.state().y_axis.ticks[SVG.state().y_axis.ticks.length - 1]['ticks'][0];
+
+        tick_bottom = +(tick_bottom.hasAttribute("transform") ? tick_bottom.getAttribute("transform").match(/(-?\d+\.?-?\d*)/g)[1] : tick_bottom._global_transform[1] - SVG.state().y_axis.global_range[1]);
+        tick_top = +(tick_top.hasAttribute("transform") ? tick_top.getAttribute("transform").match(/(-?\d+\.?-?\d*)/g)[1] : tick_top._global_transform[1] - SVG.state().y_axis.global_range[1]);
 
         let new_domain_y = SVG.state().y_axis.range.map(
             SVG.state().y_axis.scale.copy().range([tick_top, tick_bottom]).invert, SVG.state().y_axis.scale
@@ -37,7 +39,7 @@ export function zoom(SVG) {
         SVG.state().y_axis.scale.domain(new_domain_y);
         SVG.state().y_axis.axis.scale(SVG.state().y_axis.scale)();
     }
-
+    // return;
     // if (!SVG.has_domain() && SVG.get_x_axis() && SVG.get_y_axis()) {
     //     g_x_axis.select(".domain").attr("display", "none");
     //     g_y_axis.select(".domain").attr("display", "none");
@@ -125,13 +127,20 @@ export function zoom(SVG) {
         //     g_y_axis.call(SVG.get_y_axis().scale(ty().rescaleY(SVG.get_y_scale())));
         marks.attr("transform", function() {
             let transform = this.__transform.match(/(-?\d+\.?-?\d*)/g);
-            this._t ? this._t : this._t = [this.getBoundingClientRect().left - this._global_transform[0] - SVG.state().svg.getBoundingClientRect().left,
-                this.getBoundingClientRect().top - this._global_transform[1] - SVG.state().svg.getBoundingClientRect().top];
+            
+            let t_x = (this.getBoundingClientRect().left - this._global_transform[0] - SVG.state().svg.getBoundingClientRect().left +
+                this.getBoundingClientRect().right - this._global_transform[0] - SVG.state().svg.getBoundingClientRect().left) / 2;
+            let t_y = (this.getBoundingClientRect().top - this._global_transform[1] - SVG.state().svg.getBoundingClientRect().top + 
+                this.getBoundingClientRect().bottom - this._global_transform[1] - SVG.state().svg.getBoundingClientRect().top) / 2;
 
-            let new_x = tx().applyX(+this._t[0]) + (+transform[0] - +this._t[0]);
-            let new_y = ty().applyY(+this._t[1]) + (+transform[1] - +this._t[1]);
+            if (!this._t) this._t = [t_x, t_y];
+            let x_offset = +transform[0] === 0 ? 0 : +transform[0] - +this._t[0];
+            let y_offset = +transform[1] === 0 ? 0 : +transform[1] - +this._t[1];
 
-            return 'translate(' + new_x + ',' + new_y + ')'; //scale(' + tx().k + ',' + ty().k + ')';
+            let new_x = tx().applyX(+this._t[0]) + x_offset;
+            let new_y = ty().applyY(+this._t[1]) + y_offset;
+
+            return 'translate(' + (this.hasAttribute("cx") ? new_x - this.getAttribute("cx") : new_x) + ',' + (this.hasAttribute("cy") ? new_y - this.getAttribute("cy") : new_y) + ')';
         });
             // marks.attr("transform", 'translate(' + tx().x + ',' + ty().y + ') scale(' + tx().k + ',' + ty().k + ')');
         // } else { // if (marks.node().nodeName === 'path') {

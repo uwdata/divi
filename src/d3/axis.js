@@ -28,7 +28,7 @@ function entering() {
   return !this.__axis;
 }
 
-function axis(orient, scale, ticks) {
+function axis(orient, scale, ticks, global_range) {
   var tickArguments = [],
       tickValues = null,
       tickFormat = null,
@@ -39,7 +39,8 @@ function axis(orient, scale, ticks) {
       k = orient === top || orient === left ? -1 : 1,
       x = orient === left || orient === right ? "x" : "y",
       transform = orient === top || orient === bottom ? translateX : translateY,
-      diff = null;
+      diff = null, 
+      range_index = orient === top || orient === bottom ? 0 : 1;
 
   function axis() {
     var values = tickValues == null ? (scale.ticks ? scale.ticks.apply(scale, tickArguments) : scale.domain()) : tickValues,
@@ -50,29 +51,31 @@ function axis(orient, scale, ticks) {
       let label = tick['label'];
       let tick_marks = tick['ticks'];
 
-      label.innerHTML = value;
+      label.innerHTML = (label.innerHTML == value ? label.innerHTML : value);
+
       let offset_label = label.hasAttribute("transform") ?
         (orient === top || orient === bottom ? 
-          label.getAttribute("transform").match(/(-?\d+\.?-?\d*)/g)[1] :
-          label.getAttribute("transform").match(/(-?\d+\.?-?\d*)/g)[0]) :
+          label.getAttribute("transform").match(/(-?\d+\.?\d*e?-?\d*)/g)[1] :
+          label.getAttribute("transform").match(/(-?\d+\.?\d*e?-?\d*)/g)[0]) :
         0;
 
       let text_anchor = label.hasAttribute("transform") ?
         (orient === top || orient === bottom ? 
-          label.getAttribute("transform").match(/(-?\d+\.?-?\d*)/g)[0] :
-          label.getAttribute("transform").match(/(-?\d+\.?-?\d*)/g)[1]) :
+          label.getAttribute("transform").match(/(-?\d+\.?\d*e?-?\d*)/g)[0] :
+          label.getAttribute("transform").match(/(-?\d+\.?\d*e?-?\d*)/g)[1]) :
         0;
       diff = diff == null ? +text_anchor - position(value) : diff;
 
-      label.setAttribute("transform", transform(position(value) + (Math.abs(diff) < 5 ? diff : 0), +offset_label));
+      label.setAttribute("transform", transform(position(value) + (Math.abs(diff) < 5 ? diff : 0) + global_range[range_index] - label._global_transform[range_index], +Math.abs(offset_label) > 1e-2 ? +offset_label : 0));
 
       for (const mark of tick_marks) {
         let offset_mark = mark.hasAttribute("transform") ?
         (orient === top || orient === bottom ? 
-          mark.getAttribute("transform").match(/(-?\d+\.?-?\d*)/g)[1] :
-          mark.getAttribute("transform").match(/(-?\d+\.?-?\d*)/g)[0]) :
+          mark.getAttribute("transform").match(/(-?\d+\.?\d*e?-?\d*)/g)[1] :
+          mark.getAttribute("transform").match(/(-?\d+\.?\d*e?-?\d*)/g)[0]) :
         0;
-        mark.setAttribute("transform", transform(position(values[counter]), +offset_mark));
+
+        mark.setAttribute("transform", transform(position(values[counter]) + global_range[range_index] - mark._global_transform[range_index], +Math.abs(offset_mark) > 1e-2 ? +offset_mark : 0));
       }
     }
 
@@ -83,9 +86,10 @@ function axis(orient, scale, ticks) {
     for ( ; counter < values.length; ++counter) {
       let new_tick = { 
         'label': ticks[0]['label'].cloneNode(), 
-        'ticks': ticks[0]['ticks'].map(d => d.cloneNode()), 
+        'ticks': ticks[0]['ticks'].map(d => { let e = d.cloneNode(); e._global_transform = d._global_transform; return e; }), 
         'offset': null
       };
+      new_tick['label']._global_transform = ticks[0]['label']._global_transform;
 
       update_tick(new_tick, values[counter]);
       ticks[0]['label'].parentElement.appendChild(new_tick['label']);
@@ -145,18 +149,18 @@ function axis(orient, scale, ticks) {
   return axis;
 }
 
-export function axisTop(scale, ticks) {
-  return axis(top, scale, ticks);
+export function axisTop(scale, ticks, global_range) {
+  return axis(top, scale, ticks, global_range);
 }
 
-export function axisRight(scale, ticks) {
-  return axis(right, scale, ticks);
+export function axisRight(scale, ticks, global_range) {
+  return axis(right, scale, ticks, global_range);
 }
 
-export function axisBottom(scale, ticks) {
-  return axis(bottom, scale, ticks);
+export function axisBottom(scale, ticks, global_range) {
+  return axis(bottom, scale, ticks, global_range);
 }
 
-export function axisLeft(scale, ticks) {
-  return axis(left, scale, ticks);
+export function axisLeft(scale, ticks, global_range) {
+  return axis(left, scale, ticks, global_range);
 }

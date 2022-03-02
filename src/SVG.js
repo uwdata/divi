@@ -11,6 +11,7 @@ export default function() {
             domain: [null, null],
             ordinal: [],
             range: [null, null],
+            global_range: [null, null],
             ticks: [],
             scale: null,
             axis: null
@@ -19,6 +20,7 @@ export default function() {
             domain: [null, null],
             ordinal: [],
             range: [null, null],
+            global_range: [null, null],
             ticks: [],
             scale: null,
             axis: null
@@ -137,8 +139,7 @@ export default function() {
     
             var y_max = y_axis.bottom - state.svg.getBoundingClientRect().top;
             var y_min = y_axis.top - state.svg.getBoundingClientRect().top;
-        }
-        else {
+        } else {
             let y_tick = state.y_axis.ticks[0]['ticks'][0].getBoundingClientRect();
             let x_tick = state.x_axis.ticks[0]['ticks'][0].getBoundingClientRect();
 
@@ -149,7 +150,19 @@ export default function() {
             var y_min = d3.max([y_max - x_tick.height, 0]);
         }
 
-        state.x_axis.range = [x_min, x_max].map(d => d - state.x_axis.ticks[0]['ticks'][0]._global_transform[0]);
+        //     var x_min = d3.min(state.y_axis.ticks[0]['ticks'].map(d => d.getBoundingClientRect().left - state.svg.getBoundingClientRect().left));
+        //     var x_max = d3.min([d3.max(state.y_axis.ticks[0]['ticks'].map(d => d.getBoundingClientRect().width + x_min)), width]);
+
+        //     var y_max = d3.max(state.x_axis.ticks[0]['ticks'].map(d => d.getBoundingClientRect().bottom - state.svg.getBoundingClientRect().top));
+        //     var y_min = d3.max([d3.min(state.x_axis.ticks[0]['ticks'].map(d => y_max - d.getBoundingClientRect().height)), 0]);
+        // }
+
+
+        // state.x_axis.range = [x_min, x_max].map(d => d - state.x_axis.ticks[0]['ticks'][0]._global_transform[0]);
+        // state.y_axis.range = [y_max, y_min].map(d => d - state.y_axis.ticks[0]['ticks'][0]._global_transform[1]);
+        state.x_axis.global_range = [x_min, x_max];
+        state.y_axis.global_range = [y_max, y_min];
+        state.x_axis.range = [x_min, x_max].map(d => d - state.y_axis.ticks[0]['ticks'][0]._global_transform[0]);
         state.y_axis.range = [y_max, y_min].map(d => d - state.y_axis.ticks[0]['ticks'][0]._global_transform[1]);
 
         let diff_1_y = +state.y_axis.ticks[1]['label'].innerHTML - +state.y_axis.ticks[0]['label'].innerHTML;
@@ -208,7 +221,7 @@ export default function() {
             state.x_axis.scale = (state.x_axis.domain[0] instanceof Date ? d3.scaleTime() : (state.x_axis.ordinal.length ? d3.scaleBand() : d3.scaleLinear()))
                 .domain(typeof state.x_axis.ticks[0]['label'] === "string" ? state.x_axis.ordinal : state.x_axis.domain)
                 .range(state.x_axis.range);
-            state.x_axis.axis = axisBottom(state.x_axis.scale, state.x_axis.ticks)
+            state.x_axis.axis = axisBottom(state.x_axis.scale, state.x_axis.ticks, state.x_axis.global_range)
                 .ticks(state.x_axis.ticks.length);
             // state.x_axis.axis(state.x_axis.ticks);
                 // .tickSize(state.x_axis.ticks[1].children[0].getAttribute("y2"))
@@ -226,7 +239,7 @@ export default function() {
             state.y_axis.scale = (state.y_axis.domain[0] instanceof Date ? d3.scaleTime() : (state.y_axis.ordinal.length ? d3.scaleBand() : d3.scaleLinear()))
                 .domain(typeof state.y_axis.ticks[0]['label'] === "string" ? state.y_axis.ordinal : state.y_axis.domain)
                 .range(state.y_axis.range);
-            state.y_axis.axis = axisLeft(state.y_axis.scale, state.y_axis.ticks)
+            state.y_axis.axis = axisLeft(state.y_axis.scale, state.y_axis.ticks, state.y_axis.global_range)
                 .ticks(state.y_axis.ticks.length);
             // state.y_axis.axis(state.y_axis.ticks);
                 // .tickSize(-state.y_axis.ticks[1].children[0].getAttribute("x2"))
