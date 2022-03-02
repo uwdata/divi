@@ -2,115 +2,116 @@ import { INTERACTION_CONSTANTS } from './constants.js';
 import SVG from './SVG.js';
 import { parseSVG } from 'svg-path-parser';
 import { min, max } from 'd3-array';
+import { treemapSquarify } from 'd3';
 
-function traverse_DOM_tree(element, SVG, transform) {
-    if (element === null) {
-        return;
-    }
-
-    if (element.nodeName === INTERACTION_CONSTANTS.SVG_TYPE.SVG_CONTAINER) {
-        SVG.set_svg(element);
-        // if (!SVG.get_svg().id) {
-        //     SVG.get_svg().id = INTERACTION_CONSTANTS.SVG_TYPE.DEFAULT_ID;
-        // }
-    }
-
+function analyze_axis(element, SVG, transform) {
     element._global_transform = [...transform];
+
     if (element.nodeName === INTERACTION_CONSTANTS.SVG_TYPE.SVG_GROUP) {
         let t = element.getAttribute("transform");
         if (t) {
             transform[0] += +t.match(/(\d+\.?\d*)/g)[0];
             transform[1] += +t.match(/(\d+\.?\d*)/g)[1];
         }
-    }
-
-    if (element.className &&
-        element.nodeName === INTERACTION_CONSTANTS.SVG_TYPE.SVG_GROUP && 
-        element.className.animVal === INTERACTION_CONSTANTS.SVG_TYPE.SVG_TICK) {
-        let x_shift = +element.getAttribute("transform").match(/(\d+)/g)[0];
-        let y_shift = +element.getAttribute("transform").match(/(\d+)/g)[1];
-
-        if (x_shift > 0 || (x_shift === 0 && y_shift === 0 && element.childNodes[1].hasAttribute("y"))) {
-            SVG.add_x_axis_tick(element);
-
-            if (typeof element.__data__ === "string") {
-                SVG.add_x_ordinal(element.__data__);
-            }
-
-            let domain = SVG.get_x_axis_domain();
-
-            domain[0] = (
-                domain[0] == null ? element.__data__ : min([domain[0], element.__data__])
-            );
-            domain[1] = (
-                domain[1] == null ? element.__data__ : max([domain[1], element.__data__])
-            );
-            SVG.set_x_axis_domain(domain);
+    } else {
+        if (element.nodeName === "text") {
+            SVG.state().axis_text_marks.push(element);
         } else {
-            SVG.add_y_axis_tick(element);
+            for (const mark_type of INTERACTION_CONSTANTS.SVG_TYPE.SVG_MARK) {
+                if (element.nodeName === mark_type) {
+                    let is_x = element.hasAttribute("x2") ? +element.getAttribute("x2") : 0;
+                    let is_y = element.hasAttribute("y2") ? +element.getAttribute("y2") : 0;
 
-            if (typeof element.__data__ === "string") {
-                SVG.add_y_ordinal(element.__data__);
+                    if (is_x) SVG.state().y_axis.ticks.push(element);
+                    if (is_y) SVG.state().x_axis.ticks.push(element);
+                }
             }
-
-            let domain = SVG.get_y_axis_domain();
-
-            domain[0] = (
-                domain[0] == null ? element.__data__ : min([domain[0], element.__data__])
-            );
-            domain[1] = (
-                domain[1] == null ? element.__data__ : max([domain[1], element.__data__])
-            );
-            SVG.set_y_axis_domain(domain);
         }
     }
 
-    for (const mark_type of INTERACTION_CONSTANTS.SVG_TYPE.SVG_MARK) {
-        if (element.nodeName === mark_type) {
-            element.contour = null;
+    for (const child of element.childNodes) {
+        analyze_axis(child, SVG, [...transform]);
+    }
+}
 
-            if (mark_type === "path") {
-                let commands = parseSVG(element.getAttribute("d"));
+function analyze_DOM_tree(element, SVG, transform) {
+    if (element === null) {
+        return;
+    }
 
-                if (commands.length) {
-                    let start_cmd = commands[0];
-                    let end_cmd = commands[commands.length - 1];
+    var skip = false;
+    element._global_transform = [...transform];
 
-                    if (end_cmd.code === "Z" || (
-                        end_cmd.code === "A" && end_cmd.x === start_cmd.x && end_cmd.y === start_cmd.y
-                    )) {
-                        element.contour = commands;
-                        // element.contour = commands.map((d) => { return [d.x, d.y]; });
-                        // element.contour[element.contour.length - 1] = element.contour[0];
-                    }
-                } 
+    if (element.nodeName === INTERACTION_CONSTANTS.SVG_TYPE.SVG_CONTAINER) {
+        SVG.state().svg = element;
+    }
+
+    if (element.nodeName === INTERACTION_CONSTANTS.SVG_TYPE.SVG_GROUP) {
+        let t = element.getAttribute("transform");
+        if (t) {
+            transform[0] += +t.match(/(\d+\.?\d*)/g)[0];
+            transform[1] += +t.match(/(\d+\.?\d*)/g)[1];
+        }
+
+        let c_name = element.className.animVal;
+        if (c_name.includes("legend")) {
+            skip = true;
+        } else if (c_name.includes("tick") || c_name.includes("grid") ||  c_name.includes("label") /*|| c_name.includes("title")*/) {
+            skip = true;
+            for (const child of element.childNodes) {
+                analyze_axis(child, SVG, [...transform]);
+            }
+        }
+    } else {
+        for (const mark_type of INTERACTION_CONSTANTS.SVG_TYPE.SVG_MARK) {
+            if (element.nodeName === "text") {
+                element.style['pointer-events'] = 'none';
             }
 
-            if (element.className.animVal === INTERACTION_CONSTANTS.SVG_TYPE.TICK_DOMAIN) {
-                SVG.set_domain(true);
-            } else {
-                // element.__mark__ = true;
-                element.setAttribute("__mark__", "true");
-                SVG.add_svg_mark(element);
+            if (element.className && (element.className.animVal === "background" || element.className.animVal === "foreground")) {
+                break;
+            }
+
+            if (element.nodeName === mark_type) {
+                if (mark_type === "path") {
+                    let commands = parseSVG(element.getAttribute("d"));
+
+                    if (commands.length) {
+                        let start_cmd = commands[0];
+                        let end_cmd = commands[commands.length - 1];
+
+                        if (end_cmd.code === "Z" || (end_cmd.code === "A" && end_cmd.x === start_cmd.x && end_cmd.y === start_cmd.y)) {
+                            element.contour = commands;
+                        }
+                    } 
+                }
+
+                if (element.className && element.className.animVal === INTERACTION_CONSTANTS.SVG_TYPE.TICK_DOMAIN) {
+                    SVG.state().domain = true;
+                } else {
+                    element.setAttribute("__mark__", "true");
+                    element.__transform = element.hasAttribute("transform") ? element.getAttribute("transform") : "translate(0, 0)";
+                    SVG.state().svg_marks.push(element);
+                }
+
                 break;
             }
         }
     }
-    
-    for (const child of element.childNodes) {
-        if (element.className && 
-            element.className.animVal === INTERACTION_CONSTANTS.SVG_TYPE.SVG_TICK) {
-            break;
+
+    if (!skip) {
+        for (const child of element.childNodes) {
+            analyze_DOM_tree(child, SVG, [...transform]);
         }
-       
-        traverse_DOM_tree(child, SVG, [...transform]);
     }
 }
 
 function inspect(element) {
     let svg = new SVG();
-    traverse_DOM_tree(element, svg, [0, 0]);
+    analyze_DOM_tree(element, svg, [0, 0], false);
+    svg.analyze_axes();
     svg.infer_view();
+    console.log(svg.state());
     return svg;
 }
 
