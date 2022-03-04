@@ -1,3 +1,4 @@
+import { svg } from "d3";
 import identity from "./identity.js";
 
 var top = 1,
@@ -28,7 +29,7 @@ function entering() {
   return !this.__axis;
 }
 
-function axis(orient, scale, ticks, global_range) {
+function axis(orient, scale, SVG) {
   var tickArguments = [],
       tickValues = null,
       tickFormat = null,
@@ -40,18 +41,35 @@ function axis(orient, scale, ticks, global_range) {
       x = orient === left || orient === right ? "x" : "y",
       transform = orient === top || orient === bottom ? translateX : translateY,
       diff = null, 
-      range_index = orient === top || orient === bottom ? 0 : 1;
+      range_index = orient === top || orient === bottom ? 0 : 1,
+      scale_transform = null,
+      svg_axis = orient === top || orient === bottom ? SVG.state().x_axis : SVG.state().y_axis,
+      ticks = svg_axis.ticks;
 
   function axis() {
     var values = tickValues == null ? (scale.ticks ? scale.ticks.apply(scale, tickArguments) : scale.domain()) : tickValues,
+        format = tickFormat == null ? (scale.tickFormat ? scale.tickFormat.apply(scale, tickArguments) : identity) : tickFormat,
         position = (scale.bandwidth ? center : number)(scale.copy(), offset)
     values = orient === left || orient === right ? values.reverse() : values;
 
-    function update_tick (tick, value) {
+    function ordinal_transform(element, transform) {
+        const global_position =
+          element.getBoundingClientRect().right - element.parentElement._global_transform[0] - SVG.state().svg.getBoundingClientRect().left;
+
+        if (!element._t) element._t = [global_position, +element.getAttribute("transform").match(/(-?\d+\.?\d*e?-?\d*)/g)[0]];
+        let new_pos = transform.applyX(element._t[0]);
+
+        new_pos < svg_axis.range[0] || new_pos > svg_axis.range[1] ? 
+          element.style.visibility = "hidden" : element.style.visibility = "visible";
+
+        return (new_pos - element._t[0]) + element._t[1];
+    }
+
+    function update_tick(tick, value) {
       let label = tick['label'];
       let tick_marks = tick['ticks'];
 
-      label.innerHTML = (label.innerHTML == value ? label.innerHTML : value);
+      label.innerHTML = svg_axis.ordinal.length || label.innerHTML == format(value) ? label.innerHTML : format(value);
 
       let offset_label = label.hasAttribute("transform") ?
         (orient === top || orient === bottom ? 
@@ -63,11 +81,20 @@ function axis(orient, scale, ticks, global_range) {
         (orient === top || orient === bottom ? 
           label.getAttribute("transform").match(/(-?\d+\.?\d*e?-?\d*)/g)[0] :
           label.getAttribute("transform").match(/(-?\d+\.?\d*e?-?\d*)/g)[1]) :
-        0;
+        (orient === top || orient === bottom ? 
+          label._global_transform[0] :
+          label._global_transform[1]);;
       diff = diff == null ? +text_anchor - position(value) : diff;
 
-      label.setAttribute("transform", transform(position(value) + (Math.abs(diff) < 5 ? diff : 0) + global_range[range_index] - label._global_transform[range_index], +Math.abs(offset_label) > 1e-2 ? +offset_label : 0));
+      if (scale_transform) {
+        var label_t = transform(ordinal_transform(label, scale_transform), +Math.abs(offset_label) > 1e-2 ? +offset_label : 0);
+      } else {
+        var label_t = transform(position(value) + (Math.abs(diff) < 5 ? diff : 0) + svg_axis.global_range[range_index] - label._global_transform[range_index], +Math.abs(offset_label) > 1e-2 ? +offset_label : 0);
+      }
 
+      let rotate = label.hasAttribute("transform") && label.getAttribute("transform").includes("rotate") ? +label.getAttribute("transform").match(/(-?\d+\.?\d*e?-?\d*)/g).pop() : null;
+      label.setAttribute("transform", label_t + (rotate ? " rotate(" + rotate + ")" : ""));
+      
       for (const mark of tick_marks) {
         let offset_mark = mark.hasAttribute("transform") ?
         (orient === top || orient === bottom ? 
@@ -75,12 +102,17 @@ function axis(orient, scale, ticks, global_range) {
           mark.getAttribute("transform").match(/(-?\d+\.?\d*e?-?\d*)/g)[0]) :
         0;
 
-        mark.setAttribute("transform", transform(position(values[counter]) + global_range[range_index] - mark._global_transform[range_index], +Math.abs(offset_mark) > 1e-2 ? +offset_mark : 0));
+        if (scale_transform) {
+          var mark_t = transform(ordinal_transform(label, scale_transform), +Math.abs(offset_label) > 1e-2 ? +offset_label : 0);
+        } else {
+          var mark_t = transform(position(value) + svg_axis.global_range[range_index] - label._global_transform[range_index], +Math.abs(offset_mark) > 1e-2 ? +offset_mark : 0);
+        }
+        mark.setAttribute("transform", mark_t);
       }
     }
 
     for (var counter = 0; counter < values.length && counter < ticks.length; ++counter) {
-      update_tick(ticks[counter], values[counter]);
+      update_tick(ticks[counter], svg_axis.ordinal.length ? svg_axis.ordinal[counter] : values[counter]);
     }
 
     for ( ; counter < values.length; ++counter) {
@@ -104,6 +136,10 @@ function axis(orient, scale, ticks, global_range) {
       ticks[pos]['ticks'].forEach(d => d.remove());
       ticks.pop();
     }
+  }
+
+  axis.applyTransform = function(_) {
+    return arguments.length ? (scale_transform = _, axis) : axis; 
   }
 
   axis.scale = function(_) {
@@ -149,18 +185,18 @@ function axis(orient, scale, ticks, global_range) {
   return axis;
 }
 
-export function axisTop(scale, ticks, global_range) {
-  return axis(top, scale, ticks, global_range);
+export function axisTop(scale, SVG) {
+  return axis(top, scale, SVG);
 }
 
-export function axisRight(scale, ticks, global_range) {
-  return axis(right, scale, ticks, global_range);
+export function axisRight(scale, SVG) {
+  return axis(right, scale, SVG);
 }
 
-export function axisBottom(scale, ticks, global_range) {
-  return axis(bottom, scale, ticks, global_range);
+export function axisBottom(scale, SVG) {
+  return axis(bottom, scale, SVG);
 }
 
-export function axisLeft(scale, ticks, global_range) {
-  return axis(left, scale, ticks, global_range);
+export function axisLeft(scale, SVG) {
+  return axis(left, scale, SVG);
 }
