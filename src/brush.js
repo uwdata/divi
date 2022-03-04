@@ -1,7 +1,7 @@
 import { drag } from "d3";
 import { INTERACTION_CONSTANTS } from "./constants";
 
-function dragElement(elmnt, SVG) {
+function dragElement(elmnt, SVG, constrains) {
     var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     elmnt.onmousedown = dragMouseDown;
 
@@ -25,12 +25,12 @@ function dragElement(elmnt, SVG) {
         pos3 = e.clientX;
         pos4 = e.clientY;
         // set the element's new position:
-        elmnt.setAttribute("y", elmnt.getAttribute("y") - pos2);
-        elmnt.setAttribute("x", elmnt.getAttribute("x") - pos1);
+        if (!constrains[1]) elmnt.setAttribute("y", elmnt.getAttribute("y") - pos2);
+        if (!constrains[0]) elmnt.setAttribute("x", elmnt.getAttribute("x") - pos1);
 
         SVG.filter(
-            +elmnt.getAttribute("x") + +SVG.get_svg().getBoundingClientRect().left,
-            +elmnt.getAttribute("y") + +SVG.get_svg().getBoundingClientRect().top,
+            +elmnt.getAttribute("x") + +SVG.state().svg.getBoundingClientRect().left,
+            +elmnt.getAttribute("y") + +SVG.state().svg.getBoundingClientRect().top,
             elmnt.getAttribute("width"),
             elmnt.getAttribute("height")
         );
@@ -43,10 +43,10 @@ function dragElement(elmnt, SVG) {
     }
 }    
 
-export function brush(SVG) {
-    if (SVG.get_svg_marks()[0].nodeName === "path") {
-        return;
-    }
+export function brush(SVG, control, axis_control) {
+    // if (SVG.state().svg_marks[0].nodeName === "path") {
+    //     return;
+    // }
 
     let rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
     rect.setAttribute("fill", "gray");
@@ -55,30 +55,67 @@ export function brush(SVG) {
     rect.setAttribute("y", 0);
     rect.setAttribute("width", 0);
     rect.setAttribute("height", 0);
+    rect.style['cursor'] = 'move';
 
-    let svg = SVG.get_svg();
+    let svg = SVG.state().svg;
     svg.appendChild(rect);
 
-    let mousedown = false;
-    svg.addEventListener("mousedown", function(e) {
+    let mousedown = false,
+        constrains = [false, false];
+
+    function update_rect() {
+        if (+rect.getAttribute("width") === 0 || +rect.getAttribute("height") === 0) return;
+        if (constrains[0]) {
+            rect.setAttribute("x", SVG.state().x_axis.global_range[0]);
+            rect.setAttribute("width", SVG.state().x_axis.global_range[1] - SVG.state().x_axis.global_range[0]);
+        } else if (constrains[1]) {
+            rect.setAttribute("y", SVG.state().y_axis.global_range[1]);
+            rect.setAttribute("height", SVG.state().y_axis.global_range[0] - SVG.state().y_axis.global_range[1]);
+        }
+
+        SVG.filter(
+            +rect.getAttribute("x") + +svg.getBoundingClientRect().left,
+            +rect.getAttribute("y") + +svg.getBoundingClientRect().top,
+            rect.getAttribute("width"),
+            rect.getAttribute("height")
+        );
+    }
+    
+    function mousedown_callback(e) {
         if (e.clientX - svg.getBoundingClientRect().left >= +rect.getAttribute("x") && 
             e.clientX - svg.getBoundingClientRect().left <= +rect.getAttribute("x") + +rect.getAttribute("width") &&
             e.clientY - svg.getBoundingClientRect().top >= +rect.getAttribute("y") &&
             e.clientY - svg.getBoundingClientRect().top <= +rect.getAttribute("y") + +rect.getAttribute("height")) {
             return;
         }
-        rect.setAttribute("width", 0);
-        rect.setAttribute("height", 0);
+        constrains[0] ? 
+            rect.setAttribute("width", SVG.state().x_axis.global_range[1] - SVG.state().x_axis.global_range[0]) : 
+            rect.setAttribute("width", 0);
+        constrains[1] ? 
+            rect.setAttribute("height", SVG.state().y_axis.global_range[0] - SVG.state().y_axis.global_range[1]) :
+            rect.setAttribute("height", 0);
+
         e.preventDefault();
         mousedown = true;
-        rect.setAttribute("x", e.clientX - svg.getBoundingClientRect().left);
-        rect.setAttribute("y", e.clientY - svg.getBoundingClientRect().top);
-    });
-    svg.addEventListener("mousemove", function(e) {
+        constrains[0] ? 
+            rect.setAttribute("x", SVG.state().x_axis.global_range[0]) :
+            rect.setAttribute("x", e.clientX - svg.getBoundingClientRect().left);
+        constrains[1] ? 
+            rect.setAttribute("y", SVG.state().y_axis.global_range[1]) :
+            rect.setAttribute("y", e.clientY - svg.getBoundingClientRect().top);
+    }
+
+    function mousemove_callback(e) {
         if (mousedown) {
             e.preventDefault();
-            rect.setAttribute("width", e.clientX - rect.getAttribute("x") - svg.getBoundingClientRect().left);
-            rect.setAttribute("height", e.clientY - rect.getAttribute("y") - svg.getBoundingClientRect().top);
+            let width = e.clientX - rect.getAttribute("x") - svg.getBoundingClientRect().left;
+            let height = e.clientY - rect.getAttribute("y") - svg.getBoundingClientRect().top;
+            constrains[0] ? 
+                rect.setAttribute("width", SVG.state().x_axis.global_range[1] - SVG.state().x_axis.global_range[0]) :
+                rect.setAttribute("width", width < 0 ? 0 : width);
+            constrains[1] ?
+                rect.setAttribute("height", SVG.state().y_axis.global_range[0] - SVG.state().y_axis.global_range[1]) :
+                rect.setAttribute("height", height < 0 ? 0 : height);
             SVG.filter(
                 +rect.getAttribute("x") + +svg.getBoundingClientRect().left,
                 +rect.getAttribute("y") + +svg.getBoundingClientRect().top,
@@ -86,10 +123,43 @@ export function brush(SVG) {
                 rect.getAttribute("height")
             );
         }
-    });
-    svg.addEventListener("mouseup", function(e) {
-        mousedown = false;
-    })
+    };
 
-    dragElement(rect, SVG);
+    function mouseup_callback(e) {
+        mousedown = false;
+        if (+rect.getAttribute("width") === 0 || +rect.getAttribute("height") === 0) { 
+            SVG.unfilter();
+        }
+    };
+
+    control.addEventListener('change', function() {
+        if (!this.checked) { 
+            SVG.unfilter();
+            rect.setAttribute("width", 0);
+            rect.setAttribute("height", 0);
+        }
+
+        this.checked ? svg.addEventListener("mousedown", mousedown_callback) : svg.removeEventListener("mousedown", mousedown_callback);
+        this.checked ? svg.addEventListener("mousemove", mousemove_callback) : svg.removeEventListener("mousemove", mousemove_callback);
+        this.checked ? svg.addEventListener("mouseup", mouseup_callback) : svg.removeEventListener("mouseup", mouseup_callback);
+    });
+
+    axis_control.addEventListener('change', function(event) {
+        switch(event.target.value) {
+            case "XY":
+                constrains[0] = constrains[1] = false;
+                break;
+            case "X":
+                constrains[0] = false;
+                constrains[1] = true;
+                break;
+            case "Y":
+                constrains[0] = true;
+                constrains[1] = false;
+                break;
+        }
+        update_rect();
+    });
+
+    dragElement(rect, SVG, constrains);
 }
