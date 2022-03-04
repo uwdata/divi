@@ -1,6 +1,6 @@
 function createHexChart() {
     var width = 500;
-    var height = 500;
+    var height = 300;
 
     // The svg
     var svg = d3.select("#hex")
