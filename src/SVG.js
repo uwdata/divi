@@ -1,4 +1,11 @@
+import { format } from 'd3';
+import { zoom } from './zoom.js';
+import { brush } from './brush.js';
+import { filter } from './filter.js';
+import { sort } from './sort.js';
+import { select } from './select.js';
 import { min, max } from 'd3-array';
+import { INTERACTION_CONSTANTS } from './constants';
 import { axisBottom, axisLeft } from './d3/axis';
 
 export default function() {
@@ -6,6 +13,7 @@ export default function() {
         has_domain: false,
         svg: null,
         svg_marks: [],
+        text_marks: [],
         axis_text_marks: [],
         x_axis: {
             domain: [null, null],
@@ -29,6 +37,29 @@ export default function() {
         titles: {
             x: null,
             y: null
+        },
+        interactions: {
+            selection: {
+                control: null
+            },
+            zoom: {
+                control: null,
+                axis_control: null
+            },
+            pan: {
+                control: null,
+                axis_control: null
+            },
+            brush: {
+                control: null,
+                axis_control: null
+            },
+            filter: {
+                control: null,
+            },
+            sort: {
+                control: null
+            }
         }
     }
 
@@ -81,12 +112,114 @@ export default function() {
 
     var compute_domain = function(axis) {
         for (const [_, value] of Object.entries(axis.ticks)) {
-            axis.domain[0] = axis.domain[0] === null ? +value['label'].innerHTML : Math.min(axis.domain[0], +value['label'].innerHTML);
-            axis.domain[1] = axis.domain[1] === null ? +value['label'].innerHTML : Math.max(axis.domain[1], +value['label'].innerHTML);
+            let format_val = value['label'].__data__ ? 
+                value['label'].__data__ : 
+                isNaN(parseInt(value['label'].innerHTML)) ? 
+                value['label'].innerHTML :
+                +(value['label'].innerHTML.replace(/,/g, ''));
+
+            if (typeof format_val === "string") {
+                axis.ordinal.push(format_val);
+            } else {
+                axis.domain[0] = axis.domain[0] === null ? format_val : min([axis.domain[0], format_val]);
+                axis.domain[1] = axis.domain[1] === null ? format_val : max([axis.domain[1], format_val]);
+            }
+        }
+    }
+
+    var configure_axes = function() {
+        if (SVG.state().x_axis.scale && !SVG.state().x_axis.ordinal.length) {
+            // Infer original X-axis domain
+            let tick_left = SVG.state().x_axis.ticks[0]['ticks'][0];
+            let tick_right = SVG.state().x_axis.ticks[SVG.state().x_axis.ticks.length - 1]['ticks'][0];
+            
+            tick_left = +(tick_left.hasAttribute("transform") ? tick_left.getAttribute("transform").match(/(-?\d+\.?-?\d*)/g)[0] : tick_left._global_transform[0] - SVG.state().x_axis.global_range[0]);
+            tick_right = +(tick_right.hasAttribute("transform") ? tick_right.getAttribute("transform").match(/(-?\d+\.?-?\d*)/g)[0] : tick_right._global_transform[0] - SVG.state().x_axis.global_range[0]);
+    
+            let new_domain_x = SVG.state().x_axis.range.map(
+                SVG.state().x_axis.scale.copy().range([tick_left, tick_right]).invert, SVG.state().x_axis.scale
+            );
+            
+            SVG.state().x_axis.scale.domain(new_domain_x);
+        }
+    
+        // TO-DO: Fix transform bug.
+        if (SVG.state().y_axis.scale && !SVG.state().y_axis.ordinal.length) {
+            // Infer original Y-axis domain
+            let tick_bottom = SVG.state().y_axis.ticks[0]['ticks'][0];
+            let tick_top = SVG.state().y_axis.ticks[SVG.state().y_axis.ticks.length - 1]['ticks'][0];
+            tick_bottom = +(tick_bottom.hasAttribute("transform") ? tick_bottom.getAttribute("transform").match(/(-?\d+\.?-?\d*)/g)[1] : tick_bottom._global_transform[1] - SVG.state().y_axis.global_range[1]);
+            tick_top = +(tick_top.hasAttribute("transform") ? tick_top.getAttribute("transform").match(/(-?\d+\.?-?\d*)/g)[1] : tick_top._global_transform[1] - SVG.state().y_axis.global_range[1]);
+    
+            let new_domain_y = SVG.state().y_axis.range.map(
+                SVG.state().y_axis.scale.copy().range([tick_top, tick_bottom]).invert, SVG.state().y_axis.scale
+            );
+     
+            SVG.state().y_axis.scale.domain(new_domain_y);
         }
     }
 
     function SVG() { }
+
+    SVG.hydrate = function() {
+        for (const [key, value] of Object.entries(state.interactions)) {
+            switch(key) {
+                case INTERACTION_CONSTANTS.INTERACTION_TYPES.SELECTION:
+                    select(SVG, value.control);
+                    break;
+                case INTERACTION_CONSTANTS.INTERACTION_TYPES.ZOOM:
+                    zoom(SVG, value.control, value.axis_control);
+                    break;
+                case INTERACTION_CONSTANTS.INTERACTION_TYPES.PAN:
+                    break;
+                case INTERACTION_CONSTANTS.INTERACTION_TYPES.BRUSH:
+                    brush(SVG, value.control, value.axis_control);
+                    break;
+                case INTERACTION_CONSTANTS.INTERACTION_TYPES.FILTER:
+                    filter(SVG, value.control);
+            }
+        }
+    }
+
+    SVG.infer_mark_attributes = function() { 
+        for (const mark of state.svg_marks) {
+            if (state.text_marks.length) {
+                let title_pos_1 = state.text_marks[0].getBoundingClientRect().left;
+                let title_pos_2 = state.text_marks[1].getBoundingClientRect().left;
+                state.titles.x = title_pos_1 < title_pos_2 ? state.text_marks[1] : state.text_marks[0];
+                state.titles.y = title_pos_1 < title_pos_2 ? state.text_marks[0] : state.text_marks[1];   
+            }
+
+            if (mark.nodeName !== "path" || (!state.x_axis.ticks.length && !state.y_axis.ticks.length) || (mark.nodeName === "path" && mark.type === "ellipse")) {
+                if (mark.__data__) {
+                    let has_datum = "datum" in mark.__data__;
+                    let has_properties = "properties" in mark.__data__;
+                    let has_data = "data" in mark.__data__;
+                
+                    var iterable = has_datum ? mark.__data__.datum : 
+                        has_properties ? mark.__data__.properties :
+                        has_data ? mark.__data__.data : mark.__data__;
+                } else {
+                    let mark_x = (mark.getBoundingClientRect().left + mark.getBoundingClientRect().right) / 2
+                        - SVG.state().x_axis.ticks[0]['ticks'][0].parentNode._global_transform[0]
+                        - SVG.state().svg.getBoundingClientRect().left;
+                    let mark_y = (mark.getBoundingClientRect().top + mark.getBoundingClientRect().bottom) / 2
+                        - SVG.state().y_axis.ticks[0]['ticks'][0].parentNode._global_transform[1]
+                        - SVG.state().svg.getBoundingClientRect().top;
+
+                    var iterable = {
+                        [state.titles.x.innerHTML]: state.x_axis.scale.invert(mark_x).toFixed(2),
+                        [state.titles.y.innerHTML]: state.y_axis.scale.invert(mark_y).toFixed(2)
+                    }
+                }
+                mark.style['pointer-events'] = 'fill';
+                
+                mark.__inferred__data__ = iterable;
+            }
+        }
+
+        return SVG;
+    }
 
     SVG.state = function() { return state; }
 
@@ -114,6 +247,8 @@ export default function() {
         group_axis(state.x_axis, 'left');
         group_axis(state.y_axis, 'top');
         group_labels();
+
+        return SVG;
     }
 
     SVG.infer_view = function() {
@@ -124,13 +259,14 @@ export default function() {
         const height = +state.svg.getAttribute("height");
 
         if (!state.x_axis.ticks.length && !state.y_axis.ticks.length) {
-            state.x_axis.range = [0, width];
-            state.y_axis.range = [height, 0];
-            return;
+            state.x_axis.range = state.x_axis.global_range = [0, width];
+            state.y_axis.range = state.y_axis.global_range = [height, 0];
+            return SVG;
         }
         
+        // TO-DO: Domain path 0.5 difference.
         if (state.has_domain) {
-            let axes = [].slice.call(svg.querySelectorAll(".domain")).map((d) => { return d.getBoundingClientRect() });
+            let axes = [].slice.call(state.svg.querySelectorAll(".domain")).map((d) => { return d.getBoundingClientRect() });
             let y_axis = axes[0].width < axes[1].width ? axes[0] : axes[1];
             let x_axis = axes[0].height < axes[1].height ? axes[0] : axes[1];
 
@@ -162,8 +298,8 @@ export default function() {
         // state.y_axis.range = [y_max, y_min].map(d => d - state.y_axis.ticks[0]['ticks'][0]._global_transform[1]);
         state.x_axis.global_range = [x_min, x_max];
         state.y_axis.global_range = [y_max, y_min];
-        state.x_axis.range = [x_min, x_max].map(d => d - state.y_axis.ticks[0]['ticks'][0]._global_transform[0]);
-        state.y_axis.range = [y_max, y_min].map(d => d - state.y_axis.ticks[0]['ticks'][0]._global_transform[1]);
+        state.x_axis.range = [x_min, x_max].map(d => d - state.x_axis.ticks[0]['ticks'][0].parentNode._global_transform[0]);
+        state.y_axis.range = [y_max, y_min].map(d => d - state.y_axis.ticks[0]['ticks'][0].parentNode._global_transform[1]);
 
         let diff_1_y = +state.y_axis.ticks[1]['label'].innerHTML - +state.y_axis.ticks[0]['label'].innerHTML;
         let diff_2_y = +state.y_axis.ticks[2]['label'].innerHTML - +state.y_axis.ticks[1]['label'].innerHTML;
@@ -210,18 +346,21 @@ export default function() {
             state.x_axis.scale = d3.scaleLog()
                 .domain(state.x_axis.domain)
                 .range(state.x_axis.range);
-            state.x_axis.axis = d3.axisBottom(state.x_axis.scale)
-                .tickSize(state.x_axis.ticks[1].children[0].getAttribute("y2"))
-                .ticks(state.x_axis.ticks.filter(d => d.childNodes[1].innerHTML).length)
+            state.x_axis.axis = axisBottom(state.x_axis.scale, SVG)
+                // .tickSize(state.x_axis.ticks[1].children[0].getAttribute("y2"))
+                .ticks(state.x_axis.ticks.filter(d => d['label'].innerHTML).length)
             if (base) {
                 state.x_axis.scale = state.x_axis.scale.base(base);
                 state.x_axis.axis = state.x_axis.axis.tickFormat(d => exponent || superscript ? format(d) : d);
             }
         } else {
             state.x_axis.scale = (state.x_axis.domain[0] instanceof Date ? d3.scaleTime() : (state.x_axis.ordinal.length ? d3.scaleBand() : d3.scaleLinear()))
-                .domain(typeof state.x_axis.ticks[0]['label'] === "string" ? state.x_axis.ordinal : state.x_axis.domain)
+                .domain(state.x_axis.ordinal.length ? state.x_axis.ordinal : state.x_axis.domain)
                 .range(state.x_axis.range);
-            state.x_axis.axis = axisBottom(state.x_axis.scale, state.x_axis.ticks, state.x_axis.global_range)
+            // state.x_axis.scale = (state.x_axis.domain[0] instanceof Date ? d3.scaleTime() : d3.scaleLinear())
+            //     .domain(state.x_axis.ordinal.length ? state.x_axis.range : state.x_axis.domain)
+            //     .range(state.x_axis.range);
+            state.x_axis.axis = axisBottom(state.x_axis.scale, SVG)
                 .ticks(state.x_axis.ticks.length);
             // state.x_axis.axis(state.x_axis.ticks);
                 // .tickSize(state.x_axis.ticks[1].children[0].getAttribute("y2"))
@@ -237,14 +376,17 @@ export default function() {
                 .ticks(state.y_axis.ticks.length);
         } else {
             state.y_axis.scale = (state.y_axis.domain[0] instanceof Date ? d3.scaleTime() : (state.y_axis.ordinal.length ? d3.scaleBand() : d3.scaleLinear()))
-                .domain(typeof state.y_axis.ticks[0]['label'] === "string" ? state.y_axis.ordinal : state.y_axis.domain)
+                .domain(state.y_axis.ordinal.length ? state.y_axis.ordinal : state.y_axis.domain)
                 .range(state.y_axis.range);
-            state.y_axis.axis = axisLeft(state.y_axis.scale, state.y_axis.ticks, state.y_axis.global_range)
+            state.y_axis.axis = axisLeft(state.y_axis.scale, SVG)
                 .ticks(state.y_axis.ticks.length);
             // state.y_axis.axis(state.y_axis.ticks);
                 // .tickSize(-state.y_axis.ticks[1].children[0].getAttribute("x2"))
                 // .ticks(typeof state.y_axis.ticks[0].__data__ === "string" ? state.y_axis.ordinal.length : state.y_axis.ticks.length);
         }
+
+        configure_axes();
+        return SVG;
     }
 
     return SVG;
