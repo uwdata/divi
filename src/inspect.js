@@ -4,6 +4,22 @@ import { parseSVG } from 'svg-path-parser';
 import { min, max } from 'd3-array';
 import { treemapSquarify } from 'd3';
 
+function infer_type_from_path(element) { 
+    let commands = parseSVG(element.getAttribute("d"));
+    if (!commands.length) return;
+
+    element.contour = commands;
+    let end_cmd = commands[commands.length - 1];
+
+    if (commands.length === 3 && commands[1].code === "A" && end_cmd.code === "A") {
+        element.type = "ellipse";
+    } else if (end_cmd.code !== "Z") {
+        element.type = "line";
+    } else {
+        element.type = "polygon";
+    }
+}
+
 function analyze_axis(element, SVG, transform) {
     element._global_transform = [...transform];
 
@@ -63,9 +79,14 @@ function analyze_DOM_tree(element, SVG, transform) {
             }
         }
     } else {
+        let added = false;
         for (const mark_type of INTERACTION_CONSTANTS.SVG_TYPE.SVG_MARK) {
             if (element.nodeName === "text") {
                 element.style['pointer-events'] = 'none';
+                if (!added) {
+                    SVG.state().text_marks.push(element);
+                    added = true;
+                }
             }
 
             if (element.className && (element.className.animVal === "background" || element.className.animVal === "foreground")) {
@@ -73,21 +94,10 @@ function analyze_DOM_tree(element, SVG, transform) {
             }
 
             if (element.nodeName === mark_type) {
-                if (mark_type === "path") {
-                    let commands = parseSVG(element.getAttribute("d"));
-
-                    if (commands.length) {
-                        let start_cmd = commands[0];
-                        let end_cmd = commands[commands.length - 1];
-
-                        if (end_cmd.code === "Z" || (end_cmd.code === "A" && end_cmd.x === start_cmd.x && end_cmd.y === start_cmd.y)) {
-                            element.contour = commands;
-                        }
-                    } 
-                }
+                if (mark_type === "path") infer_type_from_path(element);
 
                 if (element.className && element.className.animVal === INTERACTION_CONSTANTS.SVG_TYPE.TICK_DOMAIN) {
-                    SVG.state().domain = true;
+                    SVG.state().has_domain = true;
                 } else {
                     element.setAttribute("__mark__", "true");
                     element.__transform = element.hasAttribute("transform") ? element.getAttribute("transform") : "translate(0, 0)";
@@ -109,8 +119,7 @@ function analyze_DOM_tree(element, SVG, transform) {
 function inspect(element) {
     let svg = new SVG();
     analyze_DOM_tree(element, svg, [0, 0], false);
-    svg.analyze_axes();
-    svg.infer_view();
+    svg.analyze_axes().infer_view().infer_mark_attributes();
     console.log(svg.state());
     return svg;
 }
