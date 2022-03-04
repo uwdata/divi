@@ -27,31 +27,51 @@
             <div style= "position: absolute;"
             >
                 <div id="control">
-                    <input type="checkbox" value="Selection" id="Selection" 
-                        checked
-                        />Selection
-                    <input type="checkbox" value="Zoom" id="Zoom" 
-                        />Zoom
-                    <input type="checkbox" value="Pan" id="Pan" 
-                        checked />Pan
-                    <input type="checkbox" value="Brush" id="Brush" 
-                        />Brush
-                    <input style="margin-left:5px;" type="text" id="Filter" />
+                    <input type="checkbox" value="Selection" id="selection"/>Selection
+
+                    <input type="checkbox" value="Zoom" id="zoom" />Zoom
+                    <select type="dropdown" value="Zoom_dd" id="zoom_axis">
+                        <option value="XY">X and Y</option>
+                        <option value="X">X</option>
+                        <option value="Y">Y</option>
+                    </select>
+
+                    <input type="checkbox" value="Pan" id="pan" />Pan
+                    <select type="dropdown" value="Pan_dd" id="pan_axis">
+                        <option value="zoom">Same as Zoom</option>
+                        <option value="XY">X and Y</option>
+                        <option value="X">X</option>
+                        <option value="Y">Y</option>
+                    </select>
+
+                    <input type="checkbox" value="Brush" id="brush" />Brush
+                    <select type="dropdown" value="Brush_dd" id="brush_axis">
+                        <option value="XY">X and Y</option>
+                        <option value="X">X</option>
+                        <option value="Y">Y</option>
+                    </select>
+                    
+                    <input style="margin-left:20px;" type="text" id="filter" />
                     Filter
+
+                    <input style="margin-left:5px;" type="text" id="sort" />
+                    Sort
                     <br />
+            <br />
             </div>
-            <div id="vis"></div>
-            <div id="linevis"></div>
+            <div id="vis"></div> 
+            <div id="linevis"></div> 
             <div id="stackedvis"></div>
             <div id="vega"></div>
             <div id="barchart"></div>
             <div id="log"></div>
             <div id="hex"></div>
+            <div id="test"></div>
         </div>
 
         <script>
             createScatterPlot();
-            createLineChart();
+            createLineChart(); 
             createStackedChart();
             createVegaLineChart();
             createBarChart();
