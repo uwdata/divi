@@ -55,6 +55,7 @@ export function brush(SVG, control, axis_control) {
     rect.setAttribute("y", 0);
     rect.setAttribute("width", 0);
     rect.setAttribute("height", 0);
+    rect.setAttribute("id", "brush-rect")
     rect.style['cursor'] = 'move';
 
     let svg = SVG.state().svg;
@@ -82,6 +83,9 @@ export function brush(SVG, control, axis_control) {
     }
     
     function mousedown_callback(e) {
+        if (!SVG.state().interactions.brush.flag) return;
+        document.getElementById('pan_disam').style['display'] = 'block';
+
         if (e.clientX - svg.getBoundingClientRect().left >= +rect.getAttribute("x") && 
             e.clientX - svg.getBoundingClientRect().left <= +rect.getAttribute("x") + +rect.getAttribute("width") &&
             e.clientY - svg.getBoundingClientRect().top >= +rect.getAttribute("y") &&
@@ -106,6 +110,11 @@ export function brush(SVG, control, axis_control) {
     }
 
     function mousemove_callback(e) {
+        // var brush_shift = document.getElementById("brush-shift").className.split(" ").indexOf("bg-primary") > -1 &&
+        //     document.getElementById("brush-drag").className.split(" ").indexOf("bg-primary") <= -1;
+        // var brush_shift = false;
+        // if ((brush_shift && !e.shiftKey) || (!brush_shift && e.shiftKey)) return;
+
         if (mousedown) {
             e.preventDefault();
             let width = e.clientX - rect.getAttribute("x") - svg.getBoundingClientRect().left;
@@ -129,8 +138,13 @@ export function brush(SVG, control, axis_control) {
         mousedown = false;
         if (+rect.getAttribute("width") === 0 || +rect.getAttribute("height") === 0) { 
             SVG.unfilter();
+            document.getElementById('pan_disam').style['display'] = 'none';
         }
     };
+
+    svg.addEventListener("mousedown", mousedown_callback);
+    svg.addEventListener("mousemove", mousemove_callback);
+    svg.addEventListener("mouseup", mouseup_callback);
 
     control.addEventListener('change', function() {
         if (!this.checked) { 
@@ -144,22 +158,22 @@ export function brush(SVG, control, axis_control) {
         this.checked ? svg.addEventListener("mouseup", mouseup_callback) : svg.removeEventListener("mouseup", mouseup_callback);
     });
 
-    axis_control.addEventListener('change', function(event) {
-        switch(event.target.value) {
-            case "XY":
+    document.querySelectorAll('ul.brush a.axis').forEach(d => d.addEventListener('click', function(event) {
+        switch(event.target.innerHTML) {
+            case "2D":
                 constrains[0] = constrains[1] = false;
                 break;
-            case "X":
+            case "X axis":
                 constrains[0] = false;
                 constrains[1] = true;
                 break;
-            case "Y":
+            case "Y axis":
                 constrains[0] = true;
                 constrains[1] = false;
                 break;
         }
         update_rect();
-    });
+    }));
 
     dragElement(rect, SVG, constrains);
 }

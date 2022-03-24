@@ -38,6 +38,7 @@ function create_hover(SVG, control) {
         const marks = SVG.state().svg_marks;
         var i = 0;
         for (const mark of marks) {
+            // if (mark.style['opacity'] && +mark.style['opacity'] !== 1) return;
             ++i;
             let transform = mark.getAttribute('transform');
             let x_scale = 1, x_translate = 0;
@@ -71,10 +72,9 @@ function create_hover(SVG, control) {
     
                 if (pos.x > path_x) {
                     end = target;
-                }  else if (pos.x < path_x) {
+                } else if (pos.x < path_x) {
                     start = target;
-                }
-                else {
+                } else {
                     break; //position found
                 }
             }
@@ -83,7 +83,7 @@ function create_hover(SVG, control) {
             let y_domain = SVG.state().y_axis.scale.invert(
                 y - SVG.state().y_axis.ticks[0]['ticks'][0].parentNode._global_transform[1]
             );
-            let data_x = SVG.state().x_axis.scale.invert(pos.x);
+            let data_x = SVG.state().x_axis.scale.invert(path_x);
             data_x = typeof data_x === "number" ? data_x.toFixed(2) : data_x;
             let circle = SVG.state().svg.querySelector("#_circle" + i);
 
@@ -140,6 +140,25 @@ function create_hover(SVG, control) {
         }
     }
 
+    function mousedown(event) {
+        let marks = SVG.state().svg_marks;
+        for (const mark of marks) {
+            mark.style['opacity'] = mark.style['opacity'] && mark.style['opacity'] === 0.5 ? 1 : 0.5; 
+        }
+        this.style['opacity'] = this.style['opacity'] && this.style['opacity'] === 1 ? 0.5 : 1; 
+    }
+
+    for (const mark of SVG.state().svg_marks) {
+        if (!mark.type || mark.type === "ellipse" || (!SVG.state().x_axis.ticks.length && !SVG.state().y_axis.ticks.length)) {
+            mark.addEventListener('mouseenter', show_data);
+            mark.addEventListener('mouseleave', mouseleave);
+            mark.style['cursor'] = 'default';
+        } else {
+            SVG.state().svg.addEventListener('mousemove', showline);
+        }
+        // mark.addEventListener('mousedown', mousedown);
+    }
+
     control.addEventListener("change", function() {
         if (!this.checked) {
             d3.select("#" + SVG.state().svg.id).selectAll(".hover").attr("display", "none");
@@ -154,6 +173,7 @@ function create_hover(SVG, control) {
             } else {
                 this.checked ? SVG.state().svg.addEventListener('mousemove', showline) : SVG.state().svg.removeEventListener('mousemove', showline);
             }
+            // this.checked ? mark.addEventListener('mousedown', mousedown) : mark.removeEventListener('mousedown', mousedown);
         }
     });
 }

@@ -1,12 +1,12 @@
 const INTERACTION_CONSTANTS = {
     INTERACTION_TYPES: {
-        SELECTION: 'Selection',
-        ZOOM: 'Zoom',
-        PAN: 'Pan',
-        FILTER: 'Filter',
-        SORT: 'Sort',
-        BRUSH: 'Brush',
-        HIGHLIGHT: 'Highlight'
+        SELECTION: 'selection',
+        ZOOM: 'zoom',
+        PAN: 'pan',
+        FILTER: 'filter',
+        SORT: 'sort',
+        BRUSH: 'brush',
+        HIGHLIGHT: 'highlight'
     },
     INTERACTION_TARGETS: {
         CATEGORICAL: 'Categorical',
@@ -36,9 +36,8 @@ const INTERACTION_CONSTANTS = {
         SVG_TICK: "tick",
         TICK_DOMAIN: "domain",
         DEFAULT_ID: "svg_plot",
-        SVG_MARK: ["circle", "ellipse", "line", "polygon", "polyline", "rect", "path"]
+        SVG_MARK: ["circle", "ellipse", "line", "polygon", "polyline", "rect", "path"],
     }
-    
 }
 
 export { INTERACTION_CONSTANTS };

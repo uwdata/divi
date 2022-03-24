@@ -2,8 +2,8 @@ function createVegaLineChart() {
   const spec = {
     "$schema": "https://vega.github.io/schema/vega/v5.json",
     "description": "A basic scatter plot example depicting automobile statistics.",
-    "width": 720,
-    "height": 720,
+    "width": 600,
+    "height": 600,
     "padding": 5,
 
     "data": [
@@ -75,7 +75,7 @@ function createVegaLineChart() {
         "format": "s",
         "symbolStrokeColor": "#4682b4",
         "symbolStrokeWidth": 2,
-        "symbolOpacity": 0.5,
+        "symbolOpacity": 1,
         "symbolType": "circle"
       }
     ],
@@ -92,7 +92,7 @@ function createVegaLineChart() {
             "size": {"scale": "size", "field": "Acceleration"},
             "shape": {"value": "circle"},
             "strokeWidth": {"value": 2},
-            "opacity": {"value": 0.5},
+            "opacity": {"value": 1},
             "stroke": {"value": "#4682b4"},
             "fill": {"value": "transparent"}
           }
@@ -100,8 +100,24 @@ function createVegaLineChart() {
       }
     ]
   }
-  vegaEmbed("#vega", spec, {renderer: "svg"}).then(function() {
+  // var view = new vega.View(spec)
+  // .logLevel(vega.Warn) // set view logging level
+  // .renderer('svg')     // set render type (defaults to 'canvas')
+  // .initialize('#view') // set parent DOM element
+  // .hover(); 
+
+  var view = new vega.View(vega.parse(spec), { renderer: 'svg' });
+  view.toSVG().then(function(svg) {
+    document.querySelector("#vega").innerHTML = svg;
     document.querySelector("#vega svg").id = "vegachart";
     AutomaticInteraction.hydrate("#vegachart", "#control");
   });
+
+  // vegaEmbed("#vega", spec, {renderer: "svg"}).then(function(result) {
+  //   result.view.toSVG().then(function(svg) {
+  //     document.querySelector("#vega").innerHTML = svg;
+  //     document.querySelector("#vega svg").id = "vegachart";
+  //     AutomaticInteraction.hydrate("#vegachart", "#control");
+  //   });
+  // });
 }

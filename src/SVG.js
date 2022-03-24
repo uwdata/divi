@@ -1,5 +1,5 @@
 import { format } from 'd3';
-import { zoom } from './zoom.js';
+import { _zoom } from './zoom.js';
 import { brush } from './brush.js';
 import { filter } from './filter.js';
 import { sort } from './sort.js';
@@ -7,6 +7,7 @@ import { select } from './select.js';
 import { min, max } from 'd3-array';
 import { INTERACTION_CONSTANTS } from './constants';
 import { axisBottom, axisLeft } from './d3/axis';
+import { svg } from 'd3';
 
 export default function() {
     var state = {
@@ -48,11 +49,13 @@ export default function() {
             },
             pan: {
                 control: null,
-                axis_control: null
+                axis_control: null,
+                flag: false
             },
             brush: {
                 control: null,
-                axis_control: null
+                axis_control: null,
+                flag: true
             },
             filter: {
                 control: null,
@@ -162,22 +165,63 @@ export default function() {
     function SVG() { }
 
     SVG.hydrate = function() {
+        document.getElementById("pan-btn").addEventListener('click', function(event) {
+            SVG.unfilter();
+            document.getElementById("brush-rect").setAttribute("width", 0);
+            document.getElementById("brush-rect").setAttribute("height", 0);
+            document.getElementById("pan_disam").style['display'] = 'none';
+            state.svg.style['cursor'] = 'default';
+            state.interactions.pan.flag = true;
+            state.interactions.brush.flag = false;
+        });
+
+        document.getElementById("brush-btn").addEventListener('click', function(event) {
+            document.getElementById("brush_disam").style['display'] = 'none';
+            state.svg.style['cursor'] = 'crosshair';
+            state.interactions.pan.flag = false;
+            state.interactions.brush.flag = true;
+        });
+
         for (const [key, value] of Object.entries(state.interactions)) {
             switch(key) {
                 case INTERACTION_CONSTANTS.INTERACTION_TYPES.SELECTION:
                     select(SVG, value.control);
                     break;
                 case INTERACTION_CONSTANTS.INTERACTION_TYPES.ZOOM:
-                    zoom(SVG, value.control, value.axis_control);
+                    _zoom(SVG, value.control, value.axis_control);
                     break;
                 case INTERACTION_CONSTANTS.INTERACTION_TYPES.PAN:
                     break;
                 case INTERACTION_CONSTANTS.INTERACTION_TYPES.BRUSH:
+                    state.svg.style['cursor'] = 'crosshair';
                     brush(SVG, value.control, value.axis_control);
                     break;
                 case INTERACTION_CONSTANTS.INTERACTION_TYPES.FILTER:
                     filter(SVG, value.control);
             }
+        }
+        if (state.svg.id !== "chart") return;
+        let field = document.getElementById("field");
+        let __data__ = state.svg_marks[0].__inferred__data__;
+        for (const [key, value] of Object.entries(__data__)) {
+            let option = document.createElement('option');
+            option.innerHTML = key;
+            field.appendChild(option);
+        }
+
+        for (const attribute of state.svg_marks[0].attributes) {
+            if (attribute.nodeName === "__mark__" || attribute.nodeName === "style") continue;
+            let option = document.createElement('option');
+            option.innerHTML = attribute.nodeName;
+            field.appendChild(option);
+        }
+
+        let condition = document.getElementById("condition");
+        let conditions = ['<', '<=', '=', '>=', '>'];
+        for (const c of conditions) {
+            let new_c = document.createElement('option');
+            new_c.innerHTML = c;
+            condition.appendChild(new_c);
         }
     }
 

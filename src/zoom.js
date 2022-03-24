@@ -2,10 +2,11 @@ import { INTERACTION_CONSTANTS } from "./constants";
 // import { svg_objects } from "./inspect";
 import { axisBottom, axisLeft } from "./d3/axis_old";
 import { parseSVG } from 'svg-path-parser';
+import zoom from './d3/zoom/zoom.js';
 // import { ticks } from "d3";
 // import { ZoomTransform } from 'd3-zoom';
 
-export function zoom(SVG, control, axis_control) {
+export function _zoom(SVG, control, axis_control) {
     var svg = d3.select("#" + SVG.state().svg.id);
 
     if (SVG.state().x_axis.scale && !SVG.state().x_axis.ordinal.length) SVG.state().x_axis.axis.scale(SVG.state().x_axis.scale)();
@@ -39,14 +40,37 @@ export function zoom(SVG, control, axis_control) {
     var g_y_axis = svg.append("g").attr("id", "y-axis-zoom-accessor");
 
     let z = d3.zoomIdentity;
-    const zoomX = d3.zoom();
-    const zoomY = d3.zoom();
+    const zoomX = zoom();
+    const zoomY = zoom();
     const tx = () => d3.zoomTransform(g_x_axis.node());
     const ty = () => d3.zoomTransform(g_y_axis.node());
     g_x_axis.call(zoomX).attr("pointer-events", "none");
     g_y_axis.call(zoomY).attr("pointer-events", "none");
 
     let zoom_callback = function({sourceEvent, transform}) {
+        // var zoom_enabled = document.getElementById("zoom").checked;
+        // var pan_enabled = document.getElementById("pan").checked;
+        sourceEvent.preventDefault();
+        if (SVG.state().interactions.pan.flag) document.getElementById("brush_disam").style['display'] = 'block';
+        var zoom_enabled = true,
+            pan_enabled = true,
+            control_zoom_X = true,
+            control_zoom_Y = true,
+            control_pan_X = SVG.state().interactions.pan.flag,
+            control_pan_Y = SVG.state().interactions.pan.flag,
+            pan_shift = false;
+        // var control_zoom_X = document.getElementById("zoom-2d").className.split(" ").indexOf("bg-primary") > -1 ||
+        //     document.getElementById("zoom-x").className.split(" ").indexOf("bg-primary") > -1;
+        // var control_zoom_Y = document.getElementById("zoom-2d").className.split(" ").indexOf("bg-primary") > -1 ||
+        //     document.getElementById("zoom-y").className.split(" ").indexOf("bg-primary") > -1;
+        // var control_pan_X = document.getElementById("pan-2d").className.split(" ").indexOf("bg-primary") > -1 ||
+        //     document.getElementById("pan-x").className.split(" ").indexOf("bg-primary") > -1;
+        // var control_pan_Y = document.getElementById("pan-2d").className.split(" ").indexOf("bg-primary") > -1 ||
+        //     document.getElementById("pan-y").className.split(" ").indexOf("bg-primary") > -1;
+
+        // var pan_shift = document.getElementById("pan-shift").className.split(" ").indexOf("bg-primary") > -1 &&
+        //     document.getElementById("pan-drag").className.split(" ").indexOf("bg-primary") <= -1;
+
         if (!SVG.state().x_axis.axis && !SVG.state().y_axis.axis) {
             marks.attr('transform', transform);
             svg.selectAll('text').attr('transform', transform);
@@ -62,10 +86,11 @@ export function zoom(SVG, control, axis_control) {
         let cliX = sourceEvent.clientX - marks.node()._global_transform[0] - SVG.state().svg.getBoundingClientRect().left;
         let cliY = sourceEvent.clientY - marks.node()._global_transform[1] - SVG.state().svg.getBoundingClientRect().top;
         
-        if (k === 1) {
-            zoom_X && g_x_axis.call(zoomX.translateBy, x, 0);
-        } else {
-            zoom_X && g_x_axis.call(zoomY.scaleBy, k, [cliX, cliY]);
+        if (k === 1 && pan_enabled) {
+            ((!pan_shift && !sourceEvent.shiftKey) || (pan_shift && sourceEvent.shiftKey)) && 
+                control_pan_X && zoom_X && g_x_axis.call(zoomX.translateBy, x, 0);
+        } else if (zoom_enabled) {
+            control_zoom_X && zoom_X && g_x_axis.call(zoomY.scaleBy, k, [cliX, cliY]);
         }
         SVG.state().x_axis.ordinal.length ?
             SVG.state().x_axis.axis.applyTransform(tx())() :
@@ -76,10 +101,11 @@ export function zoom(SVG, control, axis_control) {
         let ordinal = SVG.state().x_axis.scale.domain().length > 2 && zoom_Y && !zoom_X;
         let not_path = SVG.state().x_axis.scale.domain().length == 2 && marks.node().nodeName !== "path" && zoom_Y;
 
-        if (k === 1) {
-            (not_path || discrete || not_discrete || ordinal) && g_y_axis.call(zoomY.translateBy, 0, y);
-        } else {
-            (not_path || discrete || not_discrete || ordinal) && g_y_axis.call(zoomY.scaleBy, k, [cliX, cliY]);   
+        if (k === 1 && pan_enabled) {
+            ((!pan_shift && !sourceEvent.shiftKey) || (pan_shift && sourceEvent.shiftKey)) && 
+                control_pan_Y && (not_path || discrete || not_discrete || ordinal) && g_y_axis.call(zoomY.translateBy, 0, y);
+        } else if (zoom_enabled) {
+            control_zoom_Y && (not_path || discrete || not_discrete || ordinal) && g_y_axis.call(zoomY.scaleBy, k, [cliX, cliY]);   
         }
         SVG.state().y_axis.axis.scale(ty().rescaleY(SVG.state().y_axis.scale))();
         
@@ -116,15 +142,15 @@ export function zoom(SVG, control, axis_control) {
         z = transform;
     };
 
-    control.addEventListener('change', function() {
-        if (this.checked) {
-            svg.call(d3.zoom().on("zoom", zoom_callback)); //.on("mousedown.zoom", null).on("dblclick.zoom", null);
-        } else {
-            svg.call(d3.zoom().on("zoom", null));
-        }
-    });
+    // control.addEventListener('change', function() {
+    //     if (this.checked) {
+    svg.call(zoom().on("zoom", zoom_callback)); //.on("mousedown.zoom", null).on("dblclick.zoom", null);
+        // } else {
+            // svg.call(d3.zoom().on("zoom", null));
+        // }
+    // });
 
-    axis_control.addEventListener('change', function(event) {
-        console.log(event.id);
-    });
+    // axis_control.addEventListener('change', function(event) {
+    //     console.log(event.id);
+    // });
 }

@@ -2,6 +2,7 @@ import { INTERACTION_CONSTANTS } from "./constants";
 // import { svg_objects } from "./inspect";
 
 export function filter(SVG, control) {
+    return;
     function update(condition) {
         let [field, sep, val] = condition.split(" ");
         let svg_marks = SVG.state().svg_marks;

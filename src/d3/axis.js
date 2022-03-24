@@ -60,7 +60,7 @@ function axis(orient, scale, SVG) {
         let new_pos = transform.applyX(element._t[0]);
 
         new_pos < svg_axis.range[0] || new_pos > svg_axis.range[1] ? 
-          element.style.visibility = "hidden" : element.style.visibility = "visible";
+          element.style.display = "none" : element.style.display = "block";
 
         return (new_pos - element._t[0]) + element._t[1];
     }

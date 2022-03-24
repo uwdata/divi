@@ -18,7 +18,7 @@ function createLogChart() {
     let data = d3.range(10).map(function(x) { return [Math.exp(x), x * Math.exp(2.5)]; });
  
     var x = d3.scaleLog()
-        .base(Math.E)
+        // .base(Math.E)
         .domain([Math.exp(0), Math.exp(9)])
         .range([0, width]);
 
@@ -29,7 +29,7 @@ function createLogChart() {
 
     var xAxis = d3.axisBottom()
         .scale(x)
-        .tickFormat(function(d) { return "e" + formatPower(Math.round(Math.log(d))); });
+        // .tickFormat(function(d) { return "e" + formatPower(Math.round(Math.log(d))); });
 
     var yAxis = d3.axisLeft()
         .scale(y);
@@ -50,7 +50,7 @@ function createLogChart() {
         .attr("transform", "translate(-10,0)")
         .call(yAxis);
 
-    svg.append("g")
+    var gx= svg.append("g")
         .attr("class", "axis axis--x")
         .attr("transform", "translate(0," + (height + 10) + ")")
         .call(xAxis);
@@ -63,6 +63,20 @@ function createLogChart() {
         .attr("fill", "none")
         .attr("stroke", "steelblue")
         .attr("strokewidth", "1.5px");
+
+    //     let svg_ = d3.select("svg");
+
+    // svg_.call(d3.zoom().on("zoom", function({transform}) {
+    //     console.log('here')
+    //     gx.call(xAxis.scale(transform.rescaleX(x)));
+    //     x.range([margin.left, width - margin.right]
+    //         .map(d => transform.applyX(d)));
+    //     svg_.select(".line")
+    //       .attr("d", d3.line()
+    //         .x(function(d) { return x(d[0]); })
+    //         .y(function(d) { return y(d[1]); })
+    //       )
+    // }));
 
     AutomaticInteraction.hydrate("#logchart", "#control");
 }

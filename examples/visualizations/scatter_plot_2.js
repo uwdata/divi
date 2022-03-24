@@ -36,7 +36,7 @@ function createScatterPlot() {
             .select(".domain").remove();
 
         // Customization
-        svg.selectAll(".tick line").attr("stroke", "black");
+        svg.selectAll(".tick line").attr("stroke", "black").attr("opacity", 0.3);
 
         // Add X axis label:
         svg.append("text")
@@ -68,6 +68,8 @@ function createScatterPlot() {
             .attr("cy", function (d) { return y(d.Petal_Length); } )
             .attr("r", 5)
             .style("fill", function (d) { return color(d.Species) } );
+
+        // d3.selectAll(".tick").attr("opacity", 0.5);
 
         AutomaticInteraction.hydrate("#chart", "Zoom");
     })
