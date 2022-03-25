@@ -7,7 +7,7 @@ function dragElement(elmnt, SVG, constrains) {
 
     function dragMouseDown(e) {
         e = e || window.event;
-        e.preventDefault();
+        // e.preventDefault();
         // get the mouse cursor position at startup:
         pos3 = e.clientX;
         pos4 = e.clientY;
@@ -56,7 +56,9 @@ export function brush(SVG, control, axis_control) {
     rect.setAttribute("width", 0);
     rect.setAttribute("height", 0);
     rect.setAttribute("id", "brush-rect")
-    rect.style['cursor'] = 'move';
+    // rect.style['cursor'] = 'move';
+    // rect.style['strokeWidth'] = '2px';
+    rect.style['stroke'] = '#fff';
 
     let svg = SVG.state().svg;
     svg.appendChild(rect);
@@ -83,8 +85,9 @@ export function brush(SVG, control, axis_control) {
     }
     
     function mousedown_callback(e) {
-        if (!SVG.state().interactions.brush.flag) return;
-        document.getElementById('pan_disam').style['display'] = 'block';
+        if (!SVG.state().interactions.brush.flag || SVG.state().interactions.selection.active) return;
+        SVG.disambiguate("brush");
+        // document.getElementById('pan_disam').style['display'] = 'block';
 
         if (e.clientX - svg.getBoundingClientRect().left >= +rect.getAttribute("x") && 
             e.clientX - svg.getBoundingClientRect().left <= +rect.getAttribute("x") + +rect.getAttribute("width") &&
@@ -92,19 +95,42 @@ export function brush(SVG, control, axis_control) {
             e.clientY - svg.getBoundingClientRect().top <= +rect.getAttribute("y") + +rect.getAttribute("height")) {
             return;
         }
-        constrains[0] ? 
+
+        SVG.state().interactions.brush.active = true;
+
+        var left_bound = SVG.state().svg_marks[0]._global_transform[0] + SVG.state().svg.getBoundingClientRect().left;
+        var top_bound = SVG.state().svg_marks[0]._global_transform[1] + SVG.state().svg.getBoundingClientRect().top;
+
+        let x_flag = e.clientX - left_bound > SVG.state().x_axis.range[0], 
+            y_flag = e.clientY - top_bound < SVG.state().y_axis.range[0];
+
+        let brush_Y = !x_flag && y_flag;
+        let brush_X = (x_flag && !y_flag) || 
+            ((SVG.state().svg_marks[0].type === "line" || SVG.state().svg_marks[0].type === "polygon") && !brush_Y && 
+            SVG.state().x_axis.ticks.length);
+
+        let std = SVG.std();
+        if (std < 0.5 && !brush_X && !brush_Y) {
+            brush_X = false;
+            brush_Y = true;
+        } else if (std > 2 && !brush_X && !brush_Y) {
+            brush_X = true;
+            brush_Y = false;
+        }
+
+        constrains[0] || brush_Y ? 
             rect.setAttribute("width", SVG.state().x_axis.global_range[1] - SVG.state().x_axis.global_range[0]) : 
             rect.setAttribute("width", 0);
-        constrains[1] ? 
+        constrains[1] || brush_X ? 
             rect.setAttribute("height", SVG.state().y_axis.global_range[0] - SVG.state().y_axis.global_range[1]) :
             rect.setAttribute("height", 0);
 
         e.preventDefault();
         mousedown = true;
-        constrains[0] ? 
+        constrains[0] || brush_Y ? 
             rect.setAttribute("x", SVG.state().x_axis.global_range[0]) :
             rect.setAttribute("x", e.clientX - svg.getBoundingClientRect().left);
-        constrains[1] ? 
+        constrains[1] || brush_X ? 
             rect.setAttribute("y", SVG.state().y_axis.global_range[1]) :
             rect.setAttribute("y", e.clientY - svg.getBoundingClientRect().top);
     }
@@ -114,31 +140,58 @@ export function brush(SVG, control, axis_control) {
         //     document.getElementById("brush-drag").className.split(" ").indexOf("bg-primary") <= -1;
         // var brush_shift = false;
         // if ((brush_shift && !e.shiftKey) || (!brush_shift && e.shiftKey)) return;
+        var left_bound = SVG.state().svg_marks[0]._global_transform[0] + SVG.state().svg.getBoundingClientRect().left;
+        var top_bound = SVG.state().svg_marks[0]._global_transform[1] + SVG.state().svg.getBoundingClientRect().top;
+
+        let x_flag = e.clientX - left_bound > SVG.state().x_axis.range[0], 
+            y_flag = e.clientY - top_bound < SVG.state().y_axis.range[0];
+        let brush_Y = !x_flag && y_flag;
+        let brush_X = (x_flag && !y_flag) ||
+            ((SVG.state().svg_marks[0].type === "line" || SVG.state().svg_marks[0].type === "polygon") && !brush_Y &&
+            SVG.state().x_axis.ticks.length);
+
+        let std = SVG.std();
+        if (std < 0.5 && !brush_X && !brush_Y) {
+            brush_X = false;
+            brush_Y = true;
+        } else if (std > 2 && !brush_X && !brush_Y) {
+            brush_X = true;
+            brush_Y = false;
+        }
 
         if (mousedown) {
             e.preventDefault();
             let width = e.clientX - rect.getAttribute("x") - svg.getBoundingClientRect().left;
             let height = e.clientY - rect.getAttribute("y") - svg.getBoundingClientRect().top;
-            constrains[0] ? 
+            constrains[0] || brush_Y ? 
                 rect.setAttribute("width", SVG.state().x_axis.global_range[1] - SVG.state().x_axis.global_range[0]) :
                 rect.setAttribute("width", width < 0 ? 0 : width);
-            constrains[1] ?
+            constrains[1] || brush_X ?
                 rect.setAttribute("height", SVG.state().y_axis.global_range[0] - SVG.state().y_axis.global_range[1]) :
                 rect.setAttribute("height", height < 0 ? 0 : height);
-            SVG.filter(
-                +rect.getAttribute("x") + +svg.getBoundingClientRect().left,
-                +rect.getAttribute("y") + +svg.getBoundingClientRect().top,
-                rect.getAttribute("width"),
-                rect.getAttribute("height")
-            );
+            // if (SVG.state().svg_marks[0].type !== "line" && SVG.state().svg_marks[0].type !== "polygon") {
+                SVG.filter(
+                    +rect.getAttribute("x") + +svg.getBoundingClientRect().left,
+                    +rect.getAttribute("y") + +svg.getBoundingClientRect().top,
+                    rect.getAttribute("width"),
+                    rect.getAttribute("height")
+                );
+            // }
         }
     };
 
     function mouseup_callback(e) {
+        if (!SVG.state().interactions.brush.active) return;
+        SVG.state().interactions.brush.active = false;
         mousedown = false;
         if (+rect.getAttribute("width") === 0 || +rect.getAttribute("height") === 0) { 
             SVG.unfilter();
-            document.getElementById('pan_disam').style['display'] = 'none';
+            // document.getElementById('pan_disam').style['display'] = 'none';
+            // SVG.disambiguate("brush", true);
+            d3.selectAll(".brush_tooltip").remove();
+        } else {
+            rect.setAttribute("width", 0);
+            rect.setAttribute("height", 0);
         }
     };
 

@@ -3,6 +3,8 @@ import { INTERACTION_CONSTANTS } from "./constants";
 import { axisBottom, axisLeft } from "./d3/axis_old";
 import { parseSVG } from 'svg-path-parser';
 import zoom from './d3/zoom/zoom.js';
+import { Transform } from './d3/zoom/transform.js';
+import { zoomTransform } from "d3";
 // import { ticks } from "d3";
 // import { ZoomTransform } from 'd3-zoom';
 
@@ -51,7 +53,8 @@ export function _zoom(SVG, control, axis_control) {
         // var zoom_enabled = document.getElementById("zoom").checked;
         // var pan_enabled = document.getElementById("pan").checked;
         sourceEvent.preventDefault();
-        if (SVG.state().interactions.pan.flag) document.getElementById("brush_disam").style['display'] = 'block';
+        document.getElementById("modebar").style['visibility'] = 'hidden';
+        // if (SVG.state().interactions.pan.flag) document.getElementById("brush_disam").style['display'] = 'block';
         var zoom_enabled = true,
             pan_enabled = true,
             control_zoom_X = true,
@@ -71,26 +74,50 @@ export function _zoom(SVG, control, axis_control) {
         // var pan_shift = document.getElementById("pan-shift").className.split(" ").indexOf("bg-primary") > -1 &&
         //     document.getElementById("pan-drag").className.split(" ").indexOf("bg-primary") <= -1;
 
-        if (!SVG.state().x_axis.axis && !SVG.state().y_axis.axis) {
-            marks.attr('transform', transform);
-            svg.selectAll('text').attr('transform', transform);
-            return;
-        }
-
         const k = transform.k / z.k;
         const x = (transform.x - z.x) / tx().k;
         const y = (transform.y - z.y) / ty().k;
+
+        if (!SVG.state().x_axis.axis && !SVG.state().y_axis.axis) {
+            console.log('here')
+            let cliX = sourceEvent.clientX - marks.node()._global_transform[0] - SVG.state().svg.getBoundingClientRect().left;
+            let cliY = sourceEvent.clientY - marks.node()._global_transform[1] - SVG.state().svg.getBoundingClientRect().top;
+
+            if (k === 1) {
+                control_pan_X && g_x_axis.call(zoomX.translateBy, x, 0);
+                control_pan_Y && g_y_axis.call(zoomY.translateBy, 0, y);
+            } else {
+                control_zoom_X && g_x_axis.call(zoomX.scaleBy, k, [cliX, cliY]);
+                control_zoom_Y && g_y_axis.call(zoomY.scaleBy, k, [cliX, cliY]);
+                SVG.disambiguate("zoom", true);
+            }
+            marks.attr('transform', 'translate(' + tx().x + ',' + ty().y + ') scale(' + tx().k + ',' + ty().k + ')');
+            svg.selectAll('text').attr('transform','translate(' + tx().x + ',' + ty().y + ') scale(' + tx().k + ',' + ty().k + ')');
+            z = transform;
+            return;
+        }
 
         let zoom_X = sourceEvent.clientX - left_bound > SVG.state().x_axis.range[0], 
             zoom_Y = sourceEvent.clientY - top_bound < SVG.state().y_axis.range[0];
         let cliX = sourceEvent.clientX - marks.node()._global_transform[0] - SVG.state().svg.getBoundingClientRect().left;
         let cliY = sourceEvent.clientY - marks.node()._global_transform[1] - SVG.state().svg.getBoundingClientRect().top;
+
+        let std = SVG.std();
+        if (std < 0.5 && zoom_X && zoom_Y) {
+            zoom_X = true;
+            zoom_Y = false;
+        } else if (std > 2 && zoom_X && zoom_Y) {
+            zoom_X = false;
+            zoom_Y = true;
+        }
         
         if (k === 1 && pan_enabled) {
             ((!pan_shift && !sourceEvent.shiftKey) || (pan_shift && sourceEvent.shiftKey)) && 
                 control_pan_X && zoom_X && g_x_axis.call(zoomX.translateBy, x, 0);
+                // SVG.disambiguate("zoom");
         } else if (zoom_enabled) {
-            control_zoom_X && zoom_X && g_x_axis.call(zoomY.scaleBy, k, [cliX, cliY]);
+            control_zoom_X && zoom_X && g_x_axis.call(zoomX.scaleBy, k, [cliX, cliY]);
+            // SVG.disambiguate("zoom", true);
         }
         SVG.state().x_axis.ordinal.length ?
             SVG.state().x_axis.axis.applyTransform(tx())() :
@@ -139,6 +166,7 @@ export function _zoom(SVG, control, axis_control) {
         let tooltips = document.querySelectorAll(".tooltip");
         if (tooltips.length) tooltips.forEach(d => d.style['visibility'] = 'hidden');
 
+        SVG.updateBrush();
         z = transform;
     };
 

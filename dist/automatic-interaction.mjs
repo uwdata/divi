@@ -5381,7 +5381,8 @@ function _zoom(SVG, control, axis_control) {
         // var zoom_enabled = document.getElementById("zoom").checked;
         // var pan_enabled = document.getElementById("pan").checked;
         sourceEvent.preventDefault();
-        if (SVG.state().interactions.pan.flag) document.getElementById("brush_disam").style['display'] = 'block';
+        document.getElementById("modebar").style['visibility'] = 'hidden';
+        // if (SVG.state().interactions.pan.flag) document.getElementById("brush_disam").style['display'] = 'block';
         var pan_enabled = true,
             control_pan_X = SVG.state().interactions.pan.flag,
             control_pan_Y = SVG.state().interactions.pan.flag,
@@ -5398,26 +5399,50 @@ function _zoom(SVG, control, axis_control) {
         // var pan_shift = document.getElementById("pan-shift").className.split(" ").indexOf("bg-primary") > -1 &&
         //     document.getElementById("pan-drag").className.split(" ").indexOf("bg-primary") <= -1;
 
-        if (!SVG.state().x_axis.axis && !SVG.state().y_axis.axis) {
-            marks.attr('transform', transform);
-            svg.selectAll('text').attr('transform', transform);
-            return;
-        }
-
         const k = transform.k / z.k;
         const x = (transform.x - z.x) / tx().k;
         const y = (transform.y - z.y) / ty().k;
+
+        if (!SVG.state().x_axis.axis && !SVG.state().y_axis.axis) {
+            console.log('here');
+            let cliX = sourceEvent.clientX - marks.node()._global_transform[0] - SVG.state().svg.getBoundingClientRect().left;
+            let cliY = sourceEvent.clientY - marks.node()._global_transform[1] - SVG.state().svg.getBoundingClientRect().top;
+
+            if (k === 1) {
+                control_pan_X && g_x_axis.call(zoomX.translateBy, x, 0);
+                control_pan_Y && g_y_axis.call(zoomY.translateBy, 0, y);
+            } else {
+                g_x_axis.call(zoomX.scaleBy, k, [cliX, cliY]);
+                g_y_axis.call(zoomY.scaleBy, k, [cliX, cliY]);
+                SVG.disambiguate("zoom", true);
+            }
+            marks.attr('transform', 'translate(' + tx().x + ',' + ty().y + ') scale(' + tx().k + ',' + ty().k + ')');
+            svg.selectAll('text').attr('transform','translate(' + tx().x + ',' + ty().y + ') scale(' + tx().k + ',' + ty().k + ')');
+            z = transform;
+            return;
+        }
 
         let zoom_X = sourceEvent.clientX - left_bound > SVG.state().x_axis.range[0], 
             zoom_Y = sourceEvent.clientY - top_bound < SVG.state().y_axis.range[0];
         let cliX = sourceEvent.clientX - marks.node()._global_transform[0] - SVG.state().svg.getBoundingClientRect().left;
         let cliY = sourceEvent.clientY - marks.node()._global_transform[1] - SVG.state().svg.getBoundingClientRect().top;
+
+        let std = SVG.std();
+        if (std < 0.5 && zoom_X && zoom_Y) {
+            zoom_X = true;
+            zoom_Y = false;
+        } else if (std > 2 && zoom_X && zoom_Y) {
+            zoom_X = false;
+            zoom_Y = true;
+        }
         
         if (k === 1 && pan_enabled) {
             ((!sourceEvent.shiftKey) || (pan_shift )) && 
                 control_pan_X && zoom_X && g_x_axis.call(zoomX.translateBy, x, 0);
+                // SVG.disambiguate("zoom");
         } else {
-            zoom_X && g_x_axis.call(zoomY.scaleBy, k, [cliX, cliY]);
+            zoom_X && g_x_axis.call(zoomX.scaleBy, k, [cliX, cliY]);
+            // SVG.disambiguate("zoom", true);
         }
         SVG.state().x_axis.ordinal.length ?
             SVG.state().x_axis.axis.applyTransform(tx())() :
@@ -5466,6 +5491,7 @@ function _zoom(SVG, control, axis_control) {
         let tooltips = document.querySelectorAll(".tooltip");
         if (tooltips.length) tooltips.forEach(d => d.style['visibility'] = 'hidden');
 
+        SVG.updateBrush();
         z = transform;
     };
 
@@ -5488,7 +5514,7 @@ function dragElement(elmnt, SVG, constrains) {
 
     function dragMouseDown(e) {
         e = e || window.event;
-        e.preventDefault();
+        // e.preventDefault();
         // get the mouse cursor position at startup:
         pos3 = e.clientX;
         pos4 = e.clientY;
@@ -5537,7 +5563,9 @@ function brush(SVG, control, axis_control) {
     rect.setAttribute("width", 0);
     rect.setAttribute("height", 0);
     rect.setAttribute("id", "brush-rect");
-    rect.style['cursor'] = 'move';
+    // rect.style['cursor'] = 'move';
+    // rect.style['strokeWidth'] = '2px';
+    rect.style['stroke'] = '#fff';
 
     let svg = SVG.state().svg;
     svg.appendChild(rect);
@@ -5564,8 +5592,9 @@ function brush(SVG, control, axis_control) {
     }
     
     function mousedown_callback(e) {
-        if (!SVG.state().interactions.brush.flag) return;
-        document.getElementById('pan_disam').style['display'] = 'block';
+        if (!SVG.state().interactions.brush.flag || SVG.state().interactions.selection.active) return;
+        SVG.disambiguate("brush");
+        // document.getElementById('pan_disam').style['display'] = 'block';
 
         if (e.clientX - svg.getBoundingClientRect().left >= +rect.getAttribute("x") && 
             e.clientX - svg.getBoundingClientRect().left <= +rect.getAttribute("x") + +rect.getAttribute("width") &&
@@ -5573,19 +5602,42 @@ function brush(SVG, control, axis_control) {
             e.clientY - svg.getBoundingClientRect().top <= +rect.getAttribute("y") + +rect.getAttribute("height")) {
             return;
         }
-        constrains[0] ? 
+
+        SVG.state().interactions.brush.active = true;
+
+        var left_bound = SVG.state().svg_marks[0]._global_transform[0] + SVG.state().svg.getBoundingClientRect().left;
+        var top_bound = SVG.state().svg_marks[0]._global_transform[1] + SVG.state().svg.getBoundingClientRect().top;
+
+        let x_flag = e.clientX - left_bound > SVG.state().x_axis.range[0], 
+            y_flag = e.clientY - top_bound < SVG.state().y_axis.range[0];
+
+        let brush_Y = !x_flag && y_flag;
+        let brush_X = (x_flag && !y_flag) || 
+            ((SVG.state().svg_marks[0].type === "line" || SVG.state().svg_marks[0].type === "polygon") && !brush_Y && 
+            SVG.state().x_axis.ticks.length);
+
+        let std = SVG.std();
+        if (std < 0.5 && !brush_X && !brush_Y) {
+            brush_X = false;
+            brush_Y = true;
+        } else if (std > 2 && !brush_X && !brush_Y) {
+            brush_X = true;
+            brush_Y = false;
+        }
+
+        constrains[0] || brush_Y ? 
             rect.setAttribute("width", SVG.state().x_axis.global_range[1] - SVG.state().x_axis.global_range[0]) : 
             rect.setAttribute("width", 0);
-        constrains[1] ? 
+        constrains[1] || brush_X ? 
             rect.setAttribute("height", SVG.state().y_axis.global_range[0] - SVG.state().y_axis.global_range[1]) :
             rect.setAttribute("height", 0);
 
         e.preventDefault();
         mousedown = true;
-        constrains[0] ? 
+        constrains[0] || brush_Y ? 
             rect.setAttribute("x", SVG.state().x_axis.global_range[0]) :
             rect.setAttribute("x", e.clientX - svg.getBoundingClientRect().left);
-        constrains[1] ? 
+        constrains[1] || brush_X ? 
             rect.setAttribute("y", SVG.state().y_axis.global_range[1]) :
             rect.setAttribute("y", e.clientY - svg.getBoundingClientRect().top);
     }
@@ -5595,30 +5647,57 @@ function brush(SVG, control, axis_control) {
         //     document.getElementById("brush-drag").className.split(" ").indexOf("bg-primary") <= -1;
         // var brush_shift = false;
         // if ((brush_shift && !e.shiftKey) || (!brush_shift && e.shiftKey)) return;
+        var left_bound = SVG.state().svg_marks[0]._global_transform[0] + SVG.state().svg.getBoundingClientRect().left;
+        var top_bound = SVG.state().svg_marks[0]._global_transform[1] + SVG.state().svg.getBoundingClientRect().top;
+
+        let x_flag = e.clientX - left_bound > SVG.state().x_axis.range[0], 
+            y_flag = e.clientY - top_bound < SVG.state().y_axis.range[0];
+        let brush_Y = !x_flag && y_flag;
+        let brush_X = (x_flag && !y_flag) ||
+            ((SVG.state().svg_marks[0].type === "line" || SVG.state().svg_marks[0].type === "polygon") && !brush_Y &&
+            SVG.state().x_axis.ticks.length);
+
+        let std = SVG.std();
+        if (std < 0.5 && !brush_X && !brush_Y) {
+            brush_X = false;
+            brush_Y = true;
+        } else if (std > 2 && !brush_X && !brush_Y) {
+            brush_X = true;
+            brush_Y = false;
+        }
 
         if (mousedown) {
             e.preventDefault();
             let width = e.clientX - rect.getAttribute("x") - svg.getBoundingClientRect().left;
             let height = e.clientY - rect.getAttribute("y") - svg.getBoundingClientRect().top;
-            constrains[0] ? 
+            constrains[0] || brush_Y ? 
                 rect.setAttribute("width", SVG.state().x_axis.global_range[1] - SVG.state().x_axis.global_range[0]) :
                 rect.setAttribute("width", width < 0 ? 0 : width);
-            constrains[1] ?
+            constrains[1] || brush_X ?
                 rect.setAttribute("height", SVG.state().y_axis.global_range[0] - SVG.state().y_axis.global_range[1]) :
                 rect.setAttribute("height", height < 0 ? 0 : height);
-            SVG.filter(
-                +rect.getAttribute("x") + +svg.getBoundingClientRect().left,
-                +rect.getAttribute("y") + +svg.getBoundingClientRect().top,
-                rect.getAttribute("width"),
-                rect.getAttribute("height")
-            );
+            // if (SVG.state().svg_marks[0].type !== "line" && SVG.state().svg_marks[0].type !== "polygon") {
+                SVG.filter(
+                    +rect.getAttribute("x") + +svg.getBoundingClientRect().left,
+                    +rect.getAttribute("y") + +svg.getBoundingClientRect().top,
+                    rect.getAttribute("width"),
+                    rect.getAttribute("height")
+                );
+            // }
         }
     }
     function mouseup_callback(e) {
+        if (!SVG.state().interactions.brush.active) return;
+        SVG.state().interactions.brush.active = false;
         mousedown = false;
         if (+rect.getAttribute("width") === 0 || +rect.getAttribute("height") === 0) { 
             SVG.unfilter();
-            document.getElementById('pan_disam').style['display'] = 'none';
+            // document.getElementById('pan_disam').style['display'] = 'none';
+            // SVG.disambiguate("brush", true);
+            d3.selectAll(".brush_tooltip").remove();
+        } else {
+            rect.setAttribute("width", 0);
+            rect.setAttribute("height", 0);
         }
     }
     svg.addEventListener("mousedown", mousedown_callback);
@@ -5663,25 +5742,178 @@ function filter(SVG, control) {
     return;
 }
 
+function getFormattedDate(date) {
+    var year = date.getFullYear();
+  
+    var month = (1 + date.getMonth()).toString();
+    month = month.length > 1 ? month : '0' + month;
+  
+    var day = date.getDate().toString();
+    day = day.length > 1 ? day : '0' + day;
+    
+    return month + '/' + day + '/' + year;
+  }  
+
 function mouseleave() {
     let tooltip = document.querySelector("#tooltip");
     tooltip.style['visibility'] = 'hidden';
 }
 
-function create_tooltip(id) {
+function create_tooltip(id, c=null) {
     if (document.querySelector("#" + id)) return;
 
     const div = document.createElement("div");
     div.id = id;
-    div.setAttribute("class", "tooltip");
-    div.style = "opacity:0.75; visibility:hidden; position:absolute; background-color:white; z-index:999; " +
-        "border:solid; border-width:2px; border-radius:5px; padding:5px; font-weight:bold;";
+    div.setAttribute("class", c ? c : "tooltip");
+    div.style = "opacity:1; visibility:visible; position:absolute; background-color:white; z-index:999; " +
+        "border:solid; border-width:1px; border-radius:2px; padding:2px; font-size:14px; font-weight:500";
     document.body.insertBefore(div, null);
+}
+
+function line(SVG, event, mark, i, id=null, c=null) {
+    if (!id && d3.selectAll(".brush_tooltip").nodes().length) return;
+
+    let transform = mark.getAttribute('transform');
+    let x_scale = 1, x_translate = 0;
+    if (transform) {
+        let t = transform.match(/(-?\d+\.?\d*)/g);
+        x_translate = +t[0];
+        x_scale = +t[2];
+    }
+
+    let offset = SVG.state().x_axis.ticks[0]['ticks'][0].parentNode._global_transform[0] 
+        +SVG.state().svg.getBoundingClientRect().left,
+        path_x = event.clientX - offset,
+        start = SVG.state().x_axis.range[0], 
+        end = mark.getTotalLength(),
+        target, 
+        pos;
+
+    create_tooltip("tooltip" + (id ? id : ""), c);
+    let tooltip = document.querySelector("#tooltip" + (id ? id : ""));
+    // tooltip.style['visibility'] = 'visible';
+    if (path_x < SVG.state().x_axis.range[0] || SVG.state().x_axis.range[1] < path_x) {
+        d3.selectAll(".hover").attr("visibility", "hidden");
+        if (tooltip) tooltip.style["visibility"] = "hidden";
+    } else {
+        d3.selectAll(".hover").attr("visibility", "visible");
+        if (tooltip) tooltip.style["visibility"] = "visible";
+    }
+ 
+    path_x = (path_x - x_translate) / x_scale;
+    while (true){
+        target = Math.floor((start + end) / 2);
+        pos = mark.getPointAtLength(target);
+        if ((target === end || target === start) && pos.x !== path_x) {
+            break;
+        }
+
+        if (pos.x > path_x) {
+            end = target;
+        } else if (pos.x < path_x) {
+            start = target;
+        } else {
+            break; //position found
+        }
+    }
+
+    let y = pos.y + SVG.state().y_axis.ticks[0]['ticks'][0].parentNode._global_transform[1];
+    let y_domain = SVG.state().y_axis.scale.invert(
+        y - SVG.state().y_axis.ticks[0]['ticks'][0].parentNode._global_transform[1]
+    );
+    let data_x = SVG.state().x_axis.scale.invert(path_x);
+    data_x = typeof data_x === "number" ? Math.round(data_x) : getFormattedDate(data_x);
+
+    // tooltip.innerHTML = (SVG.state().titles.x ? SVG.state().titles.x + ":" : "") + data_x + "<hr style='margin:0px;border:0.5px solid black;opacity:1;'>" + 
+    //     (SVG.state().titles.y ? SVG.state().titles.y + ":" : "") + Math.round(y_domain);
+    let color = mark.type === "line" ? window.getComputedStyle(mark)['stroke'] : window.getComputedStyle(mark)['fill'];
+    if (i === 1) {
+        tooltip.innerHTML = SVG.state().svg_marks.length === 1 ? Math.round(y_domain) :
+            "<div><span class='dot' style='background-color:" + color + ";'></span>" +
+            "<div style='display:inline;margin-right:20px;'> " + (mark.__data__.key ? mark.__data__.key : "") + "</div> " +
+            "<div style='display:inline;float:right;'>" + Math.round(y_domain) + "</div></div>";
+    } else {
+        tooltip.innerHTML = SVG.state().svg_marks.length === 1 ? Math.round(y_domain) :
+            "<div><span class='dot' style='background-color:" + color + ";'></span>" +
+            "<div style='display:inline;margin-right:20px;'> " + (mark.__data__.key ? mark.__data__.key : "") + "</div> " +
+            "<div style='display:inline;float:right;'>" + Math.round(y_domain) + "</div></div>" +
+            tooltip.innerHTML;
+    }
+    
+    d3.selectAll(".dot")
+        .style("height", "10px")
+        .style("width", "10px")
+        // .style("background-color", "#bbb")
+        .style("border-radius", "50%")
+        .style("display", "inline-block");
+    
+    tooltip.style['color'] = mark.type === "line" ? window.getComputedStyle(mark)['stroke'] : "black";
+    tooltip.style['left'] = event.pageX + 7.5;
+    tooltip.style['top'] = /*SVG.state().svg.getBoundingClientRect().top + 10;*/
+    event.pageY - event.clientY + y + 
+        SVG.state().svg.getBoundingClientRect().top - 15;
+
+    let circle = SVG.state().svg.querySelector("#_circle" + (id ? id : "") + i);
+    if (circle) {
+        circle.setAttribute("cx", (path_x * x_scale + x_translate) 
+            + SVG.state().x_axis.ticks[0]['ticks'][0].parentNode._global_transform[0]);
+        circle.setAttribute("cy", y);
+        circle.setAttribute("display", "");
+    } else {
+        circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        circle.setAttribute("r", 6);
+        circle.setAttribute("fill", mark.type === "line" ? window.getComputedStyle(mark)['stroke'] : 
+            window.getComputedStyle(mark)['fill']);
+        circle.setAttribute("opacity", 0.75);
+        circle.setAttribute("stroke", "black");
+        // circle.setAttribute("stroke", window.getComputedStyle(mark)['fill']);
+        circle.setAttribute("stroke-width", '1px');
+        circle.id = "_circle" + (id ? id : "") + i;
+        circle.setAttribute("class", c ? c : "hover");
+        SVG.state().svg.append(circle);
+        circle.setAttribute("cx", (path_x * x_scale + x_translate) 
+            + SVG.state().x_axis.ticks[0]['ticks'][0].parentNode._global_transform[0]);
+        circle.setAttribute("cy", y);
+    }
+
+    let line = SVG.state().svg.querySelector("#_hoverline" + (id ? id : ""));
+    if (line) { 
+        line.setAttribute("x1", event.clientX - SVG.state().svg.getBoundingClientRect().left);
+        line.setAttribute("x2", event.clientX - SVG.state().svg.getBoundingClientRect().left);
+        line.setAttribute("display", "");
+    } else {
+        line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line.setAttribute("stroke", "black");
+        line.setAttribute("stroke-width", 1.5);
+        line.setAttribute("opacity", "0.65");
+        line.setAttribute("class", c ? c : "hover");
+        line.setAttribute("y1", 
+            SVG.state().y_axis.range[0] + SVG.state().y_axis.ticks[0]['ticks'][0].parentNode._global_transform[1]);
+        line.setAttribute("y2", 
+            SVG.state().y_axis.range[1] + SVG.state().y_axis.ticks[0]['ticks'][0].parentNode._global_transform[1]);
+        line.setAttribute("x1", event.clientX - SVG.state().svg.getBoundingClientRect().left);
+        line.setAttribute("x2", event.clientX - SVG.state().svg.getBoundingClientRect().left);
+        line.id = "_hoverline" + (id ? id : "");
+        SVG.state().svg.append(line);
+    }
 }
 
 
 function create_hover(SVG, control) {
+    function highlight(event) {
+        SVG.state().interactions.selection.active = true;
+        document.getElementById("filter_mode").style['opacity'] = 1;
+        document.getElementById("filter_mode").style['display'] = 'block';
+        if (!event.shiftKey) {
+            for (const mark of SVG.state().svg_marks) {
+                mark.setAttribute("opacity", 0.25);
+            }
+        } 
+        event.target.setAttribute("opacity", 1);
+    }
+
     function show_data(event) {
+        create_tooltip("tooltip");
         let tooltip = document.querySelector("#tooltip");
         let data = "";
         let mark = event.target;
@@ -5693,7 +5925,7 @@ function create_hover(SVG, control) {
     
         tooltip.innerHTML = data;
         tooltip.style['visibility'] = 'visible';
-        tooltip.style['left'] = event.pageX;
+        tooltip.style['left'] = event.pageX + 7;
         tooltip.style['top'] = event.pageY;
     }
 
@@ -5703,102 +5935,16 @@ function create_hover(SVG, control) {
         for (const mark of marks) {
             // if (mark.style['opacity'] && +mark.style['opacity'] !== 1) return;
             ++i;
-            let transform = mark.getAttribute('transform');
-            let x_scale = 1, x_translate = 0;
-            if (transform) {
-                let t = transform.match(/(-?\d+\.?\d*)/g);
-                x_translate = +t[0];
-                x_scale = +t[2];
-            }
-
-            let offset = SVG.state().x_axis.ticks[0]['ticks'][0].parentNode._global_transform[0] 
-                + SVG.state().svg.getBoundingClientRect().left,
-                path_x = event.clientX - offset,
-                start = SVG.state().x_axis.range[0], 
-                end = mark.getTotalLength(),
-                target, 
-                pos;
-
-            if (path_x < SVG.state().x_axis.range[0] || SVG.state().x_axis.range[1] < path_x ) {
-                d3.selectAll(".hover").attr("visibility", "hidden");
-            } else {
-                d3.selectAll(".hover").attr("visibility", "visible");
-            }
-
-            path_x = (path_x - x_translate) / x_scale;
-            while (true){
-                target = Math.floor((start + end) / 2);
-                pos = mark.getPointAtLength(target);
-                if ((target === end || target === start) && pos.x !== path_x) {
-                    break;
-                }
-    
-                if (pos.x > path_x) {
-                    end = target;
-                } else if (pos.x < path_x) {
-                    start = target;
-                } else {
-                    break; //position found
-                }
-            }
-
-            let y = pos.y + SVG.state().y_axis.ticks[0]['ticks'][0].parentNode._global_transform[1];
-            let y_domain = SVG.state().y_axis.scale.invert(
-                y - SVG.state().y_axis.ticks[0]['ticks'][0].parentNode._global_transform[1]
-            );
-            let data_x = SVG.state().x_axis.scale.invert(path_x);
-            data_x = typeof data_x === "number" ? data_x.toFixed(2) : data_x;
-            let circle = SVG.state().svg.querySelector("#_circle" + i);
-
-            let tooltip = document.querySelector("#tooltip" + i);
-            if (!tooltip) {
-                create_tooltip("tooltip" + i);
-            } 
-            tooltip = document.querySelector("#tooltip" + i);
-            tooltip.innerHTML = "(" + data_x + ", " + y_domain.toFixed(2) + ")";
-            tooltip.style['visibility'] = 'visible';
-            tooltip.style['left'] = event.pageX + 7.5;
-            tooltip.style['top'] = event.pageY - event.clientY + y + 
-                SVG.state().svg.getBoundingClientRect().top - 15;
-
-            if (circle) {
-                circle.setAttribute("cx", (path_x * x_scale + x_translate) 
-                    + SVG.state().x_axis.ticks[0]['ticks'][0].parentNode._global_transform[0]);
-                circle.setAttribute("cy", y);
-                circle.setAttribute("display", "");
-            } else {
-                circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-                circle.setAttribute("r", 5);
-                circle.setAttribute("fill", "none");
-                circle.setAttribute("stroke", "black");
-                circle.setAttribute("stroke-width", '1px');
-                circle.id = "_circle" + i;
-                circle.setAttribute("class", "hover");
-                SVG.state().svg.append(circle);
-                circle.setAttribute("cx", (path_x * x_scale + x_translate) 
-                    + SVG.state().x_axis.ticks[0]['ticks'][0].parentNode._global_transform[0]);
-                circle.setAttribute("cy", y);
-            }
-        
-            let line = SVG.state().svg.querySelector("#_hoverline");
-            if (line) { 
-                line.setAttribute("x1", event.clientX - SVG.state().svg.getBoundingClientRect().left);
-                line.setAttribute("x2", event.clientX - SVG.state().svg.getBoundingClientRect().left);
-                line.setAttribute("display", "");
-            } else {
-                line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-                line.setAttribute("stroke", "black");
-                line.setAttribute("stroke-width", 1.5);
-                line.setAttribute("opacity", "0.65");
-                line.setAttribute("class", "hover");
-                line.setAttribute("y1", 
-                    SVG.state().y_axis.range[0] + SVG.state().y_axis.ticks[0]['ticks'][0].parentNode._global_transform[1]);
-                line.setAttribute("y2", 
-                    SVG.state().y_axis.range[1] + SVG.state().y_axis.ticks[0]['ticks'][0].parentNode._global_transform[1]);
-                line.setAttribute("x1", event.clientX - SVG.state().svg.getBoundingClientRect().left);
-                line.setAttribute("x2", event.clientX - SVG.state().svg.getBoundingClientRect().left);
-                line.id = "_hoverline";
-                SVG.state().svg.append(line);
+            line(SVG, event, mark, i);
+        }
+        if (marks.length > 1) {
+            let tooltip = document.getElementById("tooltip");
+            [...tooltip.children]
+                .sort((a,b) => +a.children[2].innerHTML < +b.children[2].innerText ? 1 : -1)
+                .forEach(node => tooltip.appendChild(node));
+            for (let i = 0; i < tooltip.children.length - 1; ++i) {
+                tooltip.children[i].children[2].innerHTML = +tooltip.children[i].children[2].innerHTML - 
+                    +tooltip.children[i + 1].children[2].innerHTML;
             }
         }
     }
@@ -5807,10 +5953,11 @@ function create_hover(SVG, control) {
         if (!mark.type || mark.type === "ellipse" || (!SVG.state().x_axis.ticks.length && !SVG.state().y_axis.ticks.length)) {
             mark.addEventListener('mouseenter', show_data);
             mark.addEventListener('mouseleave', mouseleave);
-            mark.style['cursor'] = 'default';
+            mark.style['cursor'] = 'pointer';
         } else {
             SVG.state().svg.addEventListener('mousemove', showline);
         }
+        mark.addEventListener('click', highlight);
         // mark.addEventListener('mousedown', mousedown);
     }
 
@@ -5834,10 +5981,65 @@ function create_hover(SVG, control) {
 }
 
 function select(SVG, control) {
-    create_tooltip("tooltip");
     create_hover(SVG, control);
     // add_click(svg_objects);
 }
+
+select.applyBrush = function(SVG, x, y, width, height) {
+    d3.selectAll(".brush_tooltip").remove();
+
+    let event1 = { clientX: x, pageX: x, clientY: y, pageY: y };
+    let event2 = { clientX: x + +width, pageX: x + +width, clientY: y + +height, pageY: y + +height};
+    let i = 0;
+    for (const mark of SVG.state().svg_marks) {
+        ++i;
+        line(SVG, event1, mark, i, "brush1", "brush_tooltip");
+        line(SVG, event2, mark, i, "brush2", "brush_tooltip");
+    }
+
+    if (SVG.state().svg_marks.length > 1) {
+        let tooltips = [document.getElementById("tooltipbrush1"), document.getElementById("tooltipbrush2")];
+        for (const tooltip of tooltips) {
+            [...tooltip.children]
+                .sort((a,b) => +a.children[2].innerHTML < +b.children[2].innerText ? 1 : -1)
+                .forEach(node => tooltip.appendChild(node));
+            for (let i = 0; i < tooltip.children.length - 1; ++i) {
+                tooltip.children[i].children[2].innerHTML = +tooltip.children[i].children[2].innerHTML - 
+                    +tooltip.children[i + 1].children[2].innerHTML;
+            }
+        }
+    }
+};
+
+select.updateBrush = function(SVG) {
+    if (!document.getElementById("_hoverlinebrush1")) return;
+    let x1 = document.getElementById("_hoverlinebrush1").getBoundingClientRect().left;
+    let y1 = document.getElementById("_hoverlinebrush1").getBoundingClientRect().top;
+    let x2 = document.getElementById("_hoverlinebrush2").getBoundingClientRect().left;
+    let y2 = document.getElementById("_hoverlinebrush2").getBoundingClientRect().top;
+
+    let event1 = { clientX: x1, pageX: x1, clientY: y1, pageY: y1 };
+    let event2 = { clientX: x2, pageX: x2, clientY: y2, pageY: y2 };
+    let i = 0;
+    for (const mark of SVG.state().svg_marks) {
+        ++i;
+        line(SVG, event1, mark, i, "brush1", "brush_tooltip");
+        line(SVG, event2, mark, i, "brush2", "brush_tooltip");
+    }
+
+    if (SVG.state().svg_marks.length > 1) {
+        let tooltips = [document.getElementById("tooltipbrush1"), document.getElementById("tooltipbrush2")];
+        for (const tooltip of tooltips) {
+            [...tooltip.children]
+                .sort((a,b) => +a.children[2].innerHTML < +b.children[2].innerText ? 1 : -1)
+                .forEach(node => tooltip.appendChild(node));
+            for (let i = 0; i < tooltip.children.length - 1; ++i) {
+                tooltip.children[i].children[2].innerHTML = +tooltip.children[i].children[2].innerHTML - 
+                    +tooltip.children[i + 1].children[2].innerHTML;
+            }
+        }
+    }
+};
 
 var top = 1,
     right = 2,
@@ -6055,7 +6257,8 @@ function SVG() {
         },
         interactions: {
             selection: {
-                control: null
+                control: null,
+                active: false
             },
             zoom: {
                 control: null,
@@ -6069,10 +6272,12 @@ function SVG() {
             brush: {
                 control: null,
                 axis_control: null,
-                flag: true
+                flag: true,
+                active: false
             },
             filter: {
                 control: null,
+                active: false
             },
             sort: {
                 control: null
@@ -6179,22 +6384,22 @@ function SVG() {
     function SVG() { }
 
     SVG.hydrate = function() {
-        document.getElementById("pan-btn").addEventListener('click', function(event) {
-            SVG.unfilter();
-            document.getElementById("brush-rect").setAttribute("width", 0);
-            document.getElementById("brush-rect").setAttribute("height", 0);
-            document.getElementById("pan_disam").style['display'] = 'none';
-            state.svg.style['cursor'] = 'default';
-            state.interactions.pan.flag = true;
-            state.interactions.brush.flag = false;
-        });
+        // document.getElementById("pan-btn").addEventListener('click', function(event) {
+        //     SVG.unfilter();
+        //     document.getElementById("brush-rect").setAttribute("width", 0);
+        //     document.getElementById("brush-rect").setAttribute("height", 0);
+        //     document.getElementById("pan_disam").style['display'] = 'none';
+        //     state.svg.style['cursor'] = 'default';
+        //     state.interactions.pan.flag = true;
+        //     state.interactions.brush.flag = false;
+        // });
 
-        document.getElementById("brush-btn").addEventListener('click', function(event) {
-            document.getElementById("brush_disam").style['display'] = 'none';
-            state.svg.style['cursor'] = 'crosshair';
-            state.interactions.pan.flag = false;
-            state.interactions.brush.flag = true;
-        });
+        // document.getElementById("brush-btn").addEventListener('click', function(event) {
+        //     document.getElementById("brush_disam").style['display'] = 'none';
+        //     state.svg.style['cursor'] = 'crosshair';
+        //     state.interactions.pan.flag = false;
+        //     state.interactions.brush.flag = true;
+        // });
 
         for (const [key, value] of Object.entries(state.interactions)) {
             switch(key) {
@@ -6214,29 +6419,73 @@ function SVG() {
                     filter(SVG, value.control);
             }
         }
-        if (state.svg.id !== "chart") return;
-        let field = document.getElementById("field");
-        let __data__ = state.svg_marks[0].__inferred__data__;
-        for (const [key, value] of Object.entries(__data__)) {
-            let option = document.createElement('option');
-            option.innerHTML = key;
-            field.appendChild(option);
-        }
+        // if (state.svg.id !== "chart") return;
+        // let field = document.getElementById("field");
+        // let __data__ = state.svg_marks[0].__inferred__data__;
+        // for (const [key, value] of Object.entries(__data__)) {
+        //     let option = document.createElement('option');
+        //     option.innerHTML = key;
+        //     field.appendChild(option);
+        // }
 
-        for (const attribute of state.svg_marks[0].attributes) {
-            if (attribute.nodeName === "__mark__" || attribute.nodeName === "style") continue;
-            let option = document.createElement('option');
-            option.innerHTML = attribute.nodeName;
-            field.appendChild(option);
-        }
+        // for (const attribute of state.svg_marks[0].attributes) {
+        //     if (attribute.nodeName === "__mark__" || attribute.nodeName === "style") continue;
+        //     let option = document.createElement('option');
+        //     option.innerHTML = attribute.nodeName;
+        //     field.appendChild(option);
+        // }
 
-        let condition = document.getElementById("condition");
-        let conditions = ['<', '<=', '=', '>=', '>'];
-        for (const c of conditions) {
-            let new_c = document.createElement('option');
-            new_c.innerHTML = c;
-            condition.appendChild(new_c);
-        }
+        // let condition = document.getElementById("condition");
+        // let conditions = ['<', '<=', '=', '>=', '>'];
+        // for (const c of conditions) {
+        //     let new_c = document.createElement('option');
+        //     new_c.innerHTML = c;
+        //     condition.appendChild(new_c);
+        // }
+
+        // Tooltip
+        let mousedown = false;
+        state.svg.addEventListener('mousedown', function(event) {
+            mousedown = true;
+        });
+        state.svg.addEventListener('mouseup', function(event) {
+            mousedown = false;
+        });
+        state.svg.addEventListener('mousemove', function(event) {
+            console.log('move');
+            if (!mousedown) document.getElementById("modebar").style['visibility'] = 'visible';
+        });
+        state.svg.addEventListener('mouseleave', function(event) {
+            if (event.clientX <= +state.svg.getBoundingClientRect().left || event.clientX >= +state.svg.getBoundingClientRect().right) {
+                document.getElementById("modebar").style['visibility'] = 'hidden';
+            }
+        });
+
+        let pan_elem = document.getElementById("pan_mode");
+        let brush_elem = document.getElementById("brush_mode");
+        let filter_elem = document.getElementById("filter_mode");
+        pan_elem.addEventListener("click", function(event) {
+            pan_elem.style['opacity'] = +pan_elem.style['opacity'] === 0.4 ? 1 : 0.4;
+            brush_elem.style['opacity'] = 0.4;
+            state.interactions.pan.flag = !state.interactions.pan.flag;
+            state.interactions.brush.flag = !state.interactions.brush.flag;
+            state.svg.style['cursor'] = 'move';
+        });
+        brush_elem.addEventListener("click", function(event) {
+            brush_elem.style['opacity'] = +brush_elem.style['opacity'] === 0.4 ? 1 : 0.4;
+            pan_elem.style['opacity'] = 0.4;
+            state.interactions.pan.flag = !state.interactions.pan.flag;
+            state.interactions.brush.flag = !state.interactions.pan.flag;
+            state.svg.style['cursor'] = 'crosshair';
+        });
+        filter_elem.addEventListener("click", function(event) {
+            state.interactions.filter.active = !state.interactions.filter.active;
+            for (const mark of state.svg_marks) {
+                mark.style['visibility'] = state.interactions.filter.active ? 
+                    +mark.getAttribute("opacity") === 1 ? 'visible' : 'hidden'
+                    : 'visible';
+            }
+        });
     };
 
     SVG.infer_mark_attributes = function() { 
@@ -6281,13 +6530,96 @@ function SVG() {
 
     SVG.state = function() { return state; };
 
-    SVG.filter = function(x, y, width, height) {
-        for (const mark of state.svg_marks) {
-            if (+mark.getBoundingClientRect().right < x ||
-                +mark.getBoundingClientRect().left > x + +width ||
-                +mark.getBoundingClientRect().bottom < y ||
-                +mark.getBoundingClientRect().top > y + +height) {
+    SVG.updateBrush = function() {
+        select.updateBrush(SVG);
+    };
 
+    SVG.disambiguate = function(interaction, hide=false) {
+        let pan_elem = document.getElementById("pan_mode");
+        let brush_elem = document.getElementById("brush_mode");
+        if (hide) {
+            pan_elem.style['display'] = brush_elem.style['display'] = 'none';
+            return;
+        }
+
+        pan_elem.style['display'] = brush_elem.style['display'] = 'block';
+        switch(interaction) {
+            case "pan":
+                state.interactions.pan.flag = true;
+                state.interactions.brush.flag = false;
+                pan_elem.style['opacity'] =  1;
+                brush_elem.style['opacity'] = 0.4;
+                break;
+            case "brush":
+                state.interactions.pan.flag = false;
+                state.interactions.brush.flag = true;
+                pan_elem.style['opacity'] =  0.4;
+                brush_elem.style['opacity'] = 1;
+                break;
+        }
+    };
+
+    SVG.std = function() {
+        if (state.svg_marks[0].nodeName === "path" && state.svg_marks[0].type !== "ellipse") return 1;
+
+        let x = [], 
+            y = [],
+            x_mu = 0,
+            x_std = 0,
+            y_mu = 0,
+            y_std = 0;
+        for (const mark of state.svg_marks) {
+            x_mu += +mark.getBoundingClientRect().left;
+            y_mu += +mark.getBoundingClientRect().top;
+            x.push(+mark.getBoundingClientRect().left);
+            y.push(+mark.getBoundingClientRect().top);
+        }
+
+        x_mu /= x.length;
+        y_mu /= y.length;
+
+        for (let i = 0; i < x.length; ++i) {
+            x_std += (x[i] - x_mu) * (x[i] - x_mu);
+            y_std += (y[i] - y_mu) * (y[i] - y_mu);
+        }
+        x_std = Math.sqrt(x_std / x.length);
+        y_std = Math.sqrt(y_std / y.length);
+        
+        return x_std / y_std;
+    };
+
+    SVG.filter = function(x, y, width, height) {
+        document.getElementById("filter_mode").style['opacity'] = 1;
+        document.getElementById("filter_mode").style['display'] = 'block';
+
+        for (const mark of state.svg_marks) {
+            if ((mark.type === "line" || mark.type === "polygon") && state.x_axis.ticks.length && state.y_axis.ticks.length) {
+                state.interactions.brush.active = true;
+                select.applyBrush(SVG, x, y, width, height);
+                return;
+            }
+            
+            if (state.x_axis.ordinal.length || (!state.x_axis.ticks.length && !state.y_axis.ticks.length)) {
+                var brush_x_start = x;
+                var brush_x_end = x + +width;
+                var brush_y_end = y + +height;
+                var brush_y_start = y;
+    
+                let bb = mark.getBoundingClientRect();
+                var data_x = (+bb.left + +bb.right) / 2;
+                var data_y = (+bb.top + +bb.bottom) / 2;
+            } else {
+                var brush_x_start = state.x_axis.scale.invert(x);
+                var brush_x_end = state.x_axis.scale.invert(x + +width);
+                var brush_y_end = state.y_axis.scale.invert(y);
+                var brush_y_start = state.y_axis.scale.invert(y + +height);
+    
+                let bb = mark.getBoundingClientRect();
+                var data_x = (state.x_axis.scale.invert(+bb.left) + state.x_axis.scale.invert(+bb.right)) / 2;
+                var data_y = (state.y_axis.scale.invert(+bb.top) + state.y_axis.scale.invert(+bb.bottom)) / 2;
+            }
+
+            if (data_x < brush_x_start || data_x > brush_x_end || data_y < brush_y_start || data_y > brush_y_end) {
                 mark.setAttribute("opacity", 0.25);
             } else {
                 mark.setAttribute("opacity", 1);
@@ -6296,6 +6628,8 @@ function SVG() {
     };
 
     SVG.unfilter = function() {
+        state.interactions.brush.active = false;
+        document.getElementById("filter_mode").style['display'] = 'none';
         for (const mark of state.svg_marks) {
             mark.setAttribute("opacity", 1);
         }
