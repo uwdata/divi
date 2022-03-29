@@ -25,14 +25,26 @@ export function _zoom(SVG, control, axis_control) {
 
     const marks = svg.selectAll('[__mark__="true"]');
 
-    if (marks.node().parentElement.id !== "_g_clip") {
-        let container = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        container.id = "_g_clip";
-        marks.node().parentElement.appendChild(container);
-        marks.nodes().forEach(d => container.appendChild(d));
-    }
-    marks.node().parentElement.setAttribute('clip-path', 'url(#clip-' + SVG.state().svg.id + ')');
+    // if (marks.node().parentElement.id !== "_g_clip") {
+    for (const node of marks.nodes()) {
+        let container = node.parentElement;
+        if (container.id !== "_g_clip") {
+            container = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            container.id = "_g_clip";
+            container.setAttribute('clip-path', 'url(#clip-' + SVG.state().svg.id + ')'); 
 
+            node.parentElement.appendChild(container);
+        }  
+        container.appendChild(node);
+    }
+
+    // if (marks.node().parentElement.id !== "_g_clip") {
+    //     let container = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    //     container.id = "_g_clip";
+    //     marks.node().parentElement.appendChild(container);
+    //     marks.nodes().forEach(d => container.appendChild(d));
+    // }
+    // marks.node().parentElement.setAttribute('clip-path', 'url(#clip-' + SVG.state().svg.id + ')');
     var left_bound = marks.node()._global_transform[0] + SVG.state().svg.getBoundingClientRect().left;
     var top_bound = marks.node()._global_transform[1] + SVG.state().svg.getBoundingClientRect().top;
 
@@ -102,14 +114,14 @@ export function _zoom(SVG, control, axis_control) {
         let cliX = sourceEvent.clientX - marks.node()._global_transform[0] - SVG.state().svg.getBoundingClientRect().left;
         let cliY = sourceEvent.clientY - marks.node()._global_transform[1] - SVG.state().svg.getBoundingClientRect().top;
 
-        let std = SVG.std();
-        if (std < 0.5 && zoom_X && zoom_Y) {
-            zoom_X = true;
-            zoom_Y = false;
-        } else if (std > 2 && zoom_X && zoom_Y) {
-            zoom_X = false;
-            zoom_Y = true;
-        }
+        // let std = SVG.std();
+        // if (std < 0.5 && zoom_X && zoom_Y) {
+        //     zoom_X = true;
+        //     zoom_Y = false;
+        // } else if (std > 2 && zoom_X && zoom_Y) {
+        //     zoom_X = false;
+        //     zoom_Y = true;
+        // }
         
         if (k === 1 && pan_enabled) {
             ((!pan_shift && !sourceEvent.shiftKey) || (pan_shift && sourceEvent.shiftKey)) && 
@@ -135,6 +147,15 @@ export function _zoom(SVG, control, axis_control) {
             control_zoom_Y && (not_path || discrete || not_discrete || ordinal) && g_y_axis.call(zoomY.scaleBy, k, [cliX, cliY]);   
         }
         SVG.state().y_axis.axis.scale(ty().rescaleY(SVG.state().y_axis.scale))();
+
+        var keys = (sourceEvent.ctrlKey ? " ctrl " : "") + (sourceEvent.shiftKey ? " shift " : "") + (sourceEvent.altKey ? " alt " : "");
+        if (sourceEvent.type === 'mousemove' && control_pan_X) {
+            document.getElementById("logfile").innerHTML += sourceEvent.type + " [" + keys + "] " + SVG.state().svg.id + " to pan [" +
+            (zoom_X && zoom_Y ? "2D" : (zoom_X ? "X-AXIS" : "Y-AXIS")) + "] <br/>";
+        } else if (sourceEvent.type !== 'mousemove' && control_zoom_X) {
+            document.getElementById("logfile").innerHTML += sourceEvent.type + " [" + keys + "] " + SVG.state().svg.id + " to zoom [" +
+            (zoom_X && zoom_Y ? "2D" : (zoom_X ? "X-AXIS" : "Y-AXIS")) + "] <br/>";
+        }
         
         marks.attr("transform", function() {
             let transform = this.__transform.match(/(-?\d+\.?-?\d*)/g);

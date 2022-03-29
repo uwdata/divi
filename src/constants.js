@@ -6,7 +6,8 @@ const INTERACTION_CONSTANTS = {
         FILTER: 'filter',
         SORT: 'sort',
         BRUSH: 'brush',
-        HIGHLIGHT: 'highlight'
+        HIGHLIGHT: 'highlight',
+        ANNOTATE: 'annotate'
     },
     INTERACTION_TARGETS: {
         CATEGORICAL: 'Categorical',

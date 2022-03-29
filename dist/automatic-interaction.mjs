@@ -6,7 +6,8 @@ const INTERACTION_CONSTANTS = {
         FILTER: 'filter',
         SORT: 'sort',
         BRUSH: 'brush',
-        HIGHLIGHT: 'highlight'
+        HIGHLIGHT: 'highlight',
+        ANNOTATE: 'annotate'
     },
     INTERACTION_TARGETS: {
         CATEGORICAL: 'Categorical',
@@ -5353,14 +5354,26 @@ function _zoom(SVG, control, axis_control) {
 
     const marks = svg.selectAll('[__mark__="true"]');
 
-    if (marks.node().parentElement.id !== "_g_clip") {
-        let container = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        container.id = "_g_clip";
-        marks.node().parentElement.appendChild(container);
-        marks.nodes().forEach(d => container.appendChild(d));
-    }
-    marks.node().parentElement.setAttribute('clip-path', 'url(#clip-' + SVG.state().svg.id + ')');
+    // if (marks.node().parentElement.id !== "_g_clip") {
+    for (const node of marks.nodes()) {
+        let container = node.parentElement;
+        if (container.id !== "_g_clip") {
+            container = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            container.id = "_g_clip";
+            container.setAttribute('clip-path', 'url(#clip-' + SVG.state().svg.id + ')'); 
 
+            node.parentElement.appendChild(container);
+        }  
+        container.appendChild(node);
+    }
+
+    // if (marks.node().parentElement.id !== "_g_clip") {
+    //     let container = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    //     container.id = "_g_clip";
+    //     marks.node().parentElement.appendChild(container);
+    //     marks.nodes().forEach(d => container.appendChild(d));
+    // }
+    // marks.node().parentElement.setAttribute('clip-path', 'url(#clip-' + SVG.state().svg.id + ')');
     var left_bound = marks.node()._global_transform[0] + SVG.state().svg.getBoundingClientRect().left;
     var top_bound = marks.node()._global_transform[1] + SVG.state().svg.getBoundingClientRect().top;
 
@@ -5384,6 +5397,7 @@ function _zoom(SVG, control, axis_control) {
         document.getElementById("modebar").style['visibility'] = 'hidden';
         // if (SVG.state().interactions.pan.flag) document.getElementById("brush_disam").style['display'] = 'block';
         var pan_enabled = true,
+            control_zoom_X = true,
             control_pan_X = SVG.state().interactions.pan.flag,
             control_pan_Y = SVG.state().interactions.pan.flag,
             pan_shift = false;
@@ -5427,14 +5441,14 @@ function _zoom(SVG, control, axis_control) {
         let cliX = sourceEvent.clientX - marks.node()._global_transform[0] - SVG.state().svg.getBoundingClientRect().left;
         let cliY = sourceEvent.clientY - marks.node()._global_transform[1] - SVG.state().svg.getBoundingClientRect().top;
 
-        let std = SVG.std();
-        if (std < 0.5 && zoom_X && zoom_Y) {
-            zoom_X = true;
-            zoom_Y = false;
-        } else if (std > 2 && zoom_X && zoom_Y) {
-            zoom_X = false;
-            zoom_Y = true;
-        }
+        // let std = SVG.std();
+        // if (std < 0.5 && zoom_X && zoom_Y) {
+        //     zoom_X = true;
+        //     zoom_Y = false;
+        // } else if (std > 2 && zoom_X && zoom_Y) {
+        //     zoom_X = false;
+        //     zoom_Y = true;
+        // }
         
         if (k === 1 && pan_enabled) {
             ((!sourceEvent.shiftKey) || (pan_shift )) && 
@@ -5460,6 +5474,15 @@ function _zoom(SVG, control, axis_control) {
             (not_path || discrete || not_discrete || ordinal) && g_y_axis.call(zoomY.scaleBy, k, [cliX, cliY]);   
         }
         SVG.state().y_axis.axis.scale(ty().rescaleY(SVG.state().y_axis.scale))();
+
+        var keys = (sourceEvent.ctrlKey ? " ctrl " : "") + (sourceEvent.shiftKey ? " shift " : "") + (sourceEvent.altKey ? " alt " : "");
+        if (sourceEvent.type === 'mousemove' && control_pan_X) {
+            document.getElementById("logfile").innerHTML += sourceEvent.type + " [" + keys + "] " + SVG.state().svg.id + " to pan [" +
+            (zoom_X && zoom_Y ? "2D" : (zoom_X ? "X-AXIS" : "Y-AXIS")) + "] <br/>";
+        } else if (sourceEvent.type !== 'mousemove' && control_zoom_X) {
+            document.getElementById("logfile").innerHTML += sourceEvent.type + " [" + keys + "] " + SVG.state().svg.id + " to zoom [" +
+            (zoom_X && zoom_Y ? "2D" : (zoom_X ? "X-AXIS" : "Y-AXIS")) + "] <br/>";
+        }
         
         marks.attr("transform", function() {
             let transform = this.__transform.match(/(-?\d+\.?-?\d*)/g);
@@ -5508,7 +5531,7 @@ function _zoom(SVG, control, axis_control) {
     // });
 }
 
-function dragElement(elmnt, SVG, constrains) {
+function dragElement$1(elmnt, SVG, constrains) {
     var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     elmnt.onmousedown = dragMouseDown;
 
@@ -5592,7 +5615,19 @@ function brush(SVG, control, axis_control) {
     }
     
     function mousedown_callback(e) {
-        if (!SVG.state().interactions.brush.flag || SVG.state().interactions.selection.active) return;
+        if (!SVG.state().interactions.brush.flag) return;
+        let intersects = false;
+            for (const mark of SVG.state().svg_marks) {
+                if (mark.type === "line" || mark.type === "polygon") continue;
+                let bb = mark.getBoundingClientRect();
+                if (e.clientX >= +bb.left && e.clientX <= +bb.right && e.clientY >= +bb.top && e.clientY <= +bb.bottom) {
+                    intersects = true;
+                    break;
+                }
+            }
+
+        if (intersects) return;
+
         SVG.disambiguate("brush");
         // document.getElementById('pan_disam').style['display'] = 'block';
 
@@ -5616,14 +5651,14 @@ function brush(SVG, control, axis_control) {
             ((SVG.state().svg_marks[0].type === "line" || SVG.state().svg_marks[0].type === "polygon") && !brush_Y && 
             SVG.state().x_axis.ticks.length);
 
-        let std = SVG.std();
-        if (std < 0.5 && !brush_X && !brush_Y) {
-            brush_X = false;
-            brush_Y = true;
-        } else if (std > 2 && !brush_X && !brush_Y) {
-            brush_X = true;
-            brush_Y = false;
-        }
+        // let std = SVG.std();
+        // if (std < 0.5 && !brush_X && !brush_Y) {
+        //     brush_X = false;
+        //     brush_Y = true;
+        // } else if (std > 2 && !brush_X && !brush_Y) {
+        //     brush_X = true;
+        //     brush_Y = false;
+        // }
 
         constrains[0] || brush_Y ? 
             rect.setAttribute("width", SVG.state().x_axis.global_range[1] - SVG.state().x_axis.global_range[0]) : 
@@ -5640,6 +5675,10 @@ function brush(SVG, control, axis_control) {
         constrains[1] || brush_X ? 
             rect.setAttribute("y", SVG.state().y_axis.global_range[1]) :
             rect.setAttribute("y", e.clientY - svg.getBoundingClientRect().top);
+
+        var keys = (e.ctrlKey ? " ctrl " : "") + (e.shiftKey ? " shift " : "") + (e.altKey ? " alt " : "");
+        document.getElementById("logfile").innerHTML += e.type + " [" + keys + "] " + SVG.state().svg.id + " to brush [" +
+            (!brush_X && !brush_Y ? "2D" : (brush_X ? "X-AXIS" : "Y-AXIS")) + "] <br/>";
     }
 
     function mousemove_callback(e) {
@@ -5656,15 +5695,6 @@ function brush(SVG, control, axis_control) {
         let brush_X = (x_flag && !y_flag) ||
             ((SVG.state().svg_marks[0].type === "line" || SVG.state().svg_marks[0].type === "polygon") && !brush_Y &&
             SVG.state().x_axis.ticks.length);
-
-        let std = SVG.std();
-        if (std < 0.5 && !brush_X && !brush_Y) {
-            brush_X = false;
-            brush_Y = true;
-        } else if (std > 2 && !brush_X && !brush_Y) {
-            brush_X = true;
-            brush_Y = false;
-        }
 
         if (mousedown) {
             e.preventDefault();
@@ -5695,6 +5725,7 @@ function brush(SVG, control, axis_control) {
             // document.getElementById('pan_disam').style['display'] = 'none';
             // SVG.disambiguate("brush", true);
             d3.selectAll(".brush_tooltip").remove();
+            document.getElementById("logfile").innerHTML += "reset brush <br/>";
         } else {
             rect.setAttribute("width", 0);
             rect.setAttribute("height", 0);
@@ -5733,13 +5764,133 @@ function brush(SVG, control, axis_control) {
         update_rect();
     }));
 
-    dragElement(rect, SVG, constrains);
+    dragElement$1(rect, SVG, constrains);
 }
 
 // import { svg_objects } from "./inspect";
 
 function filter(SVG, control) {
     return;
+}
+
+function constrain_elements(SVG) {
+    SVG.state().x_axis.ticks.sort((a, b) => {
+        return +a['label'].getBoundingClientRect().left < +b['label'].getBoundingClientRect().left ? -1 : 1;
+    });
+
+    let labels = SVG.state().x_axis.ticks.map(d => d['label'].innerHTML);
+    SVG.state().x_axis.ordinal = labels;
+    SVG.state().x_axis.scale.domain(labels);
+}
+
+function dragElement(SVG) {
+    var pos3 = 0, pos4 = 0;
+    document.addEventListener('mousedown', dragMouseDown);
+    var elmnt, tick, original_positions;
+
+    function dragMouseDown(e) {
+        e = e || window.event;
+        // e.preventDefault();
+        // get the mouse cursor position at startup:
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        // elmnt.onmouseup = closeDragElement;
+        // call a function whenever the cursor moves:
+        // elmnt.onmousemove = elementDrag;
+        elmnt = null;
+        tick = SVG.state().x_axis.ticks[0];
+        original_positions = [];
+        for (const mark of SVG.state().svg_marks) {
+            if (mark.hasAttribute("__legend__")) continue;
+            let bb = mark.getBoundingClientRect();
+            if (e.clientX >= +bb.left && e.clientX <= +bb.right && e.clientY >= +bb.top && e.clientY <= +bb.bottom) {
+                elmnt = mark;
+                break;
+            }
+        }
+        if (elmnt) {
+            var keys = (e.ctrlKey ? " ctrl " : "") + (e.shiftKey ? " shift " : "") + (e.altKey ? " alt " : "");
+            document.getElementById("logfile").innerHTML += e.type + " [" + keys + "] " + SVG.state().svg.id + " to sort <br/>";
+
+            document.addEventListener('mousemove', elementDrag);
+            document.addEventListener('mouseup', closeDragElement);
+            elmnt.__x__ = e.clientX;
+
+            SVG.state().svg_marks.sort((a, b) => {
+                +a.getBoundingClientRect().left < +b.getBoundingClientRect().left ? -1 : 1;
+            });
+
+            let pos = (+elmnt.getBoundingClientRect().left + +elmnt.getBoundingClientRect().right) / 2;
+            let min_diff = 1000;
+            for (let i = 0; i < SVG.state().x_axis.ticks.length; ++i) {
+                if (Math.abs(+SVG.state().x_axis.ticks[i]['ticks'][0].getBoundingClientRect().left - pos) < min_diff) {
+                    min_diff = Math.abs(+SVG.state().x_axis.ticks[i]['ticks'][0].getBoundingClientRect().left - pos);
+                    tick = SVG.state().x_axis.ticks[i];
+                }
+
+                let p = SVG.state().x_axis.ticks[i]['ticks'][0];
+                original_positions.push((+p.getBoundingClientRect().left + +p.getBoundingClientRect().right) / 2);
+
+                SVG.state().x_axis.ticks[i]['mark'] = SVG.state().svg_marks[i];
+            }
+
+            tick['__x__'] = e.clientX;
+        }
+    }
+
+    function elementDrag(e) {
+        e = e || window.event;
+        e.preventDefault();
+        // calculate the new cursor position:
+        pos3 - e.clientX;
+        pos4 - e.clientY;
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        // set the element's new position:
+        elmnt.setAttribute("transform", "translate(" + (e.clientX - elmnt.__x__) + ", 0)");
+
+        let label = tick['label'];
+        let rotate = label.hasAttribute("transform") && label.getAttribute("transform").includes("rotate") ? +label.getAttribute("transform").match(/(-?\d+\.?\d*e?-?\d*)/g).pop() : null;
+        label.setAttribute("transform", "translate(" + (e.clientX - elmnt.__x__) + ", 0)" + (rotate ? " rotate(" + rotate + ")" : ""));
+
+        for (const t of tick['ticks']) {
+            t.setAttribute("transform", "translate(" + (e.clientX - elmnt.__x__) + ", 0)");
+        }
+
+        constrain_elements(SVG);
+    
+        for (let i = 0; i < SVG.state().x_axis.ticks.length; ++i) {
+            if (SVG.state().x_axis.ticks[i]['label'].innerHTML === tick['label'].innerHTML) continue;
+
+            let t = SVG.state().x_axis.ticks[i];
+            let curr_pos = (+t['ticks'][0].getBoundingClientRect().left + 
+                +t['ticks'][0].getBoundingClientRect().right ) / 2;
+
+            let l = t['label'];
+            let rotate = label.hasAttribute("transform") && l.getAttribute("transform").includes("rotate") ? +l.getAttribute("transform").match(/(-?\d+\.?\d*e?-?\d*)/g).pop() : null;
+            l.setAttribute("transform", "translate(" + (original_positions[i] - curr_pos) + ", 0)" + (rotate ? " rotate(" + rotate + ")" : ""));
+
+            for (const tick of SVG.state().x_axis.ticks[i]['ticks']) {
+                tick.setAttribute("transform", "translate(" + (original_positions[i] - curr_pos) + ", 0)");
+            }
+
+            t['mark'].setAttribute("transform", "translate(" + (original_positions[i] - curr_pos) + ", 0)");
+        }
+    }
+
+    function closeDragElement() {
+        // stop moving when mouse button is released:
+        // elmnt.onmouseup = null;
+        // elmnt.onmousemove = null;
+        document.removeEventListener('mousemove', elementDrag);
+        document.removeEventListener('mouseup', closeDragElement);
+        // constrain_elements(SVG);
+    }
+}    
+
+function sort(SVG) {
+    if (!SVG.state().x_axis.ordinal.length) return;
+    dragElement(SVG);
 }
 
 function getFormattedDate(date) {
@@ -5766,7 +5917,7 @@ function create_tooltip(id, c=null) {
     div.id = id;
     div.setAttribute("class", c ? c : "tooltip");
     div.style = "opacity:1; visibility:visible; position:absolute; background-color:white; z-index:999; " +
-        "border:solid; border-width:1px; border-radius:2px; padding:2px; font-size:14px; font-weight:500";
+        "border:solid; border-width:1px; border-radius:2px; padding:2px; font-size:14px; font-weight:500; pointer-events:none;";
     document.body.insertBefore(div, null);
 }
 
@@ -5875,17 +6026,20 @@ function line(SVG, event, mark, i, id=null, c=null) {
             + SVG.state().x_axis.ticks[0]['ticks'][0].parentNode._global_transform[0]);
         circle.setAttribute("cy", y);
     }
-
+    
     let line = SVG.state().svg.querySelector("#_hoverline" + (id ? id : ""));
     if (line) { 
         line.setAttribute("x1", event.clientX - SVG.state().svg.getBoundingClientRect().left);
         line.setAttribute("x2", event.clientX - SVG.state().svg.getBoundingClientRect().left);
         line.setAttribute("display", "");
+        // line.setAttribute("visibility", "hidden");
     } else {
         line = document.createElementNS("http://www.w3.org/2000/svg", "line");
         line.setAttribute("stroke", "black");
         line.setAttribute("stroke-width", 1.5);
-        line.setAttribute("opacity", "0.65");
+        line.setAttribute("opacity", "0.5");
+        line.style['pointer-events'] = 'none';
+        // line.setAttribute("visibility", "hidden");
         line.setAttribute("class", c ? c : "hover");
         line.setAttribute("y1", 
             SVG.state().y_axis.range[0] + SVG.state().y_axis.ticks[0]['ticks'][0].parentNode._global_transform[1]);
@@ -5902,14 +6056,39 @@ function line(SVG, event, mark, i, id=null, c=null) {
 function create_hover(SVG, control) {
     function highlight(event) {
         SVG.state().interactions.selection.active = true;
+
+        if (event.target.hasAttribute("__legend__")) {
+            let color = window.getComputedStyle(event.target).fill;
+            for (const mark of SVG.state().svg_marks) {
+                if (window.getComputedStyle(mark).fill != color) {
+                    mark.setAttribute("opacity", 0.25);
+                } else {
+                    mark.setAttribute("opacity", 1);
+                }
+            }
+            var keys = (event.ctrlKey ? " ctrl " : "") + (event.shiftKey ? " shift " : "") + (event.altKey ? " alt " : "");
+            document.getElementById("logfile").innerHTML += event.type + " [" + keys + "] " + SVG.state().svg.id + " to filter by legend <br/>";
+            return;
+        } 
         document.getElementById("filter_mode").style['opacity'] = 1;
         document.getElementById("filter_mode").style['display'] = 'block';
-        if (!event.shiftKey) {
+
+        let is_selected = false;
+        for (const mark of SVG.state().svg_marks) {
+            if (mark.hasAttribute("opacity") && +mark.getAttribute("opacity") === 0.25) {
+                is_selected = true;
+                break;
+            }
+        }
+
+        if (!event.shiftKey || !is_selected) {
             for (const mark of SVG.state().svg_marks) {
                 mark.setAttribute("opacity", 0.25);
             }
         } 
-        event.target.setAttribute("opacity", 1);
+        var keys = (event.ctrlKey ? " ctrl " : "") + (event.shiftKey ? " shift " : "") + (event.altKey ? " alt " : "");
+        document.getElementById("logfile").innerHTML += event.type + " [" + keys + "] " + SVG.state().svg.id + " to select mark <br/>";
+        event.target.setAttribute("opacity", +event.target.getAttribute("opacity") === 1 ? 0.25 : 1);
     }
 
     function show_data(event) {
@@ -5918,6 +6097,8 @@ function create_hover(SVG, control) {
         let data = "";
         let mark = event.target;
 
+        if (!mark.__inferred__data__) return;
+        
         for (const [key, value] of Object.entries(mark.__inferred__data__)) {
             data += String(key) + ": " + String(value);
             data += "<br/>";
@@ -6088,8 +6269,9 @@ function axis(orient, scale, SVG) {
     function ordinal_transform(element, transform) {
         const global_position =
           element.getBoundingClientRect().right - element.parentElement._global_transform[0] - SVG.state().svg.getBoundingClientRect().left;
-
-        if (!element._t) element._t = [global_position, +element.getAttribute("transform").match(/(-?\d+\.?\d*e?-?\d*)/g)[0]];
+        
+        if (!element._t) element._t = [global_position, 
+          element.hasAttribute("transform") ? +element.getAttribute("transform").match(/(-?\d+\.?\d*e?-?\d*)/g)[0] : global_position];
         let new_pos = transform.applyX(element._t[0]);
 
         new_pos < svg_axis.range[0] || new_pos > svg_axis.range[1] ? 
@@ -6225,6 +6407,52 @@ function axisLeft(scale, SVG) {
   return axis(left, scale, SVG);
 }
 
+function annotate(SVG) {
+    bind(SVG);
+}
+
+// annotate.unbind = function() {
+//     document.removeEventListener('click', listener);
+// }
+
+let bind = function(SVG) {
+    function listener (event) {
+        if (!SVG.state().interactions.annotate.flag) return;
+
+        let text = prompt('Type here');
+        if (!text) return;
+
+        const annotations = [
+            {
+              note: {
+                label: text
+                // title: "d3.annotationLabel"
+              },
+              x: event.clientX - SVG.state().svg.getBoundingClientRect().left,
+              y: event.clientY - SVG.state().svg.getBoundingClientRect().top,
+              dy: 20,
+              dx: 20,
+              connector: {
+                end: "dot" // 'dot' also available
+              }
+            }];
+
+        const makeAnnotations = d3.annotation()
+            .type(d3.annotationLabel)
+            .annotations(annotations);
+
+        d3.select("#" + SVG.state().svg.id)
+            .append("g")
+            .attr("class", "annotation-group")
+            .call(makeAnnotations);
+        
+        var keys = (event.ctrlKey ? " ctrl " : "") + (event.shiftKey ? " shift " : "") + (event.altKey ? " alt " : "");
+        document.getElementById("logfile").innerHTML += event.type + " [" + keys + "] " + SVG.state().svg.id + " to annotate <br/>";
+    }  
+
+    document.addEventListener('mouseup', listener);
+};
+
 function SVG() {
     var state = {
         has_domain: false,
@@ -6281,6 +6509,9 @@ function SVG() {
             },
             sort: {
                 control: null
+            },
+            annotate: {
+                flag: false
             }
         }
     };
@@ -6332,9 +6563,57 @@ function SVG() {
         axis.ticks.sort((first, second) => +first['offset'] < +second['offset'] ? -1 : (+first['offset'] > +second['offset'] ? 1 : 0));
     };
 
+    var group_legend = function() {
+        if (state.svg.id === "hexchart") return;
+        let title_x, title_y,
+            min_x = 10000, max_y = 0;
+        for (const text of state.text_marks) {
+            if (text.getBoundingClientRect().left < min_x) {
+                min_x = text.getBoundingClientRect().left;
+                title_y = text;
+            }
+            if (text.getBoundingClientRect().bottom > max_y) {
+                max_y = text.getBoundingClientRect().bottom;
+                title_x = text;
+            }
+        }
+
+        if (title_y && Math.abs(min_x - state.svg.getBoundingClientRect().left) < 50) {
+            title_y.__title__ = true;
+            state.titles.y = title_y;
+        }
+        if (title_x && Math.abs(max_y - state.svg.getBoundingClientRect().bottom) < 50) {
+            title_x.__title__ = true;
+            state.titles.x = title_x;    
+        }
+
+        for (const text of state.text_marks) {
+            if (text.__title__) continue;
+
+            let text_x = (+text.getBoundingClientRect().left + +text.getBoundingClientRect().right) / 2,
+                text_y = (+text.getBoundingClientRect().top + +text.getBoundingClientRect().bottom) / 2;
+            let min_pos = 10000, min_mark;
+            for (const mark of state.svg_marks) {
+                let mark_x = (+mark.getBoundingClientRect().left + +mark.getBoundingClientRect().right / 2) / 2,
+                    mark_y = (+mark.getBoundingClientRect().top + +mark.getBoundingClientRect().bottom) / 2;
+                
+                let diff = Math.abs(mark_x - text_x) + Math.abs(mark_y - text_y);
+                if (diff < min_pos) {
+                    min_pos = diff;
+                    min_mark = mark;
+                }
+            }
+
+            min_mark.removeAttribute("__mark__");
+            text.setAttribute("__legend__", true);
+            min_mark.setAttribute("__legend__", "true");
+            state.legend.push({'label': text, 'glyph': min_mark});
+        }
+    };
+
     var compute_domain = function(axis) {
         for (const [_, value] of Object.entries(axis.ticks)) {
-            let format_val = value['label'].__data__ ? 
+            let format_val = value['label'].__data__ || +value['label'].__data__ === 0 ? 
                 value['label'].__data__ : 
                 isNaN(parseInt(value['label'].innerHTML)) ? 
                 value['label'].innerHTML :
@@ -6417,6 +6696,13 @@ function SVG() {
                     break;
                 case INTERACTION_CONSTANTS.INTERACTION_TYPES.FILTER:
                     filter(SVG, value.control);
+                    break;
+                case INTERACTION_CONSTANTS.INTERACTION_TYPES.SORT:
+                    sort(SVG);
+                    break;
+                case INTERACTION_CONSTANTS.INTERACTION_TYPES.ANNOTATE:
+                    annotate(SVG);
+                    break;
             }
         }
         // if (state.svg.id !== "chart") return;
@@ -6452,8 +6738,18 @@ function SVG() {
             mousedown = false;
         });
         state.svg.addEventListener('mousemove', function(event) {
-            console.log('move');
             if (!mousedown) document.getElementById("modebar").style['visibility'] = 'visible';
+
+            if (state.interactions.pan.flag) {
+                let left_bound = state.svg_marks[0]._global_transform[0] + SVG.state().svg.getBoundingClientRect().left;
+                let top_bound = state.svg_marks[0]._global_transform[1] + SVG.state().svg.getBoundingClientRect().top;
+    
+                let x_axis = event.clientX - left_bound > state.x_axis.range[0], 
+                    y_axis = event.clientY - top_bound < state.y_axis.range[0];
+
+                state.svg.style['cursor'] = x_axis && !y_axis ? 'ew-resize' :
+                    !x_axis && y_axis ? 'ns-resize' : 'move';
+            }
         });
         state.svg.addEventListener('mouseleave', function(event) {
             if (event.clientX <= +state.svg.getBoundingClientRect().left || event.clientX >= +state.svg.getBoundingClientRect().right) {
@@ -6461,44 +6757,81 @@ function SVG() {
             }
         });
 
+
         let pan_elem = document.getElementById("pan_mode");
         let brush_elem = document.getElementById("brush_mode");
         let filter_elem = document.getElementById("filter_mode");
+        let annotate_elem = document.getElementById("annotate_mode");
+
         pan_elem.addEventListener("click", function(event) {
+            if (state.svg.parentNode.style['visibility'] === 'hidden') return;
+
             pan_elem.style['opacity'] = +pan_elem.style['opacity'] === 0.4 ? 1 : 0.4;
             brush_elem.style['opacity'] = 0.4;
+            annotate_elem.style['opacity'] = 0.4;
+
             state.interactions.pan.flag = !state.interactions.pan.flag;
-            state.interactions.brush.flag = !state.interactions.brush.flag;
+            state.interactions.brush.flag = false;
+            state.interactions.annotate.flag = false;
             state.svg.style['cursor'] = 'move';
+
+            document.getElementById("logfile").innerHTML += "Click " + state.svg.id + " " +
+                (+pan_elem.style['opacity'] === 0.4 ? "disable" : "enable") + " pan <br/>";
         });
         brush_elem.addEventListener("click", function(event) {
+            if (state.svg.parentNode.style['visibility'] === 'hidden') return;
+
             brush_elem.style['opacity'] = +brush_elem.style['opacity'] === 0.4 ? 1 : 0.4;
             pan_elem.style['opacity'] = 0.4;
-            state.interactions.pan.flag = !state.interactions.pan.flag;
-            state.interactions.brush.flag = !state.interactions.pan.flag;
+            annotate_elem.style['opacity'] = 0.4;
+
+            state.interactions.annotate.flag = false;
+            state.interactions.pan.flag = false;
+            state.interactions.brush.flag = !state.interactions.brush.flag;
             state.svg.style['cursor'] = 'crosshair';
+
+            document.getElementById("logfile").innerHTML += "Click " + state.svg.id + " " +
+                (+brush_elem.style['opacity'] === 0.4 ? "disable" : "enable") + " brush <br/>";
         });
         filter_elem.addEventListener("click", function(event) {
+            if (state.svg.parentNode.style['visibility'] === 'hidden') return;
+
             state.interactions.filter.active = !state.interactions.filter.active;
             for (const mark of state.svg_marks) {
                 mark.style['visibility'] = state.interactions.filter.active ? 
                     +mark.getAttribute("opacity") === 1 ? 'visible' : 'hidden'
                     : 'visible';
             }
+
+            document.getElementById("logfile").innerHTML += "Click " + state.svg.id + " " +
+                (state.interactions.filter.active ? "enable" : "disable") + " filter <br/>";
+        });
+        annotate_elem.addEventListener("click", function(event) {
+            if (state.svg.parentNode.style['visibility'] === 'hidden') return;
+
+            annotate_elem.style['opacity'] = +annotate_elem.style['opacity'] === 0.4 ? 1 : 0.4;
+            pan_elem.style['opacity'] = 0.4;
+            brush_elem.style['opacity'] = 0.4;
+
+            state.interactions.brush.flag = false;
+            state.interactions.pan.flag = false;
+            state.interactions.annotate.flag = !state.interactions.annotate.flag;
+            state.svg.style['cursor'] = 'pointer';
+
+            // +annotate_elem.style['opacity'] === 0.4 ? annotate.unbind() : annotate.bind(SVG);
+            document.getElementById("logfile").innerHTML += "Click " + state.svg.id + " " +
+                (+annotate_elem.style['opacity'] === 0.4 ? "disable" : "enable") + " annotate <br/>";
         });
     };
 
     SVG.infer_mark_attributes = function() { 
         for (const mark of state.svg_marks) {
-            if (state.text_marks.length) {
-                let title_pos_1 = state.text_marks[0].getBoundingClientRect().left;
-                let title_pos_2 = state.text_marks[1].getBoundingClientRect().left;
-                state.titles.x = title_pos_1 < title_pos_2 ? state.text_marks[1] : state.text_marks[0];
-                state.titles.y = title_pos_1 < title_pos_2 ? state.text_marks[0] : state.text_marks[1];   
-            }
-
             if (mark.nodeName !== "path" || (!state.x_axis.ticks.length && !state.y_axis.ticks.length) || (mark.nodeName === "path" && mark.type === "ellipse")) {
                 if (mark.__data__) {
+                    if (typeof mark.__data__ === "string") {
+                        var iterable = mark.__data__;
+                        break;
+                    }
                     let has_datum = "datum" in mark.__data__;
                     let has_properties = "properties" in mark.__data__;
                     let has_data = "data" in mark.__data__;
@@ -6535,58 +6868,37 @@ function SVG() {
     };
 
     SVG.disambiguate = function(interaction, hide=false) {
-        let pan_elem = document.getElementById("pan_mode");
-        let brush_elem = document.getElementById("brush_mode");
-        if (hide) {
-            pan_elem.style['display'] = brush_elem.style['display'] = 'none';
-            return;
-        }
-
-        pan_elem.style['display'] = brush_elem.style['display'] = 'block';
-        switch(interaction) {
-            case "pan":
-                state.interactions.pan.flag = true;
-                state.interactions.brush.flag = false;
-                pan_elem.style['opacity'] =  1;
-                brush_elem.style['opacity'] = 0.4;
-                break;
-            case "brush":
-                state.interactions.pan.flag = false;
-                state.interactions.brush.flag = true;
-                pan_elem.style['opacity'] =  0.4;
-                brush_elem.style['opacity'] = 1;
-                break;
-        }
+        return;
     };
 
-    SVG.std = function() {
-        if (state.svg_marks[0].nodeName === "path" && state.svg_marks[0].type !== "ellipse") return 1;
+    // SVG.std = function() {
+    //     if (state.svg_marks[0].nodeName === "path" && state.svg_marks[0].type !== "ellipse") return 1;
 
-        let x = [], 
-            y = [],
-            x_mu = 0,
-            x_std = 0,
-            y_mu = 0,
-            y_std = 0;
-        for (const mark of state.svg_marks) {
-            x_mu += +mark.getBoundingClientRect().left;
-            y_mu += +mark.getBoundingClientRect().top;
-            x.push(+mark.getBoundingClientRect().left);
-            y.push(+mark.getBoundingClientRect().top);
-        }
+    //     let x = [], 
+    //         y = [],
+    //         x_mu = 0,
+    //         x_std = 0,
+    //         y_mu = 0,
+    //         y_std = 0;
+    //     for (const mark of state.svg_marks) {
+    //         x_mu += +mark.getBoundingClientRect().left;
+    //         y_mu += +mark.getBoundingClientRect().top
+    //         x.push(+mark.getBoundingClientRect().left);
+    //         y.push(+mark.getBoundingClientRect().top);
+    //     }
 
-        x_mu /= x.length;
-        y_mu /= y.length;
+    //     x_mu /= x.length;
+    //     y_mu /= y.length;
 
-        for (let i = 0; i < x.length; ++i) {
-            x_std += (x[i] - x_mu) * (x[i] - x_mu);
-            y_std += (y[i] - y_mu) * (y[i] - y_mu);
-        }
-        x_std = Math.sqrt(x_std / x.length);
-        y_std = Math.sqrt(y_std / y.length);
+    //     for (let i = 0; i < x.length; ++i) {
+    //         x_std += (x[i] - x_mu) * (x[i] - x_mu);
+    //         y_std += (y[i] - y_mu) * (y[i] - y_mu);
+    //     }
+    //     x_std = Math.sqrt(x_std / x.length);
+    //     y_std = Math.sqrt(y_std / y.length);
         
-        return x_std / y_std;
-    };
+    //     return x_std / y_std;
+    // }
 
     SVG.filter = function(x, y, width, height) {
         document.getElementById("filter_mode").style['opacity'] = 1;
@@ -6639,6 +6951,7 @@ function SVG() {
         group_axis(state.x_axis, 'left');
         group_axis(state.y_axis, 'top');
         group_labels();
+        group_legend();
 
         return SVG;
     };
@@ -6671,11 +6984,21 @@ function SVG() {
             let y_tick = state.y_axis.ticks[0]['ticks'][0].getBoundingClientRect();
             let x_tick = state.x_axis.ticks[0]['ticks'][0].getBoundingClientRect();
 
-            var x_min = y_tick.left - state.svg.getBoundingClientRect().left;
-            var x_max = d3.min([y_tick.width + x_min, width]);
-    
-            var y_max = x_tick.bottom - state.svg.getBoundingClientRect().top;
-            var y_min = d3.max([y_max - x_tick.height, 0]);
+            if (y_tick.right < x_tick.left) {
+                var x_min = y_tick.right - state.svg.getBoundingClientRect().left;
+                var x_max = width;
+            } else {
+                var x_min = y_tick.left - state.svg.getBoundingClientRect().left;
+                var x_max = d3.min([y_tick.width + x_min, width]);
+            }
+
+            if (x_tick.top > y_tick.bottom) {
+                var y_max = x_tick.top - state.svg.getBoundingClientRect().top;
+                var y_min = 0;
+            } else {
+                var y_max = x_tick.bottom - state.svg.getBoundingClientRect().top;
+                var y_min = d3.max([y_max - x_tick.height, 0]);
+            }
         }
 
         //     var x_min = d3.min(state.y_axis.ticks[0]['ticks'].map(d => d.getBoundingClientRect().left - state.svg.getBoundingClientRect().left));
@@ -6771,7 +7094,11 @@ function SVG() {
                 .domain(state.y_axis.ordinal.length ? state.y_axis.ordinal : state.y_axis.domain)
                 .range(state.y_axis.range);
             state.y_axis.axis = axisLeft(state.y_axis.scale, SVG)
-                .ticks(state.y_axis.ticks.length);
+                .ticks(state.y_axis.ticks.length)
+                .tickFormat(d => {
+                    let s = state.y_axis.ticks[0]['label'].innerHTML;
+                    return s.includes("M") || s.includes("k") ? d3.format(".2s")(d) : d3.format(",")(d);
+                });
             // state.y_axis.axis(state.y_axis.ticks);
                 // .tickSize(-state.y_axis.ticks[1].children[0].getAttribute("x2"))
                 // .ticks(typeof state.y_axis.ticks[0].__data__ === "string" ? state.y_axis.ordinal.length : state.y_axis.ticks.length);
@@ -6812,6 +7139,8 @@ function analyze_axis(element, SVG, transform) {
     } else {
         if (element.nodeName === "text") {
             SVG.state().axis_text_marks.push(element);
+            element.style['pointer-events'] = 'none';
+            element.style['user-select'] = 'none';
         } else {
             for (const mark_type of INTERACTION_CONSTANTS.SVG_TYPE.SVG_MARK) {
                 if (element.nodeName === mark_type) {
@@ -6863,6 +7192,7 @@ function analyze_DOM_tree(element, SVG, transform) {
         for (const mark_type of INTERACTION_CONSTANTS.SVG_TYPE.SVG_MARK) {
             if (element.nodeName === "text") {
                 element.style['pointer-events'] = 'none';
+                element.style['user-select'] = 'none';
                 if (!added) {
                     SVG.state().text_marks.push(element);
                     added = true;

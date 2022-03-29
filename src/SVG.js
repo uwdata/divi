@@ -8,6 +8,7 @@ import { min, max } from 'd3-array';
 import { INTERACTION_CONSTANTS } from './constants';
 import { axisBottom, axisLeft } from './d3/axis';
 import { svg } from 'd3';
+import { annotate } from './annotate.js';
 
 export default function() {
     var state = {
@@ -65,6 +66,9 @@ export default function() {
             },
             sort: {
                 control: null
+            },
+            annotate: {
+                flag: false
             }
         }
     }
@@ -116,9 +120,57 @@ export default function() {
         axis.ticks.sort((first, second) => +first['offset'] < +second['offset'] ? -1 : (+first['offset'] > +second['offset'] ? 1 : 0))
     }
 
+    var group_legend = function() {
+        if (state.svg.id === "hexchart") return;
+        let title_x, title_y,
+            min_x = 10000, max_y = 0;
+        for (const text of state.text_marks) {
+            if (text.getBoundingClientRect().left < min_x) {
+                min_x = text.getBoundingClientRect().left;
+                title_y = text;
+            }
+            if (text.getBoundingClientRect().bottom > max_y) {
+                max_y = text.getBoundingClientRect().bottom;
+                title_x = text;
+            }
+        }
+
+        if (title_y && Math.abs(min_x - state.svg.getBoundingClientRect().left) < 50) {
+            title_y.__title__ = true;
+            state.titles.y = title_y;
+        }
+        if (title_x && Math.abs(max_y - state.svg.getBoundingClientRect().bottom) < 50) {
+            title_x.__title__ = true;
+            state.titles.x = title_x;    
+        }
+
+        for (const text of state.text_marks) {
+            if (text.__title__) continue;
+
+            let text_x = (+text.getBoundingClientRect().left + +text.getBoundingClientRect().right) / 2,
+                text_y = (+text.getBoundingClientRect().top + +text.getBoundingClientRect().bottom) / 2;
+            let min_pos = 10000, min_mark;
+            for (const mark of state.svg_marks) {
+                let mark_x = (+mark.getBoundingClientRect().left + +mark.getBoundingClientRect().right / 2) / 2,
+                    mark_y = (+mark.getBoundingClientRect().top + +mark.getBoundingClientRect().bottom) / 2;
+                
+                let diff = Math.abs(mark_x - text_x) + Math.abs(mark_y - text_y);
+                if (diff < min_pos) {
+                    min_pos = diff;
+                    min_mark = mark;
+                }
+            }
+
+            min_mark.removeAttribute("__mark__");
+            text.setAttribute("__legend__", true);
+            min_mark.setAttribute("__legend__", "true");
+            state.legend.push({'label': text, 'glyph': min_mark});
+        }
+    }
+
     var compute_domain = function(axis) {
         for (const [_, value] of Object.entries(axis.ticks)) {
-            let format_val = value['label'].__data__ ? 
+            let format_val = value['label'].__data__ || +value['label'].__data__ === 0 ? 
                 value['label'].__data__ : 
                 isNaN(parseInt(value['label'].innerHTML)) ? 
                 value['label'].innerHTML :
@@ -201,6 +253,13 @@ export default function() {
                     break;
                 case INTERACTION_CONSTANTS.INTERACTION_TYPES.FILTER:
                     filter(SVG, value.control);
+                    break;
+                case INTERACTION_CONSTANTS.INTERACTION_TYPES.SORT:
+                    sort(SVG);
+                    break;
+                case INTERACTION_CONSTANTS.INTERACTION_TYPES.ANNOTATE:
+                    annotate(SVG);
+                    break;
             }
         }
         // if (state.svg.id !== "chart") return;
@@ -236,8 +295,18 @@ export default function() {
             mousedown = false;
         });
         state.svg.addEventListener('mousemove', function(event) {
-            console.log('move')
             if (!mousedown) document.getElementById("modebar").style['visibility'] = 'visible';
+
+            if (state.interactions.pan.flag) {
+                let left_bound = state.svg_marks[0]._global_transform[0] + SVG.state().svg.getBoundingClientRect().left;
+                let top_bound = state.svg_marks[0]._global_transform[1] + SVG.state().svg.getBoundingClientRect().top;
+    
+                let x_axis = event.clientX - left_bound > state.x_axis.range[0], 
+                    y_axis = event.clientY - top_bound < state.y_axis.range[0];
+
+                state.svg.style['cursor'] = x_axis && !y_axis ? 'ew-resize' :
+                    !x_axis && y_axis ? 'ns-resize' : 'move';
+            }
         });
         state.svg.addEventListener('mouseleave', function(event) {
             if (event.clientX <= +state.svg.getBoundingClientRect().left || event.clientX >= +state.svg.getBoundingClientRect().right) {
@@ -245,44 +314,107 @@ export default function() {
             }
         });
 
-        let pan_elem = document.getElementById("pan_mode");
-        let brush_elem = document.getElementById("brush_mode");
-        let filter_elem = document.getElementById("filter_mode");
-        pan_elem.addEventListener("click", function(event) {
+        let pan_func = function(event) {
             pan_elem.style['opacity'] = +pan_elem.style['opacity'] === 0.4 ? 1 : 0.4;
             brush_elem.style['opacity'] = 0.4;
+            console.log(pan_elem.style['opacity'])
             state.interactions.pan.flag = !state.interactions.pan.flag;
             state.interactions.brush.flag = !state.interactions.brush.flag;
             state.svg.style['cursor'] = 'move';
-        });
-        brush_elem.addEventListener("click", function(event) {
+        };
+
+        let brush_func = function(event) {
             brush_elem.style['opacity'] = +brush_elem.style['opacity'] === 0.4 ? 1 : 0.4;
             pan_elem.style['opacity'] = 0.4;
             state.interactions.pan.flag = !state.interactions.pan.flag;
             state.interactions.brush.flag = !state.interactions.pan.flag;
             state.svg.style['cursor'] = 'crosshair';
-        });
-        filter_elem.addEventListener("click", function(event) {
+        };
+
+        let filter_func = function(event) {
             state.interactions.filter.active = !state.interactions.filter.active;
             for (const mark of state.svg_marks) {
                 mark.style['visibility'] = state.interactions.filter.active ? 
                     +mark.getAttribute("opacity") === 1 ? 'visible' : 'hidden'
                     : 'visible'
             }
+        };
+
+
+        let pan_elem = document.getElementById("pan_mode");
+        let brush_elem = document.getElementById("brush_mode");
+        let filter_elem = document.getElementById("filter_mode");
+        let annotate_elem = document.getElementById("annotate_mode");
+
+        pan_elem.addEventListener("click", function(event) {
+            if (state.svg.parentNode.style['visibility'] === 'hidden') return;
+
+            pan_elem.style['opacity'] = +pan_elem.style['opacity'] === 0.4 ? 1 : 0.4;
+            brush_elem.style['opacity'] = 0.4;
+            annotate_elem.style['opacity'] = 0.4;
+
+            state.interactions.pan.flag = !state.interactions.pan.flag;
+            state.interactions.brush.flag = false;
+            state.interactions.annotate.flag = false;
+            state.svg.style['cursor'] = 'move';
+
+            document.getElementById("logfile").innerHTML += "Click " + state.svg.id + " " +
+                (+pan_elem.style['opacity'] === 0.4 ? "disable" : "enable") + " pan <br/>";
+        });
+        brush_elem.addEventListener("click", function(event) {
+            if (state.svg.parentNode.style['visibility'] === 'hidden') return;
+
+            brush_elem.style['opacity'] = +brush_elem.style['opacity'] === 0.4 ? 1 : 0.4;
+            pan_elem.style['opacity'] = 0.4;
+            annotate_elem.style['opacity'] = 0.4;
+
+            state.interactions.annotate.flag = false;
+            state.interactions.pan.flag = false;
+            state.interactions.brush.flag = !state.interactions.brush.flag;
+            state.svg.style['cursor'] = 'crosshair';
+
+            document.getElementById("logfile").innerHTML += "Click " + state.svg.id + " " +
+                (+brush_elem.style['opacity'] === 0.4 ? "disable" : "enable") + " brush <br/>";
+        });
+        filter_elem.addEventListener("click", function(event) {
+            if (state.svg.parentNode.style['visibility'] === 'hidden') return;
+
+            state.interactions.filter.active = !state.interactions.filter.active;
+            for (const mark of state.svg_marks) {
+                mark.style['visibility'] = state.interactions.filter.active ? 
+                    +mark.getAttribute("opacity") === 1 ? 'visible' : 'hidden'
+                    : 'visible'
+            }
+
+            document.getElementById("logfile").innerHTML += "Click " + state.svg.id + " " +
+                (state.interactions.filter.active ? "enable" : "disable") + " filter <br/>";
+        });
+        annotate_elem.addEventListener("click", function(event) {
+            if (state.svg.parentNode.style['visibility'] === 'hidden') return;
+
+            annotate_elem.style['opacity'] = +annotate_elem.style['opacity'] === 0.4 ? 1 : 0.4;
+            pan_elem.style['opacity'] = 0.4;
+            brush_elem.style['opacity'] = 0.4;
+
+            state.interactions.brush.flag = false;
+            state.interactions.pan.flag = false;
+            state.interactions.annotate.flag = !state.interactions.annotate.flag;
+            state.svg.style['cursor'] = 'pointer';
+
+            // +annotate_elem.style['opacity'] === 0.4 ? annotate.unbind() : annotate.bind(SVG);
+            document.getElementById("logfile").innerHTML += "Click " + state.svg.id + " " +
+                (+annotate_elem.style['opacity'] === 0.4 ? "disable" : "enable") + " annotate <br/>";
         });
     }
 
     SVG.infer_mark_attributes = function() { 
         for (const mark of state.svg_marks) {
-            if (state.text_marks.length) {
-                let title_pos_1 = state.text_marks[0].getBoundingClientRect().left;
-                let title_pos_2 = state.text_marks[1].getBoundingClientRect().left;
-                state.titles.x = title_pos_1 < title_pos_2 ? state.text_marks[1] : state.text_marks[0];
-                state.titles.y = title_pos_1 < title_pos_2 ? state.text_marks[0] : state.text_marks[1];   
-            }
-
             if (mark.nodeName !== "path" || (!state.x_axis.ticks.length && !state.y_axis.ticks.length) || (mark.nodeName === "path" && mark.type === "ellipse")) {
                 if (mark.__data__) {
+                    if (typeof mark.__data__ === "string") {
+                        var iterable = mark.__data__;
+                        break;
+                    }
                     let has_datum = "datum" in mark.__data__;
                     let has_properties = "properties" in mark.__data__;
                     let has_data = "data" in mark.__data__;
@@ -319,6 +451,7 @@ export default function() {
     }
 
     SVG.disambiguate = function(interaction, hide=false) {
+        return;
         let pan_elem = document.getElementById("pan_mode");
         let brush_elem = document.getElementById("brush_mode");
         if (hide) {
@@ -343,34 +476,34 @@ export default function() {
         }
     }
 
-    SVG.std = function() {
-        if (state.svg_marks[0].nodeName === "path" && state.svg_marks[0].type !== "ellipse") return 1;
+    // SVG.std = function() {
+    //     if (state.svg_marks[0].nodeName === "path" && state.svg_marks[0].type !== "ellipse") return 1;
 
-        let x = [], 
-            y = [],
-            x_mu = 0,
-            x_std = 0,
-            y_mu = 0,
-            y_std = 0;
-        for (const mark of state.svg_marks) {
-            x_mu += +mark.getBoundingClientRect().left;
-            y_mu += +mark.getBoundingClientRect().top
-            x.push(+mark.getBoundingClientRect().left);
-            y.push(+mark.getBoundingClientRect().top);
-        }
+    //     let x = [], 
+    //         y = [],
+    //         x_mu = 0,
+    //         x_std = 0,
+    //         y_mu = 0,
+    //         y_std = 0;
+    //     for (const mark of state.svg_marks) {
+    //         x_mu += +mark.getBoundingClientRect().left;
+    //         y_mu += +mark.getBoundingClientRect().top
+    //         x.push(+mark.getBoundingClientRect().left);
+    //         y.push(+mark.getBoundingClientRect().top);
+    //     }
 
-        x_mu /= x.length;
-        y_mu /= y.length;
+    //     x_mu /= x.length;
+    //     y_mu /= y.length;
 
-        for (let i = 0; i < x.length; ++i) {
-            x_std += (x[i] - x_mu) * (x[i] - x_mu);
-            y_std += (y[i] - y_mu) * (y[i] - y_mu);
-        }
-        x_std = Math.sqrt(x_std / x.length);
-        y_std = Math.sqrt(y_std / y.length);
+    //     for (let i = 0; i < x.length; ++i) {
+    //         x_std += (x[i] - x_mu) * (x[i] - x_mu);
+    //         y_std += (y[i] - y_mu) * (y[i] - y_mu);
+    //     }
+    //     x_std = Math.sqrt(x_std / x.length);
+    //     y_std = Math.sqrt(y_std / y.length);
         
-        return x_std / y_std;
-    }
+    //     return x_std / y_std;
+    // }
 
     SVG.filter = function(x, y, width, height) {
         document.getElementById("filter_mode").style['opacity'] = 1;
@@ -423,6 +556,7 @@ export default function() {
         group_axis(state.x_axis, 'left');
         group_axis(state.y_axis, 'top');
         group_labels();
+        group_legend();
 
         return SVG;
     }
@@ -455,11 +589,21 @@ export default function() {
             let y_tick = state.y_axis.ticks[0]['ticks'][0].getBoundingClientRect();
             let x_tick = state.x_axis.ticks[0]['ticks'][0].getBoundingClientRect();
 
-            var x_min = y_tick.left - state.svg.getBoundingClientRect().left;
-            var x_max = d3.min([y_tick.width + x_min, width]);
-    
-            var y_max = x_tick.bottom - state.svg.getBoundingClientRect().top;
-            var y_min = d3.max([y_max - x_tick.height, 0]);
+            if (y_tick.right < x_tick.left) {
+                var x_min = y_tick.right - state.svg.getBoundingClientRect().left;
+                var x_max = width;
+            } else {
+                var x_min = y_tick.left - state.svg.getBoundingClientRect().left;
+                var x_max = d3.min([y_tick.width + x_min, width]);
+            }
+
+            if (x_tick.top > y_tick.bottom) {
+                var y_max = x_tick.top - state.svg.getBoundingClientRect().top;
+                var y_min = 0;
+            } else {
+                var y_max = x_tick.bottom - state.svg.getBoundingClientRect().top;
+                var y_min = d3.max([y_max - x_tick.height, 0]);
+            }
         }
 
         //     var x_min = d3.min(state.y_axis.ticks[0]['ticks'].map(d => d.getBoundingClientRect().left - state.svg.getBoundingClientRect().left));
@@ -532,7 +676,7 @@ export default function() {
         } else {
             state.x_axis.scale = (state.x_axis.domain[0] instanceof Date ? d3.scaleTime() : (state.x_axis.ordinal.length ? d3.scaleBand() : d3.scaleLinear()))
                 .domain(state.x_axis.ordinal.length ? state.x_axis.ordinal : state.x_axis.domain)
-                .range(state.x_axis.range);
+                .range(state.x_axis.range)
             // state.x_axis.scale = (state.x_axis.domain[0] instanceof Date ? d3.scaleTime() : d3.scaleLinear())
             //     .domain(state.x_axis.ordinal.length ? state.x_axis.range : state.x_axis.domain)
             //     .range(state.x_axis.range);
@@ -555,7 +699,11 @@ export default function() {
                 .domain(state.y_axis.ordinal.length ? state.y_axis.ordinal : state.y_axis.domain)
                 .range(state.y_axis.range);
             state.y_axis.axis = axisLeft(state.y_axis.scale, SVG)
-                .ticks(state.y_axis.ticks.length);
+                .ticks(state.y_axis.ticks.length)
+                .tickFormat(d => {
+                    let s = state.y_axis.ticks[0]['label'].innerHTML;
+                    return s.includes("M") || s.includes("k") ? d3.format(".2s")(d) : d3.format(",")(d);
+                });
             // state.y_axis.axis(state.y_axis.ticks);
                 // .tickSize(-state.y_axis.ticks[1].children[0].getAttribute("x2"))
                 // .ticks(typeof state.y_axis.ticks[0].__data__ === "string" ? state.y_axis.ordinal.length : state.y_axis.ticks.length);

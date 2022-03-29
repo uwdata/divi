@@ -32,6 +32,8 @@ function analyze_axis(element, SVG, transform) {
     } else {
         if (element.nodeName === "text") {
             SVG.state().axis_text_marks.push(element);
+            element.style['pointer-events'] = 'none'
+            element.style['user-select'] = 'none'
         } else {
             for (const mark_type of INTERACTION_CONSTANTS.SVG_TYPE.SVG_MARK) {
                 if (element.nodeName === mark_type) {
@@ -83,6 +85,7 @@ function analyze_DOM_tree(element, SVG, transform) {
         for (const mark_type of INTERACTION_CONSTANTS.SVG_TYPE.SVG_MARK) {
             if (element.nodeName === "text") {
                 element.style['pointer-events'] = 'none';
+                element.style['user-select'] = 'none'
                 if (!added) {
                     SVG.state().text_marks.push(element);
                     added = true;

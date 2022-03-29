@@ -24,7 +24,7 @@ function create_tooltip(id, c=null) {
     div.id = id;
     div.setAttribute("class", c ? c : "tooltip");
     div.style = "opacity:1; visibility:visible; position:absolute; background-color:white; z-index:999; " +
-        "border:solid; border-width:1px; border-radius:2px; padding:2px; font-size:14px; font-weight:500";
+        "border:solid; border-width:1px; border-radius:2px; padding:2px; font-size:14px; font-weight:500; pointer-events:none;";
     document.body.insertBefore(div, null);
 }
 
@@ -133,17 +133,20 @@ function line(SVG, event, mark, i, id=null, c=null) {
             + SVG.state().x_axis.ticks[0]['ticks'][0].parentNode._global_transform[0]);
         circle.setAttribute("cy", y);
     }
-
+    
     let line = SVG.state().svg.querySelector("#_hoverline" + (id ? id : ""));
     if (line) { 
         line.setAttribute("x1", event.clientX - SVG.state().svg.getBoundingClientRect().left);
         line.setAttribute("x2", event.clientX - SVG.state().svg.getBoundingClientRect().left);
         line.setAttribute("display", "");
+        // line.setAttribute("visibility", "hidden");
     } else {
         line = document.createElementNS("http://www.w3.org/2000/svg", "line");
         line.setAttribute("stroke", "black");
         line.setAttribute("stroke-width", 1.5);
-        line.setAttribute("opacity", "0.65");
+        line.setAttribute("opacity", "0.5");
+        line.style['pointer-events'] = 'none';
+        // line.setAttribute("visibility", "hidden");
         line.setAttribute("class", c ? c : "hover")
         line.setAttribute("y1", 
             SVG.state().y_axis.range[0] + SVG.state().y_axis.ticks[0]['ticks'][0].parentNode._global_transform[1]);
@@ -160,14 +163,39 @@ function line(SVG, event, mark, i, id=null, c=null) {
 function create_hover(SVG, control) {
     function highlight(event) {
         SVG.state().interactions.selection.active = true;
+
+        if (event.target.hasAttribute("__legend__")) {
+            let color = window.getComputedStyle(event.target).fill;
+            for (const mark of SVG.state().svg_marks) {
+                if (window.getComputedStyle(mark).fill != color) {
+                    mark.setAttribute("opacity", 0.25);
+                } else {
+                    mark.setAttribute("opacity", 1);
+                }
+            }
+            var keys = (event.ctrlKey ? " ctrl " : "") + (event.shiftKey ? " shift " : "") + (event.altKey ? " alt " : "");
+            document.getElementById("logfile").innerHTML += event.type + " [" + keys + "] " + SVG.state().svg.id + " to filter by legend <br/>";
+            return;
+        } 
         document.getElementById("filter_mode").style['opacity'] = 1;
         document.getElementById("filter_mode").style['display'] = 'block';
-        if (!event.shiftKey) {
+
+        let is_selected = false;
+        for (const mark of SVG.state().svg_marks) {
+            if (mark.hasAttribute("opacity") && +mark.getAttribute("opacity") === 0.25) {
+                is_selected = true;
+                break;
+            }
+        }
+
+        if (!event.shiftKey || !is_selected) {
             for (const mark of SVG.state().svg_marks) {
                 mark.setAttribute("opacity", 0.25);
             }
         } 
-        event.target.setAttribute("opacity", 1);
+        var keys = (event.ctrlKey ? " ctrl " : "") + (event.shiftKey ? " shift " : "") + (event.altKey ? " alt " : "");
+        document.getElementById("logfile").innerHTML += event.type + " [" + keys + "] " + SVG.state().svg.id + " to select mark <br/>";
+        event.target.setAttribute("opacity", +event.target.getAttribute("opacity") === 1 ? 0.25 : 1);
     }
 
     function show_data(event) {
@@ -176,6 +204,8 @@ function create_hover(SVG, control) {
         let data = "";
         let mark = event.target;
 
+        if (!mark.__inferred__data__) return;
+        
         for (const [key, value] of Object.entries(mark.__inferred__data__)) {
             data += String(key) + ": " + String(value);
             data += "<br/>";

@@ -55,8 +55,9 @@ function axis(orient, scale, SVG) {
     function ordinal_transform(element, transform) {
         const global_position =
           element.getBoundingClientRect().right - element.parentElement._global_transform[0] - SVG.state().svg.getBoundingClientRect().left;
-
-        if (!element._t) element._t = [global_position, +element.getAttribute("transform").match(/(-?\d+\.?\d*e?-?\d*)/g)[0]];
+        
+        if (!element._t) element._t = [global_position, 
+          element.hasAttribute("transform") ? +element.getAttribute("transform").match(/(-?\d+\.?\d*e?-?\d*)/g)[0] : global_position];
         let new_pos = transform.applyX(element._t[0]);
 
         new_pos < svg_axis.range[0] || new_pos > svg_axis.range[1] ? 

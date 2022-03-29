@@ -85,7 +85,19 @@ export function brush(SVG, control, axis_control) {
     }
     
     function mousedown_callback(e) {
-        if (!SVG.state().interactions.brush.flag || SVG.state().interactions.selection.active) return;
+        if (!SVG.state().interactions.brush.flag) return;
+        let intersects = false;
+            for (const mark of SVG.state().svg_marks) {
+                if (mark.type === "line" || mark.type === "polygon") continue;
+                let bb = mark.getBoundingClientRect();
+                if (e.clientX >= +bb.left && e.clientX <= +bb.right && e.clientY >= +bb.top && e.clientY <= +bb.bottom) {
+                    intersects = true;
+                    break;
+                }
+            }
+
+        if (intersects) return;
+
         SVG.disambiguate("brush");
         // document.getElementById('pan_disam').style['display'] = 'block';
 
@@ -109,14 +121,14 @@ export function brush(SVG, control, axis_control) {
             ((SVG.state().svg_marks[0].type === "line" || SVG.state().svg_marks[0].type === "polygon") && !brush_Y && 
             SVG.state().x_axis.ticks.length);
 
-        let std = SVG.std();
-        if (std < 0.5 && !brush_X && !brush_Y) {
-            brush_X = false;
-            brush_Y = true;
-        } else if (std > 2 && !brush_X && !brush_Y) {
-            brush_X = true;
-            brush_Y = false;
-        }
+        // let std = SVG.std();
+        // if (std < 0.5 && !brush_X && !brush_Y) {
+        //     brush_X = false;
+        //     brush_Y = true;
+        // } else if (std > 2 && !brush_X && !brush_Y) {
+        //     brush_X = true;
+        //     brush_Y = false;
+        // }
 
         constrains[0] || brush_Y ? 
             rect.setAttribute("width", SVG.state().x_axis.global_range[1] - SVG.state().x_axis.global_range[0]) : 
@@ -133,6 +145,10 @@ export function brush(SVG, control, axis_control) {
         constrains[1] || brush_X ? 
             rect.setAttribute("y", SVG.state().y_axis.global_range[1]) :
             rect.setAttribute("y", e.clientY - svg.getBoundingClientRect().top);
+
+        var keys = (e.ctrlKey ? " ctrl " : "") + (e.shiftKey ? " shift " : "") + (e.altKey ? " alt " : "");
+        document.getElementById("logfile").innerHTML += e.type + " [" + keys + "] " + SVG.state().svg.id + " to brush [" +
+            (!brush_X && !brush_Y ? "2D" : (brush_X ? "X-AXIS" : "Y-AXIS")) + "] <br/>";
     }
 
     function mousemove_callback(e) {
@@ -149,15 +165,6 @@ export function brush(SVG, control, axis_control) {
         let brush_X = (x_flag && !y_flag) ||
             ((SVG.state().svg_marks[0].type === "line" || SVG.state().svg_marks[0].type === "polygon") && !brush_Y &&
             SVG.state().x_axis.ticks.length);
-
-        let std = SVG.std();
-        if (std < 0.5 && !brush_X && !brush_Y) {
-            brush_X = false;
-            brush_Y = true;
-        } else if (std > 2 && !brush_X && !brush_Y) {
-            brush_X = true;
-            brush_Y = false;
-        }
 
         if (mousedown) {
             e.preventDefault();
@@ -189,6 +196,7 @@ export function brush(SVG, control, axis_control) {
             // document.getElementById('pan_disam').style['display'] = 'none';
             // SVG.disambiguate("brush", true);
             d3.selectAll(".brush_tooltip").remove();
+            document.getElementById("logfile").innerHTML += "reset brush <br/>"
         } else {
             rect.setAttribute("width", 0);
             rect.setAttribute("height", 0);
