@@ -314,33 +314,6 @@ export default function() {
             }
         });
 
-        let pan_func = function(event) {
-            pan_elem.style['opacity'] = +pan_elem.style['opacity'] === 0.4 ? 1 : 0.4;
-            brush_elem.style['opacity'] = 0.4;
-            console.log(pan_elem.style['opacity'])
-            state.interactions.pan.flag = !state.interactions.pan.flag;
-            state.interactions.brush.flag = !state.interactions.brush.flag;
-            state.svg.style['cursor'] = 'move';
-        };
-
-        let brush_func = function(event) {
-            brush_elem.style['opacity'] = +brush_elem.style['opacity'] === 0.4 ? 1 : 0.4;
-            pan_elem.style['opacity'] = 0.4;
-            state.interactions.pan.flag = !state.interactions.pan.flag;
-            state.interactions.brush.flag = !state.interactions.pan.flag;
-            state.svg.style['cursor'] = 'crosshair';
-        };
-
-        let filter_func = function(event) {
-            state.interactions.filter.active = !state.interactions.filter.active;
-            for (const mark of state.svg_marks) {
-                mark.style['visibility'] = state.interactions.filter.active ? 
-                    +mark.getAttribute("opacity") === 1 ? 'visible' : 'hidden'
-                    : 'visible'
-            }
-        };
-
-
         let pan_elem = document.getElementById("pan_mode");
         let brush_elem = document.getElementById("brush_mode");
         let filter_elem = document.getElementById("filter_mode");
