@@ -16,6 +16,8 @@ function dragElement(SVG) {
     var elmnt, tick, original_positions;
 
     function dragMouseDown(e) {
+        if (SVG.state().svg.parentElement.style['visibility'] === 'hidden') return;
+        
         e = e || window.event;
         // e.preventDefault();
         // get the mouse cursor position at startup:
