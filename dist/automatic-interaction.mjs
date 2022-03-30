@@ -5789,6 +5789,8 @@ function dragElement(SVG) {
     var elmnt, tick, original_positions;
 
     function dragMouseDown(e) {
+        if (SVG.state().svg.parentElement.style['visibility'] === 'hidden') return;
+        
         e = e || window.event;
         // e.preventDefault();
         // get the mouse cursor position at startup:
@@ -6756,7 +6758,6 @@ function SVG() {
                 document.getElementById("modebar").style['visibility'] = 'hidden';
             }
         });
-
 
         let pan_elem = document.getElementById("pan_mode");
         let brush_elem = document.getElementById("brush_mode");
