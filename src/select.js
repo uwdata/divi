@@ -180,22 +180,22 @@ function create_hover(SVG, control) {
         document.getElementById("filter_mode").style['opacity'] = 1;
         document.getElementById("filter_mode").style['display'] = 'block';
 
-        let is_selected = false;
-        for (const mark of SVG.state().svg_marks) {
-            if (mark.hasAttribute("opacity") && +mark.getAttribute("opacity") === 0.25) {
-                is_selected = true;
-                break;
+        let ctrl = event.ctrlKey, cmd = event.metaKey, alt = event.altKey, shift = event.shiftKey;
+
+        if (ctrl || cmd || alt || shift) {
+            let opacity = !event.target.hasAttribute("opacity") ? 0.25 : 
+                +event.target.getAttribute("opacity") === 1 ? 0.25 : 1;
+            event.target.setAttribute("opacity", opacity);
+        } else {
+            event.target.setAttribute("opacity", 1);
+            for (const mark of SVG.state().svg_marks) {
+                if (mark === event.target) continue;
+                mark.setAttribute("opacity", 0.25);
             }
         }
 
-        if (!event.shiftKey || !is_selected) {
-            for (const mark of SVG.state().svg_marks) {
-                mark.setAttribute("opacity", 0.25);
-            }
-        } 
         var keys = (event.ctrlKey ? " ctrl " : "") + (event.shiftKey ? " shift " : "") + (event.altKey ? " alt " : "");
         document.getElementById("logfile").innerHTML += event.type + " [" + keys + "] " + SVG.state().svg.id + " to select mark <br/>";
-        event.target.setAttribute("opacity", +event.target.getAttribute("opacity") === 1 ? 0.25 : 1);
     }
 
     function show_data(event) {
