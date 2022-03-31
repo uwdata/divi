@@ -6076,27 +6076,18 @@ function create_hover(SVG, control) {
         document.getElementById("filter_mode").style['display'] = 'block';
 
         let ctrl = event.ctrlKey, cmd = event.metaKey, alt = event.altKey, shift = event.shiftKey;
-        let has_selected = false;
 
         if (ctrl || cmd || alt || shift) {
-            event.target.setAttribute("opacity", +event.target.getAttribute("opacity") === 1 ? 0.25 : 1);
+            let opacity = !event.target.hasAttribute("opacity") ? 0.25 : 
+                +event.target.getAttribute("opacity") === 1 ? 0.25 : 1;
+            event.target.setAttribute("opacity", opacity);
         } else {
             event.target.setAttribute("opacity", 1);
-        }
-
-        for (const mark of SVG.state().svg_marks) {
-            if (mark === event.target) continue;
-            if (mark.hasAttribute("opacity") && +mark.getAttribute("opacity") === 1) {
-                has_selected = true;
-                break;
-            }
-        }
-
-        if (!has_selected) {
             for (const mark of SVG.state().svg_marks) {
-                mark.setAttribute("opacity", !mark.hasAttribute("opacity") ? 0.25 : (+mark.getAttribute("opacity") === 1 ? 0.25 : 1));
+                if (mark === event.target) continue;
+                mark.setAttribute("opacity", 0.25);
             }
-        } 
+        }
 
         var keys = (event.ctrlKey ? " ctrl " : "") + (event.shiftKey ? " shift " : "") + (event.altKey ? " alt " : "");
         document.getElementById("logfile").innerHTML += event.type + " [" + keys + "] " + SVG.state().svg.id + " to select mark <br/>";
