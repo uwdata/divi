@@ -253,7 +253,6 @@
             // });
             var fired = false;
             document.addEventListener('keydown', function(event) {
-                event.preventDefault();
                 if (!fired) {
                     fired = true;
                     document.getElementById("logfile").innerHTML += event.type + " " + event.key + " <br/>";
