@@ -11,6 +11,11 @@ let bind = function(SVG) {
     function listener (event) {
         if (!SVG.state().interactions.annotate.flag) return;
 
+        let x_click = event.clientX - SVG.state().svg.getBoundingClientRect().left,
+            y_click = event.clientY - SVG.state().svg.getBoundingClientRect().top;
+        
+        if (x_click < SVG.state().x_axis.range[0] || y_click < SVG.state().y_axis.range[1]) return;
+
         let text = prompt('Type here');
         if (!text) return;
 

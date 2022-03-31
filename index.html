@@ -44,7 +44,7 @@
           </div>
 
         <div id="container">
-            <div id="modebar" style="visibility:hidden;float:left;margin-left:600px;margin-top:5px;">
+            <div id="modebar" style="visibility:hidden;float:left;margin-left:60px;margin-top:5px;">
                 <div style="display:flex;">
                     <div id="brush_mode" style="margin-left:10px;opacity:1;display:block;cursor:pointer;" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Brush area">
                         <!-- <svg xmlns="http://www.w3.org/2000/svg" stroke-width="15" width="16" height="16" fill="currentColor" class="bi bi-dash-square-dotted" viewBox="0 0 16 16">
@@ -253,6 +253,7 @@
             // });
             var fired = false;
             document.addEventListener('keydown', function(event) {
+                event.preventDefault();
                 if (!fired) {
                     fired = true;
                     document.getElementById("logfile").innerHTML += event.type + " " + event.key + " <br/>";

@@ -6075,22 +6075,31 @@ function create_hover(SVG, control) {
         document.getElementById("filter_mode").style['opacity'] = 1;
         document.getElementById("filter_mode").style['display'] = 'block';
 
-        let is_selected = false;
+        let ctrl = event.ctrlKey, cmd = event.metaKey, alt = event.altKey, shift = event.shiftKey;
+        let has_selected = false;
+
+        if (ctrl || cmd || alt || shift) {
+            event.target.setAttribute("opacity", +event.target.getAttribute("opacity") === 1 ? 0.25 : 1);
+        } else {
+            event.target.setAttribute("opacity", 1);
+        }
+
         for (const mark of SVG.state().svg_marks) {
-            if (mark.hasAttribute("opacity") && +mark.getAttribute("opacity") === 0.25) {
-                is_selected = true;
+            if (mark === event.target) continue;
+            if (mark.hasAttribute("opacity") && +mark.getAttribute("opacity") === 1) {
+                has_selected = true;
                 break;
             }
         }
 
-        if (!event.shiftKey || !is_selected) {
+        if (!has_selected) {
             for (const mark of SVG.state().svg_marks) {
-                mark.setAttribute("opacity", 0.25);
+                mark.setAttribute("opacity", !mark.hasAttribute("opacity") ? 0.25 : (+mark.getAttribute("opacity") === 1 ? 0.25 : 1));
             }
         } 
+
         var keys = (event.ctrlKey ? " ctrl " : "") + (event.shiftKey ? " shift " : "") + (event.altKey ? " alt " : "");
         document.getElementById("logfile").innerHTML += event.type + " [" + keys + "] " + SVG.state().svg.id + " to select mark <br/>";
-        event.target.setAttribute("opacity", +event.target.getAttribute("opacity") === 1 ? 0.25 : 1);
     }
 
     function show_data(event) {
@@ -6421,6 +6430,11 @@ let bind = function(SVG) {
     function listener (event) {
         if (!SVG.state().interactions.annotate.flag) return;
 
+        let x_click = event.clientX - SVG.state().svg.getBoundingClientRect().left,
+            y_click = event.clientY - SVG.state().svg.getBoundingClientRect().top;
+        
+        if (x_click < SVG.state().x_axis.range[0] || y_click < SVG.state().y_axis.range[1]) return;
+
         let text = prompt('Type here');
         if (!text) return;
 
@@ -6522,7 +6536,9 @@ function SVG() {
         for (let i = 0; i < state.axis_text_marks.length; ++i) {
             let x_offset = (+state.axis_text_marks[i].getBoundingClientRect().left + +state.axis_text_marks[i].getBoundingClientRect().right) / 2;
             let y_offset = (+state.axis_text_marks[i].getBoundingClientRect().top + +state.axis_text_marks[i].getBoundingClientRect().bottom) / 2;
-
+            // console.log(state.axis_text_marks[i])
+            // console.log([x_offset, y_offset])
+            // console.log('')
             let x_min = 0, y_min = 0;
             for (let j = 0; j < state.x_axis.ticks.length; ++j) {
                 if (Math.abs(x_offset - state.x_axis.ticks[j]['offset']) < Math.abs(x_offset - state.x_axis.ticks[x_min]['offset'])) {
@@ -6614,6 +6630,7 @@ function SVG() {
     };
 
     var compute_domain = function(axis) {
+        // return;
         for (const [_, value] of Object.entries(axis.ticks)) {
             let format_val = value['label'].__data__ || +value['label'].__data__ === 0 ? 
                 value['label'].__data__ : 
