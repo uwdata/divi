@@ -85,20 +85,20 @@ export function brush(SVG, control, axis_control) {
     }
     
     function mousedown_callback(e) {
-        if (!SVG.state().interactions.brush.flag) return;
-        let intersects = false;
-            for (const mark of SVG.state().svg_marks) {
-                if (mark.type === "line" || mark.type === "polygon") continue;
-                let bb = mark.getBoundingClientRect();
-                if (e.clientX >= +bb.left && e.clientX <= +bb.right && e.clientY >= +bb.top && e.clientY <= +bb.bottom) {
-                    intersects = true;
-                    break;
-                }
-            }
+        if (!SVG.state().interactions.brush.flag || SVG.state().interactions.brush.on_elem) return;
+        // let intersects = false;
+        //     for (const mark of SVG.state().svg_marks) {
+        //         if (mark.type === "line" || mark.type === "polygon") continue;
+        //         let bb = mark.getBoundingClientRect();
+        //         if (e.clientX >= +bb.left && e.clientX <= +bb.right && e.clientY >= +bb.top && e.clientY <= +bb.bottom) {
+        //             intersects = true;
+        //             break;
+        //         }
+        //     }
 
-        if (intersects) return;
+        // if (intersects) return;
 
-        SVG.disambiguate("brush");
+        // SVG.disambiguate("brush");
         // document.getElementById('pan_disam').style['display'] = 'block';
 
         if (e.clientX - svg.getBoundingClientRect().left >= +rect.getAttribute("x") && 
@@ -172,16 +172,22 @@ export function brush(SVG, control, axis_control) {
             let height = e.clientY - rect.getAttribute("y") - svg.getBoundingClientRect().top;
             constrains[0] || brush_Y ? 
                 rect.setAttribute("width", SVG.state().x_axis.global_range[1] - SVG.state().x_axis.global_range[0]) :
-                rect.setAttribute("width", width < 0 ? 0 : width);
+                rect.setAttribute("width", Math.abs(width));
             constrains[1] || brush_X ?
                 rect.setAttribute("height", SVG.state().y_axis.global_range[0] - SVG.state().y_axis.global_range[1]) :
-                rect.setAttribute("height", height < 0 ? 0 : height);
+                rect.setAttribute("height", Math.abs(height));
+            
+
+            let x_translate = !brush_Y && width < 0 ? width : 0;
+            let y_translate = !brush_X && height < 0 ? height : 0;
+            rect.setAttribute("transform", "translate(" + x_translate + "," + y_translate + ")");
             // if (SVG.state().svg_marks[0].type !== "line" && SVG.state().svg_marks[0].type !== "polygon") {
                 SVG.filter(
-                    +rect.getAttribute("x") + +svg.getBoundingClientRect().left,
-                    +rect.getAttribute("y") + +svg.getBoundingClientRect().top,
-                    rect.getAttribute("width"),
-                    rect.getAttribute("height")
+                    +rect.getAttribute("x") + +svg.getBoundingClientRect().left + x_translate,
+                    +rect.getAttribute("y") + +svg.getBoundingClientRect().top + y_translate,
+                    Math.abs(+rect.getAttribute("width")),
+                    Math.abs(+rect.getAttribute("height")),
+                    e.ctrlKey || e.metaKey || e.altKey || e.shiftKey
                 );
             // }
         }
