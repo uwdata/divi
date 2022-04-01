@@ -487,6 +487,8 @@ export default function() {
         document.getElementById("filter_mode").style['display'] = 'block';
 
         for (const mark of state.svg_marks) {
+            if (mark.style["visibility"] === "hidden") continue;
+
             if ((mark.type === "line" || mark.type === "polygon") && state.x_axis.ticks.length && state.y_axis.ticks.length) {
                 state.interactions.brush.active = true;
                 select.applyBrush(SVG, x, y, width, height);
@@ -525,10 +527,12 @@ export default function() {
 
     SVG.unfilter = function() {
         state.interactions.brush.active = false;
-        document.getElementById("filter_mode").style['display'] = 'none';
+        let append = false;
+
         for (const mark of state.svg_marks) {
-            mark.setAttribute("opacity", 1);
+            mark.style["visibility"] === "hidden" ? append = true : mark.setAttribute("opacity", 1);
         }
+        if (!append) document.getElementById("filter_mode").style['display'] = 'none';
     }
 
     SVG.analyze_axes = function() {
