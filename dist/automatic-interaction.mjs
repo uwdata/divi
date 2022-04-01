@@ -6066,21 +6066,21 @@ function create_hover(SVG, control) {
     function highlight(event) {
         SVG.state().interactions.selection.active = true;
 
-        // if (event.target.hasAttribute("__legend__")) {
-        //     let color = window.getComputedStyle(event.target).fill;
-        //     for (const mark of SVG.state().svg_marks) {
-        //         if (window.getComputedStyle(mark).fill != color) {
-        //             mark.setAttribute("opacity", 0.25);
-        //         } else {
-        //             mark.setAttribute("opacity", 1);
-        //         }
-        //     }
-        //     var keys = (event.ctrlKey ? " ctrl " : "") + (event.shiftKey ? " shift " : "") + (event.altKey ? " alt " : "");
-        //     document.getElementById("logfile").innerHTML += event.type + " [" + keys + "] " + SVG.state().svg.id + " to filter by legend <br/>";
-        //     return;
-        // } 
-        // document.getElementById("filter_mode").style['opacity'] = 1;
-        // document.getElementById("filter_mode").style['display'] = 'block';
+        if (event.target.hasAttribute("__legend__")) {
+            let color = window.getComputedStyle(event.target).fill;
+            for (const mark of SVG.state().svg_marks) {
+                if (window.getComputedStyle(mark).fill != color) {
+                    mark.setAttribute("opacity", 0.25);
+                } else {
+                    mark.setAttribute("opacity", 1);
+                }
+            }
+            var keys = (event.ctrlKey ? " ctrl " : "") + (event.shiftKey ? " shift " : "") + (event.altKey ? " alt " : "");
+            document.getElementById("logfile").innerHTML += event.type + " [" + keys + "] " + SVG.state().svg.id + " to filter by legend <br/>";
+            return;
+        } 
+        document.getElementById("filter_mode").style['opacity'] = 1;
+        document.getElementById("filter_mode").style['display'] = 'block';
 
         let ctrl = event.ctrlKey, cmd = event.metaKey, alt = event.altKey, shift = event.shiftKey;
 
