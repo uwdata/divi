@@ -12,11 +12,6 @@ function getFormattedDate(date) {
     return month + '/' + day + '/' + year;
   }  
 
-function mouseleave() {
-    let tooltip = document.querySelector("#tooltip");
-    tooltip.style['visibility'] = 'hidden';
-}
-
 function create_tooltip(id, c=null) {
     if (document.querySelector("#" + id)) return;
 
@@ -161,24 +156,30 @@ function line(SVG, event, mark, i, id=null, c=null) {
 
 
 function create_hover(SVG, control) {
+    function mouseleave() {
+        SVG.state().interactions.brush.on_elem = false;
+        let tooltip = document.querySelector("#tooltip");
+        tooltip.style['visibility'] = 'hidden';
+    }
+    
     function highlight(event) {
         SVG.state().interactions.selection.active = true;
 
-        if (event.target.hasAttribute("__legend__")) {
-            let color = window.getComputedStyle(event.target).fill;
-            for (const mark of SVG.state().svg_marks) {
-                if (window.getComputedStyle(mark).fill != color) {
-                    mark.setAttribute("opacity", 0.25);
-                } else {
-                    mark.setAttribute("opacity", 1);
-                }
-            }
-            var keys = (event.ctrlKey ? " ctrl " : "") + (event.shiftKey ? " shift " : "") + (event.altKey ? " alt " : "");
-            document.getElementById("logfile").innerHTML += event.type + " [" + keys + "] " + SVG.state().svg.id + " to filter by legend <br/>";
-            return;
-        } 
-        document.getElementById("filter_mode").style['opacity'] = 1;
-        document.getElementById("filter_mode").style['display'] = 'block';
+        // if (event.target.hasAttribute("__legend__")) {
+        //     let color = window.getComputedStyle(event.target).fill;
+        //     for (const mark of SVG.state().svg_marks) {
+        //         if (window.getComputedStyle(mark).fill != color) {
+        //             mark.setAttribute("opacity", 0.25);
+        //         } else {
+        //             mark.setAttribute("opacity", 1);
+        //         }
+        //     }
+        //     var keys = (event.ctrlKey ? " ctrl " : "") + (event.shiftKey ? " shift " : "") + (event.altKey ? " alt " : "");
+        //     document.getElementById("logfile").innerHTML += event.type + " [" + keys + "] " + SVG.state().svg.id + " to filter by legend <br/>";
+        //     return;
+        // } 
+        // document.getElementById("filter_mode").style['opacity'] = 1;
+        // document.getElementById("filter_mode").style['display'] = 'block';
 
         let ctrl = event.ctrlKey, cmd = event.metaKey, alt = event.altKey, shift = event.shiftKey;
 
@@ -199,6 +200,8 @@ function create_hover(SVG, control) {
     }
 
     function show_data(event) {
+        SVG.state().interactions.brush.on_elem = true;
+
         create_tooltip("tooltip");
         let tooltip = document.querySelector("#tooltip");
         let data = "";
@@ -249,10 +252,16 @@ function create_hover(SVG, control) {
         if (!mark.type || mark.type === "ellipse" || (!SVG.state().x_axis.ticks.length && !SVG.state().y_axis.ticks.length)) {
             mark.addEventListener('mouseenter', show_data);
             mark.addEventListener('mouseleave', mouseleave);
-            mark.style['cursor'] = 'pointer';
         } else {
             SVG.state().svg.addEventListener('mousemove', showline);
+            mark.addEventListener('mouseenter', function(event) {
+                SVG.state().interactions.brush.on_elem = true;
+            });
+            mark.addEventListener('mouseleave', function(event) {
+                SVG.state().interactions.brush.on_elem = false;
+            });
         }
+        mark.style['cursor'] = 'pointer';
         mark.addEventListener('click', highlight);
         // mark.addEventListener('mousedown', mousedown);
     }
