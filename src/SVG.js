@@ -58,7 +58,8 @@ export default function() {
                 control: null,
                 axis_control: null,
                 flag: true,
-                active: false
+                active: false,
+                on_elem: false
             },
             filter: {
                 control: null,
@@ -77,7 +78,9 @@ export default function() {
         for (let i = 0; i < state.axis_text_marks.length; ++i) {
             let x_offset = (+state.axis_text_marks[i].getBoundingClientRect().left + +state.axis_text_marks[i].getBoundingClientRect().right) / 2;
             let y_offset = (+state.axis_text_marks[i].getBoundingClientRect().top + +state.axis_text_marks[i].getBoundingClientRect().bottom) / 2;
-
+            // console.log(state.axis_text_marks[i])
+            // console.log([x_offset, y_offset])
+            // console.log('')
             let x_min = 0, y_min = 0;
             for (let j = 0; j < state.x_axis.ticks.length; ++j) {
                 if (Math.abs(x_offset - state.x_axis.ticks[j]['offset']) < Math.abs(x_offset - state.x_axis.ticks[x_min]['offset'])) {
@@ -169,6 +172,7 @@ export default function() {
     }
 
     var compute_domain = function(axis) {
+        // return;
         for (const [_, value] of Object.entries(axis.ticks)) {
             let format_val = value['label'].__data__ || +value['label'].__data__ === 0 ? 
                 value['label'].__data__ : 
@@ -478,7 +482,7 @@ export default function() {
     //     return x_std / y_std;
     // }
 
-    SVG.filter = function(x, y, width, height) {
+    SVG.filter = function(x, y, width, height, append=false) {
         document.getElementById("filter_mode").style['opacity'] = 1;
         document.getElementById("filter_mode").style['display'] = 'block';
 
@@ -510,7 +514,9 @@ export default function() {
             }
 
             if (data_x < brush_x_start || data_x > brush_x_end || data_y < brush_y_start || data_y > brush_y_end) {
-                mark.setAttribute("opacity", 0.25);
+                if (!append) {
+                    mark.setAttribute("opacity", 0.25);
+                }
             } else {
                 mark.setAttribute("opacity", 1);
             }
