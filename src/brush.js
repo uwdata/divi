@@ -118,7 +118,7 @@ export function brush(SVG, control, axis_control) {
 
         let brush_Y = !x_flag && y_flag;
         let brush_X = (x_flag && !y_flag) || 
-            ((SVG.state().svg_marks[0].type === "line" || SVG.state().svg_marks[0].type === "polygon") && !brush_Y && 
+            ((SVG.state().svg_marks[0].type === "line" || SVG.state().svg_marks[0].type === "polyline" || SVG.state().svg_marks[0].type === "polygon") && !brush_Y && 
             SVG.state().x_axis.ticks.length);
 
         // let std = SVG.std();
@@ -147,8 +147,8 @@ export function brush(SVG, control, axis_control) {
             rect.setAttribute("y", e.clientY - svg.getBoundingClientRect().top);
 
         var keys = (e.ctrlKey ? " ctrl " : "") + (e.shiftKey ? " shift " : "") + (e.altKey ? " alt " : "");
-        document.getElementById("logfile").innerHTML += e.type + " [" + keys + "] " + SVG.state().svg.id + " to brush [" +
-            (!brush_X && !brush_Y ? "2D" : (brush_X ? "X-AXIS" : "Y-AXIS")) + "] <br/>";
+        // document.getElementById("logfile").innerHTML += e.type + " [" + keys + "] " + SVG.state().svg.id + " to brush [" +
+            // (!brush_X && !brush_Y ? "2D" : (brush_X ? "X-AXIS" : "Y-AXIS")) + "] <br/>";
     }
 
     function mousemove_callback(e) {
@@ -163,7 +163,7 @@ export function brush(SVG, control, axis_control) {
             y_flag = e.clientY - top_bound < SVG.state().y_axis.range[0];
         let brush_Y = !x_flag && y_flag;
         let brush_X = (x_flag && !y_flag) ||
-            ((SVG.state().svg_marks[0].type === "line" || SVG.state().svg_marks[0].type === "polygon") && !brush_Y &&
+            ((SVG.state().svg_marks[0].type === "line" || SVG.state().svg_marks[0].type === "polyline" || SVG.state().svg_marks[0].type === "polygon") && !brush_Y &&
             SVG.state().x_axis.ticks.length);
 
         if (mousedown) {
@@ -202,7 +202,7 @@ export function brush(SVG, control, axis_control) {
             // document.getElementById('pan_disam').style['display'] = 'none';
             // SVG.disambiguate("brush", true);
             d3.selectAll(".brush_tooltip").remove();
-            document.getElementById("logfile").innerHTML += "reset brush <br/>"
+            // document.getElementById("logfile").innerHTML += "reset brush <br/>"
         } else {
             rect.setAttribute("width", 0);
             rect.setAttribute("height", 0);

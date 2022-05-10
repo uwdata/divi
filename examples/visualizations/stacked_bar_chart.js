@@ -1,7 +1,7 @@
  function createStackedBarChart() { 
 //   var svg = d3.select("stackedbarsvg"),
     var margin = {top: 20, right: 20, bottom: 30, left: 40},
-      width = 720 - margin.left - margin.right,
+      width = 1000 - margin.left - margin.right,
       height = 720 - margin.top - margin.bottom;
 //       g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 

@@ -3,8 +3,8 @@ import { terser } from 'rollup-plugin-terser';
 import nodeResolve from '@rollup/plugin-node-resolve';
 import commonJS from '@rollup/plugin-commonjs'
 
-// const external = [ 'd3-array' ];
-// const globals = { 'd3-array': 'd3' }
+// const external = [ 'd3' ];
+// const globals = { 'd3': 'd3' }
 
 export default [
   {

@@ -24,6 +24,7 @@ function create_tooltip(id, c=null) {
 }
 
 function line(SVG, event, mark, i, id=null, c=null) {
+    if (mark.hasAttribute("__legend__")) return;
     if (!id && d3.selectAll(".brush_tooltip").nodes().length) return;
 
     let transform = mark.getAttribute('transform');
@@ -79,16 +80,17 @@ function line(SVG, event, mark, i, id=null, c=null) {
 
     // tooltip.innerHTML = (SVG.state().titles.x ? SVG.state().titles.x + ":" : "") + data_x + "<hr style='margin:0px;border:0.5px solid black;opacity:1;'>" + 
     //     (SVG.state().titles.y ? SVG.state().titles.y + ":" : "") + Math.round(y_domain);
-    let color = mark.type === "line" ? window.getComputedStyle(mark)['stroke'] : window.getComputedStyle(mark)['fill'];
+    if (mark.hasAttribute("opacity") && +mark.getAttribute("opacity") !== 1) return;
+    let color = mark.type === "line" || mark.type === "polyline" ? window.getComputedStyle(mark)['stroke'] : window.getComputedStyle(mark)['fill'];
     if (i === 1) {
         tooltip.innerHTML = SVG.state().svg_marks.length === 1 ? Math.round(y_domain) :
             "<div><span class='dot' style='background-color:" + color + ";'></span>" +
-            "<div style='display:inline;margin-right:20px;'> " + (mark.__data__.key ? mark.__data__.key : "") + "</div> " +
+            "<div style='display:inline;margin-right:20px;'>" + (mark.__data__ && mark.__data__.key ? mark.__data__.key : "") + "</div> " +
             "<div style='display:inline;float:right;'>" + Math.round(y_domain) + "</div></div>";
     } else {
         tooltip.innerHTML = SVG.state().svg_marks.length === 1 ? Math.round(y_domain) :
             "<div><span class='dot' style='background-color:" + color + ";'></span>" +
-            "<div style='display:inline;margin-right:20px;'> " + (mark.__data__.key ? mark.__data__.key : "") + "</div> " +
+            "<div style='display:inline;margin-right:20px;'>" + (mark.__data__ && mark.__data__.key ? mark.__data__.key : "") + "</div> " +
             "<div style='display:inline;float:right;'>" + Math.round(y_domain) + "</div></div>" +
             tooltip.innerHTML;
     }
@@ -113,9 +115,10 @@ function line(SVG, event, mark, i, id=null, c=null) {
         circle.setAttribute("cy", y);
         circle.setAttribute("display", "");
     } else {
+        // console.log(mark)
         circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
         circle.setAttribute("r", 6);
-        circle.setAttribute("fill", mark.type === "line" ? window.getComputedStyle(mark)['stroke'] : 
+        circle.setAttribute("fill", mark.type === "line" || mark.type === "polyline" ? window.getComputedStyle(mark)['stroke'] : 
             window.getComputedStyle(mark)['fill']);
         circle.setAttribute("opacity", 0.75);
         circle.setAttribute("stroke", "black");
@@ -157,6 +160,7 @@ function line(SVG, event, mark, i, id=null, c=null) {
 
 function create_hover(SVG, control) {
     function mouseleave() {
+        console.log('leave')
         SVG.state().interactions.brush.on_elem = false;
         let tooltip = document.querySelector("#tooltip");
         tooltip.style['visibility'] = 'hidden';
@@ -165,38 +169,68 @@ function create_hover(SVG, control) {
     function highlight(event) {
         SVG.state().interactions.selection.active = true;
 
+        document.getElementById("filter_mode").style['opacity'] = 1;
+        document.getElementById("filter_mode").style['display'] = 'block';
         if (event.target.hasAttribute("__legend__")) {
+            event.target.active = true;
+            let p = SVG.state().legend.filter(d => d['glyph'].active);
+            let min_c = d3.min(p.map(d => {
+                return (+d['glyph'].getBoundingClientRect().bottom - +d['glyph'].getBoundingClientRect().top) / 1;
+            }));
+            let max_c = d3.max(p.map(d => {
+                return (+d['glyph'].getBoundingClientRect().bottom - +d['glyph'].getBoundingClientRect().top) / 1;
+            }));
+            console.log([min_c, max_c])
+
             let color = window.getComputedStyle(event.target).fill;
+            let color1 = color;
+            color = "none";
+            let width, height;
+            if (color === "none") {
+                width = (+event.target.getBoundingClientRect().bottom - +event.target.getBoundingClientRect().top) / 1;
+                // height = (+event.target.getBoundingClientRect().bottom - +event.target.getBoundingClientRect().top) / 2;
+            }
             for (const mark of SVG.state().svg_marks) {
-                if (window.getComputedStyle(mark).fill != color) {
+                let condition;
+                if (color === "none") {
+                    if (window.getComputedStyle(mark).fill !== color1) continue;
+                    let m_width = (+mark.getBoundingClientRect().bottom - +mark.getBoundingClientRect().top) / 1;
+                    // let m_height = (+mark.getBoundingClientRect().bottom - +mark.getBoundingClientRect().top) / 2;
+                    condition = min_c > m_width || m_width > max_c;
+                } else {
+                    condition = window.getComputedStyle(mark).fill != color;
+                }
+                if (condition) {
                     mark.setAttribute("opacity", 0.25);
                 } else {
                     mark.setAttribute("opacity", 1);
                 }
             }
             var keys = (event.ctrlKey ? " ctrl " : "") + (event.shiftKey ? " shift " : "") + (event.altKey ? " alt " : "");
-            document.getElementById("logfile").innerHTML += event.type + " [" + keys + "] " + SVG.state().svg.id + " to filter by legend <br/>";
+            // document.getElementById("logfile").innerHTML += event.type + " [" + keys + "] " + SVG.state().svg.id + " to filter by legend <br/>";
+            
             return;
         } 
-        document.getElementById("filter_mode").style['opacity'] = 1;
-        document.getElementById("filter_mode").style['display'] = 'block';
 
         let ctrl = event.ctrlKey, cmd = event.metaKey, alt = event.altKey, shift = event.shiftKey;
 
-        if (ctrl || cmd || alt || shift) {
-            let opacity = !event.target.hasAttribute("opacity") ? 0.25 : 
-                +event.target.getAttribute("opacity") === 1 ? 0.25 : 1;
-            event.target.setAttribute("opacity", opacity);
-        } else {
-            event.target.setAttribute("opacity", 1);
-            for (const mark of SVG.state().svg_marks) {
-                if (mark === event.target) continue;
-                mark.setAttribute("opacity", 0.25);
-            }
-        }
+        // if (ctrl || cmd || alt || shift) {
+        //     let opacity = !event.target.hasAttribute("opacity") ? 0.25 : 
+        //         +event.target.getAttribute("opacity") === 1 ? 0.25 : 1;
+        //     event.target.setAttribute("opacity", opacity);
+        // } else {
+        //     event.target.setAttribute("opacity", 1);
+        //     for (const mark of SVG.state().svg_marks) {
+        //         if (mark === event.target) continue;
+        //         mark.setAttribute("opacity", 0.25);
+        //     }
+        // }
 
-        var keys = (event.ctrlKey ? " ctrl " : "") + (event.shiftKey ? " shift " : "") + (event.altKey ? " alt " : "");
-        document.getElementById("logfile").innerHTML += event.type + " [" + keys + "] " + SVG.state().svg.id + " to select mark <br/>";
+        // var keys = (event.ctrlKey ? " ctrl " : "") + (event.shiftKey ? " shift " : "") + (event.altKey ? " alt " : "");
+        // let tooltips = document.querySelectorAll(".tooltip");
+        // if (tooltips.length) tooltips.forEach(d => d.style['visibility'] = 'hidden');
+        // d3.selectAll(".hover").attr("display", "none")
+        // document.getElementById("logfile").innerHTML += event.type + " [" + keys + "] " + SVG.state().svg.id + " to select mark <br/>";
     }
 
     function show_data(event) {
@@ -226,6 +260,7 @@ function create_hover(SVG, control) {
         for (const mark of marks) {
             // if (mark.style['opacity'] && +mark.style['opacity'] !== 1) return;
             ++i;
+            // if (i == 2) break;
             line(SVG, event, mark, i);
         }
         if (marks.length > 1) {
@@ -233,9 +268,11 @@ function create_hover(SVG, control) {
             [...tooltip.children]
                 .sort((a,b) => +a.children[2].innerHTML < +b.children[2].innerText ? 1 : -1)
                 .forEach(node => tooltip.appendChild(node));
-            for (let i = 0; i < tooltip.children.length - 1; ++i) {
-                tooltip.children[i].children[2].innerHTML = +tooltip.children[i].children[2].innerHTML - 
-                    +tooltip.children[i + 1].children[2].innerHTML;
+            if (marks[0].type !== "polyline") {
+                for (let i = 0; i < tooltip.children.length - 1; ++i) {
+                    tooltip.children[i].children[2].innerHTML = +tooltip.children[i].children[2].innerHTML - 
+                        +tooltip.children[i + 1].children[2].innerHTML;
+                }
             }
         }
     }
@@ -310,13 +347,16 @@ select.applyBrush = function(SVG, x, y, width, height) {
 
     if (SVG.state().svg_marks.length > 1) {
         let tooltips = [document.getElementById("tooltipbrush1"), document.getElementById("tooltipbrush2")];
+        console.log(tooltips)
         for (const tooltip of tooltips) {
             [...tooltip.children]
                 .sort((a,b) => +a.children[2].innerHTML < +b.children[2].innerText ? 1 : -1)
                 .forEach(node => tooltip.appendChild(node));
-            for (let i = 0; i < tooltip.children.length - 1; ++i) {
-                tooltip.children[i].children[2].innerHTML = +tooltip.children[i].children[2].innerHTML - 
-                    +tooltip.children[i + 1].children[2].innerHTML;
+            if (SVG.state().svg_marks[0].type !== "polyline") {
+                for (let i = 0; i < tooltip.children.length - 1; ++i) {
+                    tooltip.children[i].children[2].innerHTML = +tooltip.children[i].children[2].innerHTML - 
+                        +tooltip.children[i + 1].children[2].innerHTML;
+                }
             }
         }
     }

@@ -1,26 +1,24 @@
 import { INTERACTION_CONSTANTS } from './constants.js';
 import SVG from './SVG.js';
 import { parseSVG } from 'svg-path-parser';
-import { min, max } from 'd3-array';
-import { treemapSquarify } from 'd3';
 
-function infer_type_from_path(element) { 
+function inferTypeFromPath(element) { 
     let commands = parseSVG(element.getAttribute("d"));
     if (!commands.length) return;
 
     element.contour = commands;
-    let end_cmd = commands[commands.length - 1];
+    let endCmd = commands[commands.length - 1];
 
-    if (commands.length === 3 && commands[1].code === "A" && end_cmd.code === "A") {
+    if (commands.length === 3 && commands[1].code === "A" && endCmd.code === "A") {
         element.type = "ellipse";
-    } else if (end_cmd.code !== "Z") {
+    } else if (endCmd.code !== "Z") {
         element.type = "line";
     } else {
         element.type = "polygon";
     }
 }
 
-function analyze_axis(element, SVG, transform) {
+function analyzeAxis(element, SVG, transform) {
     element._global_transform = [...transform];
 
     if (element.nodeName === INTERACTION_CONSTANTS.SVG_TYPE.SVG_GROUP) {
@@ -38,7 +36,10 @@ function analyze_axis(element, SVG, transform) {
             for (const mark_type of INTERACTION_CONSTANTS.SVG_TYPE.SVG_MARK) {
                 if (element.nodeName === mark_type) {
                     let is_x = element.hasAttribute("x2") ? +element.getAttribute("x2") : 0;
+                    is_x = !is_x ? Math.abs((+element.getBoundingClientRect().bottom - +element.getBoundingClientRect().top)) < 1 : is_x;
+                    
                     let is_y = element.hasAttribute("y2") ? +element.getAttribute("y2") : 0;
+                    is_y = !is_y ? Math.abs((+element.getBoundingClientRect().left - +element.getBoundingClientRect().right)) < 1 : is_y;
 
                     if (is_x) SVG.state().y_axis.ticks.push(element);
                     if (is_y) SVG.state().x_axis.ticks.push(element);
@@ -48,11 +49,11 @@ function analyze_axis(element, SVG, transform) {
     }
 
     for (const child of element.childNodes) {
-        analyze_axis(child, SVG, [...transform]);
+        analyzeAxis(child, SVG, [...transform]);
     }
 }
 
-function analyze_DOM_tree(element, SVG, transform) {
+function analyzeDomTree(element, SVG, transform) {
     if (element === null) {
         return;
     }
@@ -73,11 +74,11 @@ function analyze_DOM_tree(element, SVG, transform) {
 
         let c_name = element.className.animVal;
         if (c_name.includes("legend")) {
-            skip = true;
+            // skip = true;
         } else if (c_name.includes("tick") || c_name.includes("grid") ||  c_name.includes("label") /*|| c_name.includes("title")*/) {
             skip = true;
             for (const child of element.childNodes) {
-                analyze_axis(child, SVG, [...transform]);
+                analyzeAxis(child, SVG, [...transform]);
             }
         }
     } else {
@@ -97,7 +98,12 @@ function analyze_DOM_tree(element, SVG, transform) {
             }
 
             if (element.nodeName === mark_type) {
-                if (mark_type === "path") infer_type_from_path(element);
+                if (mark_type === "path") {
+                    if (!element.hasAttribute("d")) break;
+                    inferTypeFromPath(element);
+                } else if (mark_type === "polyline") {
+                    element.type = "polyline"
+                }
 
                 if (element.className && element.className.animVal === INTERACTION_CONSTANTS.SVG_TYPE.TICK_DOMAIN) {
                     SVG.state().has_domain = true;
@@ -114,14 +120,14 @@ function analyze_DOM_tree(element, SVG, transform) {
 
     if (!skip) {
         for (const child of element.childNodes) {
-            analyze_DOM_tree(child, SVG, [...transform]);
+            analyzeDomTree(child, SVG, [...transform]);
         }
     }
 }
 
 function inspect(element) {
     let svg = new SVG();
-    analyze_DOM_tree(element, svg, [0, 0], false);
+    analyzeDomTree(element, svg, [0, 0], false);
     svg.analyze_axes().infer_view().infer_mark_attributes();
     console.log(svg.state());
     return svg;

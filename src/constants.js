@@ -7,7 +7,8 @@ const INTERACTION_CONSTANTS = {
         SORT: 'sort',
         BRUSH: 'brush',
         HIGHLIGHT: 'highlight',
-        ANNOTATE: 'annotate'
+        ANNOTATE: 'annotate',
+        ARRANGE: 'arrange'
     },
     INTERACTION_TARGETS: {
         CATEGORICAL: 'Categorical',

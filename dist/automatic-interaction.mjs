@@ -7,7 +7,8 @@ const INTERACTION_CONSTANTS = {
         SORT: 'sort',
         BRUSH: 'brush',
         HIGHLIGHT: 'highlight',
-        ANNOTATE: 'annotate'
+        ANNOTATE: 'annotate',
+        ARRANGE: 'arrange'
     },
     INTERACTION_TARGETS: {
         CATEGORICAL: 'Categorical',
@@ -1155,15 +1156,15 @@ var darker = 0.7;
 var brighter = 1 / darker;
 
 var reI = "\\s*([+-]?\\d+)\\s*",
-    reN = "\\s*([+-]?\\d*\\.?\\d+(?:[eE][+-]?\\d+)?)\\s*",
-    reP = "\\s*([+-]?\\d*\\.?\\d+(?:[eE][+-]?\\d+)?)%\\s*",
+    reN = "\\s*([+-]?(?:\\d*\\.)?\\d+(?:[eE][+-]?\\d+)?)\\s*",
+    reP = "\\s*([+-]?(?:\\d*\\.)?\\d+(?:[eE][+-]?\\d+)?)%\\s*",
     reHex = /^#([0-9a-f]{3,8})$/,
-    reRgbInteger = new RegExp("^rgb\\(" + [reI, reI, reI] + "\\)$"),
-    reRgbPercent = new RegExp("^rgb\\(" + [reP, reP, reP] + "\\)$"),
-    reRgbaInteger = new RegExp("^rgba\\(" + [reI, reI, reI, reN] + "\\)$"),
-    reRgbaPercent = new RegExp("^rgba\\(" + [reP, reP, reP, reN] + "\\)$"),
-    reHslPercent = new RegExp("^hsl\\(" + [reN, reP, reP] + "\\)$"),
-    reHslaPercent = new RegExp("^hsla\\(" + [reN, reP, reP, reN] + "\\)$");
+    reRgbInteger = new RegExp(`^rgb\\(${reI},${reI},${reI}\\)$`),
+    reRgbPercent = new RegExp(`^rgb\\(${reP},${reP},${reP}\\)$`),
+    reRgbaInteger = new RegExp(`^rgba\\(${reI},${reI},${reI},${reN}\\)$`),
+    reRgbaPercent = new RegExp(`^rgba\\(${reP},${reP},${reP},${reN}\\)$`),
+    reHslPercent = new RegExp(`^hsl\\(${reN},${reP},${reP}\\)$`),
+    reHslaPercent = new RegExp(`^hsla\\(${reN},${reP},${reP},${reN}\\)$`);
 
 var named = {
   aliceblue: 0xf0f8ff,
@@ -1317,14 +1318,15 @@ var named = {
 };
 
 define(Color, color, {
-  copy: function(channels) {
+  copy(channels) {
     return Object.assign(new this.constructor, this, channels);
   },
-  displayable: function() {
+  displayable() {
     return this.rgb().displayable();
   },
   hex: color_formatHex, // Deprecated! Use color.formatHex.
   formatHex: color_formatHex,
+  formatHex8: color_formatHex8,
   formatHsl: color_formatHsl,
   formatRgb: color_formatRgb,
   toString: color_formatRgb
@@ -1332,6 +1334,10 @@ define(Color, color, {
 
 function color_formatHex() {
   return this.rgb().formatHex();
+}
+
+function color_formatHex8() {
+  return this.rgb().formatHex8();
 }
 
 function color_formatHsl() {
@@ -1389,18 +1395,21 @@ function Rgb(r, g, b, opacity) {
 }
 
 define(Rgb, rgb, extend(Color, {
-  brighter: function(k) {
+  brighter(k) {
     k = k == null ? brighter : Math.pow(brighter, k);
     return new Rgb(this.r * k, this.g * k, this.b * k, this.opacity);
   },
-  darker: function(k) {
+  darker(k) {
     k = k == null ? darker : Math.pow(darker, k);
     return new Rgb(this.r * k, this.g * k, this.b * k, this.opacity);
   },
-  rgb: function() {
+  rgb() {
     return this;
   },
-  displayable: function() {
+  clamp() {
+    return new Rgb(clampi(this.r), clampi(this.g), clampi(this.b), clampa(this.opacity));
+  },
+  displayable() {
     return (-0.5 <= this.r && this.r < 255.5)
         && (-0.5 <= this.g && this.g < 255.5)
         && (-0.5 <= this.b && this.b < 255.5)
@@ -1408,25 +1417,34 @@ define(Rgb, rgb, extend(Color, {
   },
   hex: rgb_formatHex, // Deprecated! Use color.formatHex.
   formatHex: rgb_formatHex,
+  formatHex8: rgb_formatHex8,
   formatRgb: rgb_formatRgb,
   toString: rgb_formatRgb
 }));
 
 function rgb_formatHex() {
-  return "#" + hex(this.r) + hex(this.g) + hex(this.b);
+  return `#${hex(this.r)}${hex(this.g)}${hex(this.b)}`;
+}
+
+function rgb_formatHex8() {
+  return `#${hex(this.r)}${hex(this.g)}${hex(this.b)}${hex((isNaN(this.opacity) ? 1 : this.opacity) * 255)}`;
 }
 
 function rgb_formatRgb() {
-  var a = this.opacity; a = isNaN(a) ? 1 : Math.max(0, Math.min(1, a));
-  return (a === 1 ? "rgb(" : "rgba(")
-      + Math.max(0, Math.min(255, Math.round(this.r) || 0)) + ", "
-      + Math.max(0, Math.min(255, Math.round(this.g) || 0)) + ", "
-      + Math.max(0, Math.min(255, Math.round(this.b) || 0))
-      + (a === 1 ? ")" : ", " + a + ")");
+  const a = clampa(this.opacity);
+  return `${a === 1 ? "rgb(" : "rgba("}${clampi(this.r)}, ${clampi(this.g)}, ${clampi(this.b)}${a === 1 ? ")" : `, ${a})`}`;
+}
+
+function clampa(opacity) {
+  return isNaN(opacity) ? 1 : Math.max(0, Math.min(1, opacity));
+}
+
+function clampi(value) {
+  return Math.max(0, Math.min(255, Math.round(value) || 0));
 }
 
 function hex(value) {
-  value = Math.max(0, Math.min(255, Math.round(value) || 0));
+  value = clampi(value);
   return (value < 16 ? "0" : "") + value.toString(16);
 }
 
@@ -1475,15 +1493,15 @@ function Hsl(h, s, l, opacity) {
 }
 
 define(Hsl, hsl, extend(Color, {
-  brighter: function(k) {
+  brighter(k) {
     k = k == null ? brighter : Math.pow(brighter, k);
     return new Hsl(this.h, this.s, this.l * k, this.opacity);
   },
-  darker: function(k) {
+  darker(k) {
     k = k == null ? darker : Math.pow(darker, k);
     return new Hsl(this.h, this.s, this.l * k, this.opacity);
   },
-  rgb: function() {
+  rgb() {
     var h = this.h % 360 + (this.h < 0) * 360,
         s = isNaN(h) || isNaN(this.s) ? 0 : this.s,
         l = this.l,
@@ -1496,20 +1514,28 @@ define(Hsl, hsl, extend(Color, {
       this.opacity
     );
   },
-  displayable: function() {
+  clamp() {
+    return new Hsl(clamph(this.h), clampt(this.s), clampt(this.l), clampa(this.opacity));
+  },
+  displayable() {
     return (0 <= this.s && this.s <= 1 || isNaN(this.s))
         && (0 <= this.l && this.l <= 1)
         && (0 <= this.opacity && this.opacity <= 1);
   },
-  formatHsl: function() {
-    var a = this.opacity; a = isNaN(a) ? 1 : Math.max(0, Math.min(1, a));
-    return (a === 1 ? "hsl(" : "hsla(")
-        + (this.h || 0) + ", "
-        + (this.s || 0) * 100 + "%, "
-        + (this.l || 0) * 100 + "%"
-        + (a === 1 ? ")" : ", " + a + ")");
+  formatHsl() {
+    const a = clampa(this.opacity);
+    return `${a === 1 ? "hsl(" : "hsla("}${clamph(this.h)}, ${clampt(this.s) * 100}%, ${clampt(this.l) * 100}%${a === 1 ? ")" : `, ${a})`}`;
   }
 }));
+
+function clamph(value) {
+  value = (value || 0) % 360;
+  return value < 0 ? value + 360 : value;
+}
+
+function clampt(value) {
+  return Math.max(0, Math.min(1, value || 0));
+}
 
 /* From FvD 13.37, CSS Color Module Level 3 */
 function hsl2rgb(h, m1, m2) {
@@ -2799,10 +2825,6 @@ function selection_transition(name) {
 
 selection.prototype.interrupt = selection_interrupt;
 selection.prototype.transition = selection_transition;
-
-function identity$1(x) {
-    return x;
-}
 
 /*
  * Generated by PEG.js 0.10.0.
@@ -4885,7 +4907,7 @@ Transform.prototype = {
   }
 };
 
-var identity = new Transform(1, 0, 0);
+var identity$1 = new Transform(1, 0, 0);
 
 function nopropagation(event) {
   event.stopImmediatePropagation();
@@ -4916,7 +4938,7 @@ function defaultExtent() {
 }
 
 function defaultTransform() {
-  return this.__zoom || identity;
+  return this.__zoom || identity$1;
 }
 
 function defaultWheelDelta(event) {
@@ -5019,7 +5041,7 @@ function zoom() {
       var e = extent.apply(this, arguments),
           t = this.__zoom,
           p0 = p == null ? centroid(e) : typeof p === "function" ? p.apply(this, arguments) : p;
-      return constrain(identity.translate(p0[0], p0[1]).scale(t.k).translate(
+      return constrain(identity$1.translate(p0[0], p0[1]).scale(t.k).translate(
         typeof x === "function" ? -x.apply(this, arguments) : -x,
         typeof y === "function" ? -y.apply(this, arguments) : -y
       ), e, translateExtent);
@@ -5355,25 +5377,27 @@ function _zoom(SVG, control, axis_control) {
     const marks = svg.selectAll('[__mark__="true"]');
 
     // if (marks.node().parentElement.id !== "_g_clip") {
-    for (const node of marks.nodes()) {
-        let container = node.parentElement;
-        if (container.id !== "_g_clip") {
-            container = document.createElementNS("http://www.w3.org/2000/svg", "g");
-            container.id = "_g_clip";
-            container.setAttribute('clip-path', 'url(#clip-' + SVG.state().svg.id + ')'); 
-
-            node.parentElement.appendChild(container);
-        }  
-        container.appendChild(node);
+    if (SVG.state().x_axis.scale && SVG.state().y_axis.scale) {
+        for (const node of marks.nodes()) {
+            let container = node.parentElement;
+            if (container.id !== "_g_clip") {
+                container = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                container.id = "_g_clip";
+                container.setAttribute('clip-path', 'url(#clip-' + SVG.state().svg.id + ')'); 
+    
+                node.parentElement.appendChild(container);
+            }  
+            container.appendChild(node);
+        }
     }
 
-    // if (marks.node().parentElement.id !== "_g_clip") {
-    //     let container = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    //     container.id = "_g_clip";
-    //     marks.node().parentElement.appendChild(container);
-    //     marks.nodes().forEach(d => container.appendChild(d));
-    // }
-    // marks.node().parentElement.setAttribute('clip-path', 'url(#clip-' + SVG.state().svg.id + ')');
+    if (marks.node().parentElement.id !== "_g_clip") {
+        let container = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        container.id = "_g_clip";
+        marks.node().parentElement.appendChild(container);
+        marks.nodes().forEach(d => container.appendChild(d));
+    }
+    marks.node().parentElement.setAttribute('clip-path', 'url(#clip-' + SVG.state().svg.id + ')');
     var left_bound = marks.node()._global_transform[0] + SVG.state().svg.getBoundingClientRect().left;
     var top_bound = marks.node()._global_transform[1] + SVG.state().svg.getBoundingClientRect().top;
 
@@ -5391,6 +5415,24 @@ function _zoom(SVG, control, axis_control) {
     g_y_axis.call(zoomY).attr("pointer-events", "none");
 
     let zoom_callback = function({sourceEvent, transform}) {
+        if (sourceEvent.type === "wheel" || sourceEvent.type === "dblclick") {
+            if (SVG.state().svg.parentNode.style['visibility'] === 'hidden') return;
+
+            let pan_elem = document.getElementById("pan_mode");
+            let brush_elem = document.getElementById("brush_mode");
+            document.getElementById("filter_mode");
+            let annotate_elem = document.getElementById("annotate_mode");
+    
+            pan_elem.style['opacity'] = 1;
+            brush_elem.style['opacity'] = 0.4;
+            annotate_elem.style['opacity'] = 0.4;
+    
+            SVG.state().interactions.pan.flag = true;
+            SVG.state().interactions.brush.flag = false;
+            SVG.state().interactions.annotate.flag = false;
+            SVG.state().svg.style['cursor'] = 'move';
+        }
+
         // var zoom_enabled = document.getElementById("zoom").checked;
         // var pan_enabled = document.getElementById("pan").checked;
         sourceEvent.preventDefault();
@@ -5418,7 +5460,6 @@ function _zoom(SVG, control, axis_control) {
         const y = (transform.y - z.y) / ty().k;
 
         if (!SVG.state().x_axis.axis && !SVG.state().y_axis.axis) {
-            console.log('here');
             let cliX = sourceEvent.clientX - marks.node()._global_transform[0] - SVG.state().svg.getBoundingClientRect().left;
             let cliY = sourceEvent.clientY - marks.node()._global_transform[1] - SVG.state().svg.getBoundingClientRect().top;
 
@@ -5428,7 +5469,7 @@ function _zoom(SVG, control, axis_control) {
             } else {
                 g_x_axis.call(zoomX.scaleBy, k, [cliX, cliY]);
                 g_y_axis.call(zoomY.scaleBy, k, [cliX, cliY]);
-                SVG.disambiguate("zoom", true);
+                // SVG.disambiguate("zoom", true);
             }
             marks.attr('transform', 'translate(' + tx().x + ',' + ty().y + ') scale(' + tx().k + ',' + ty().k + ')');
             svg.selectAll('text').attr('transform','translate(' + tx().x + ',' + ty().y + ') scale(' + tx().k + ',' + ty().k + ')');
@@ -5475,14 +5516,8 @@ function _zoom(SVG, control, axis_control) {
         }
         SVG.state().y_axis.axis.scale(ty().rescaleY(SVG.state().y_axis.scale))();
 
-        var keys = (sourceEvent.ctrlKey ? " ctrl " : "") + (sourceEvent.shiftKey ? " shift " : "") + (sourceEvent.altKey ? " alt " : "");
-        if (sourceEvent.type === 'mousemove' && control_pan_X) {
-            document.getElementById("logfile").innerHTML += sourceEvent.type + " [" + keys + "] " + SVG.state().svg.id + " to pan [" +
-            (zoom_X && zoom_Y ? "2D" : (zoom_X ? "X-AXIS" : "Y-AXIS")) + "] <br/>";
-        } else if (sourceEvent.type !== 'mousemove' && control_zoom_X) {
-            document.getElementById("logfile").innerHTML += sourceEvent.type + " [" + keys + "] " + SVG.state().svg.id + " to zoom [" +
-            (zoom_X && zoom_Y ? "2D" : (zoom_X ? "X-AXIS" : "Y-AXIS")) + "] <br/>";
-        }
+        (sourceEvent.ctrlKey ? " ctrl " : "") + (sourceEvent.shiftKey ? " shift " : "") + (sourceEvent.altKey ? " alt " : "");
+        if (sourceEvent.type === 'mousemove' && control_pan_X) ; else if (sourceEvent.type !== 'mousemove' && control_zoom_X) ;
         
         marks.attr("transform", function() {
             let transform = this.__transform.match(/(-?\d+\.?-?\d*)/g);
@@ -5648,7 +5683,7 @@ function brush(SVG, control, axis_control) {
 
         let brush_Y = !x_flag && y_flag;
         let brush_X = (x_flag && !y_flag) || 
-            ((SVG.state().svg_marks[0].type === "line" || SVG.state().svg_marks[0].type === "polygon") && !brush_Y && 
+            ((SVG.state().svg_marks[0].type === "line" || SVG.state().svg_marks[0].type === "polyline" || SVG.state().svg_marks[0].type === "polygon") && !brush_Y && 
             SVG.state().x_axis.ticks.length);
 
         // let std = SVG.std();
@@ -5676,9 +5711,9 @@ function brush(SVG, control, axis_control) {
             rect.setAttribute("y", SVG.state().y_axis.global_range[1]) :
             rect.setAttribute("y", e.clientY - svg.getBoundingClientRect().top);
 
-        var keys = (e.ctrlKey ? " ctrl " : "") + (e.shiftKey ? " shift " : "") + (e.altKey ? " alt " : "");
-        document.getElementById("logfile").innerHTML += e.type + " [" + keys + "] " + SVG.state().svg.id + " to brush [" +
-            (!brush_X && !brush_Y ? "2D" : (brush_X ? "X-AXIS" : "Y-AXIS")) + "] <br/>";
+        (e.ctrlKey ? " ctrl " : "") + (e.shiftKey ? " shift " : "") + (e.altKey ? " alt " : "");
+        // document.getElementById("logfile").innerHTML += e.type + " [" + keys + "] " + SVG.state().svg.id + " to brush [" +
+            // (!brush_X && !brush_Y ? "2D" : (brush_X ? "X-AXIS" : "Y-AXIS")) + "] <br/>";
     }
 
     function mousemove_callback(e) {
@@ -5693,7 +5728,7 @@ function brush(SVG, control, axis_control) {
             y_flag = e.clientY - top_bound < SVG.state().y_axis.range[0];
         let brush_Y = !x_flag && y_flag;
         let brush_X = (x_flag && !y_flag) ||
-            ((SVG.state().svg_marks[0].type === "line" || SVG.state().svg_marks[0].type === "polygon") && !brush_Y &&
+            ((SVG.state().svg_marks[0].type === "line" || SVG.state().svg_marks[0].type === "polyline" || SVG.state().svg_marks[0].type === "polygon") && !brush_Y &&
             SVG.state().x_axis.ticks.length);
 
         if (mousedown) {
@@ -5731,7 +5766,7 @@ function brush(SVG, control, axis_control) {
             // document.getElementById('pan_disam').style['display'] = 'none';
             // SVG.disambiguate("brush", true);
             d3.selectAll(".brush_tooltip").remove();
-            document.getElementById("logfile").innerHTML += "reset brush <br/>";
+            // document.getElementById("logfile").innerHTML += "reset brush <br/>"
         } else {
             rect.setAttribute("width", 0);
             rect.setAttribute("height", 0);
@@ -5779,128 +5814,6 @@ function filter(SVG, control) {
     return;
 }
 
-function constrain_elements(SVG) {
-    SVG.state().x_axis.ticks.sort((a, b) => {
-        return +a['label'].getBoundingClientRect().left < +b['label'].getBoundingClientRect().left ? -1 : 1;
-    });
-
-    let labels = SVG.state().x_axis.ticks.map(d => d['label'].innerHTML);
-    SVG.state().x_axis.ordinal = labels;
-    SVG.state().x_axis.scale.domain(labels);
-}
-
-function dragElement(SVG) {
-    var pos3 = 0, pos4 = 0;
-    document.addEventListener('mousedown', dragMouseDown);
-    var elmnt, tick, original_positions;
-
-    function dragMouseDown(e) {
-        if (SVG.state().svg.parentElement.style['visibility'] === 'hidden') return;
-        
-        e = e || window.event;
-        // e.preventDefault();
-        // get the mouse cursor position at startup:
-        pos3 = e.clientX;
-        pos4 = e.clientY;
-        // elmnt.onmouseup = closeDragElement;
-        // call a function whenever the cursor moves:
-        // elmnt.onmousemove = elementDrag;
-        elmnt = null;
-        tick = SVG.state().x_axis.ticks[0];
-        original_positions = [];
-        for (const mark of SVG.state().svg_marks) {
-            if (mark.hasAttribute("__legend__")) continue;
-            let bb = mark.getBoundingClientRect();
-            if (e.clientX >= +bb.left && e.clientX <= +bb.right && e.clientY >= +bb.top && e.clientY <= +bb.bottom) {
-                elmnt = mark;
-                break;
-            }
-        }
-        if (elmnt) {
-            var keys = (e.ctrlKey ? " ctrl " : "") + (e.shiftKey ? " shift " : "") + (e.altKey ? " alt " : "");
-            document.getElementById("logfile").innerHTML += e.type + " [" + keys + "] " + SVG.state().svg.id + " to sort <br/>";
-
-            document.addEventListener('mousemove', elementDrag);
-            document.addEventListener('mouseup', closeDragElement);
-            elmnt.__x__ = e.clientX;
-
-            SVG.state().svg_marks.sort((a, b) => {
-                +a.getBoundingClientRect().left < +b.getBoundingClientRect().left ? -1 : 1;
-            });
-
-            let pos = (+elmnt.getBoundingClientRect().left + +elmnt.getBoundingClientRect().right) / 2;
-            let min_diff = 1000;
-            for (let i = 0; i < SVG.state().x_axis.ticks.length; ++i) {
-                if (Math.abs(+SVG.state().x_axis.ticks[i]['ticks'][0].getBoundingClientRect().left - pos) < min_diff) {
-                    min_diff = Math.abs(+SVG.state().x_axis.ticks[i]['ticks'][0].getBoundingClientRect().left - pos);
-                    tick = SVG.state().x_axis.ticks[i];
-                }
-
-                let p = SVG.state().x_axis.ticks[i]['ticks'][0];
-                original_positions.push((+p.getBoundingClientRect().left + +p.getBoundingClientRect().right) / 2);
-
-                SVG.state().x_axis.ticks[i]['mark'] = SVG.state().svg_marks[i];
-            }
-
-            tick['__x__'] = e.clientX;
-        }
-    }
-
-    function elementDrag(e) {
-        e = e || window.event;
-        e.preventDefault();
-        // calculate the new cursor position:
-        pos3 - e.clientX;
-        pos4 - e.clientY;
-        pos3 = e.clientX;
-        pos4 = e.clientY;
-        // set the element's new position:
-        elmnt.setAttribute("transform", "translate(" + (e.clientX - elmnt.__x__) + ", 0)");
-
-        let label = tick['label'];
-        let rotate = label.hasAttribute("transform") && label.getAttribute("transform").includes("rotate") ? +label.getAttribute("transform").match(/(-?\d+\.?\d*e?-?\d*)/g).pop() : null;
-        label.setAttribute("transform", "translate(" + (e.clientX - elmnt.__x__) + ", 0)" + (rotate ? " rotate(" + rotate + ")" : ""));
-
-        for (const t of tick['ticks']) {
-            t.setAttribute("transform", "translate(" + (e.clientX - elmnt.__x__) + ", 0)");
-        }
-
-        constrain_elements(SVG);
-    
-        for (let i = 0; i < SVG.state().x_axis.ticks.length; ++i) {
-            if (SVG.state().x_axis.ticks[i]['label'].innerHTML === tick['label'].innerHTML) continue;
-
-            let t = SVG.state().x_axis.ticks[i];
-            let curr_pos = (+t['ticks'][0].getBoundingClientRect().left + 
-                +t['ticks'][0].getBoundingClientRect().right ) / 2;
-
-            let l = t['label'];
-            let rotate = label.hasAttribute("transform") && l.getAttribute("transform").includes("rotate") ? +l.getAttribute("transform").match(/(-?\d+\.?\d*e?-?\d*)/g).pop() : null;
-            l.setAttribute("transform", "translate(" + (original_positions[i] - curr_pos) + ", 0)" + (rotate ? " rotate(" + rotate + ")" : ""));
-
-            for (const tick of SVG.state().x_axis.ticks[i]['ticks']) {
-                tick.setAttribute("transform", "translate(" + (original_positions[i] - curr_pos) + ", 0)");
-            }
-
-            t['mark'].setAttribute("transform", "translate(" + (original_positions[i] - curr_pos) + ", 0)");
-        }
-    }
-
-    function closeDragElement() {
-        // stop moving when mouse button is released:
-        // elmnt.onmouseup = null;
-        // elmnt.onmousemove = null;
-        document.removeEventListener('mousemove', elementDrag);
-        document.removeEventListener('mouseup', closeDragElement);
-        // constrain_elements(SVG);
-    }
-}    
-
-function sort(SVG) {
-    if (!SVG.state().x_axis.ordinal.length) return;
-    dragElement(SVG);
-}
-
 function getFormattedDate(date) {
     var year = date.getFullYear();
   
@@ -5925,6 +5838,7 @@ function create_tooltip(id, c=null) {
 }
 
 function line(SVG, event, mark, i, id=null, c=null) {
+    if (mark.hasAttribute("__legend__")) return;
     if (!id && d3.selectAll(".brush_tooltip").nodes().length) return;
 
     let transform = mark.getAttribute('transform');
@@ -5980,16 +5894,17 @@ function line(SVG, event, mark, i, id=null, c=null) {
 
     // tooltip.innerHTML = (SVG.state().titles.x ? SVG.state().titles.x + ":" : "") + data_x + "<hr style='margin:0px;border:0.5px solid black;opacity:1;'>" + 
     //     (SVG.state().titles.y ? SVG.state().titles.y + ":" : "") + Math.round(y_domain);
-    let color = mark.type === "line" ? window.getComputedStyle(mark)['stroke'] : window.getComputedStyle(mark)['fill'];
+    if (mark.hasAttribute("opacity") && +mark.getAttribute("opacity") !== 1) return;
+    let color = mark.type === "line" || mark.type === "polyline" ? window.getComputedStyle(mark)['stroke'] : window.getComputedStyle(mark)['fill'];
     if (i === 1) {
         tooltip.innerHTML = SVG.state().svg_marks.length === 1 ? Math.round(y_domain) :
             "<div><span class='dot' style='background-color:" + color + ";'></span>" +
-            "<div style='display:inline;margin-right:20px;'> " + (mark.__data__.key ? mark.__data__.key : "") + "</div> " +
+            "<div style='display:inline;margin-right:20px;'>" + (mark.__data__ && mark.__data__.key ? mark.__data__.key : "") + "</div> " +
             "<div style='display:inline;float:right;'>" + Math.round(y_domain) + "</div></div>";
     } else {
         tooltip.innerHTML = SVG.state().svg_marks.length === 1 ? Math.round(y_domain) :
             "<div><span class='dot' style='background-color:" + color + ";'></span>" +
-            "<div style='display:inline;margin-right:20px;'> " + (mark.__data__.key ? mark.__data__.key : "") + "</div> " +
+            "<div style='display:inline;margin-right:20px;'>" + (mark.__data__ && mark.__data__.key ? mark.__data__.key : "") + "</div> " +
             "<div style='display:inline;float:right;'>" + Math.round(y_domain) + "</div></div>" +
             tooltip.innerHTML;
     }
@@ -6014,9 +5929,10 @@ function line(SVG, event, mark, i, id=null, c=null) {
         circle.setAttribute("cy", y);
         circle.setAttribute("display", "");
     } else {
+        // console.log(mark)
         circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
         circle.setAttribute("r", 6);
-        circle.setAttribute("fill", mark.type === "line" ? window.getComputedStyle(mark)['stroke'] : 
+        circle.setAttribute("fill", mark.type === "line" || mark.type === "polyline" ? window.getComputedStyle(mark)['stroke'] : 
             window.getComputedStyle(mark)['fill']);
         circle.setAttribute("opacity", 0.75);
         circle.setAttribute("stroke", "black");
@@ -6058,6 +5974,7 @@ function line(SVG, event, mark, i, id=null, c=null) {
 
 function create_hover(SVG, control) {
     function mouseleave() {
+        console.log('leave');
         SVG.state().interactions.brush.on_elem = false;
         let tooltip = document.querySelector("#tooltip");
         tooltip.style['visibility'] = 'hidden';
@@ -6066,38 +5983,67 @@ function create_hover(SVG, control) {
     function highlight(event) {
         SVG.state().interactions.selection.active = true;
 
+        document.getElementById("filter_mode").style['opacity'] = 1;
+        document.getElementById("filter_mode").style['display'] = 'block';
         if (event.target.hasAttribute("__legend__")) {
+            event.target.active = true;
+            let p = SVG.state().legend.filter(d => d['glyph'].active);
+            let min_c = d3.min(p.map(d => {
+                return (+d['glyph'].getBoundingClientRect().bottom - +d['glyph'].getBoundingClientRect().top) / 1;
+            }));
+            let max_c = d3.max(p.map(d => {
+                return (+d['glyph'].getBoundingClientRect().bottom - +d['glyph'].getBoundingClientRect().top) / 1;
+            }));
+            console.log([min_c, max_c]);
+
             let color = window.getComputedStyle(event.target).fill;
+            let color1 = color;
+            color = "none";
+            if (color === "none") {
+                (+event.target.getBoundingClientRect().bottom - +event.target.getBoundingClientRect().top) / 1;
+                // height = (+event.target.getBoundingClientRect().bottom - +event.target.getBoundingClientRect().top) / 2;
+            }
             for (const mark of SVG.state().svg_marks) {
-                if (window.getComputedStyle(mark).fill != color) {
+                let condition;
+                if (color === "none") {
+                    if (window.getComputedStyle(mark).fill !== color1) continue;
+                    let m_width = (+mark.getBoundingClientRect().bottom - +mark.getBoundingClientRect().top) / 1;
+                    // let m_height = (+mark.getBoundingClientRect().bottom - +mark.getBoundingClientRect().top) / 2;
+                    condition = min_c > m_width || m_width > max_c;
+                } else {
+                    condition = window.getComputedStyle(mark).fill != color;
+                }
+                if (condition) {
                     mark.setAttribute("opacity", 0.25);
                 } else {
                     mark.setAttribute("opacity", 1);
                 }
             }
-            var keys = (event.ctrlKey ? " ctrl " : "") + (event.shiftKey ? " shift " : "") + (event.altKey ? " alt " : "");
-            document.getElementById("logfile").innerHTML += event.type + " [" + keys + "] " + SVG.state().svg.id + " to filter by legend <br/>";
+            (event.ctrlKey ? " ctrl " : "") + (event.shiftKey ? " shift " : "") + (event.altKey ? " alt " : "");
+            // document.getElementById("logfile").innerHTML += event.type + " [" + keys + "] " + SVG.state().svg.id + " to filter by legend <br/>";
+            
             return;
         } 
-        document.getElementById("filter_mode").style['opacity'] = 1;
-        document.getElementById("filter_mode").style['display'] = 'block';
 
-        let ctrl = event.ctrlKey, cmd = event.metaKey, alt = event.altKey, shift = event.shiftKey;
+        event.ctrlKey; event.metaKey; event.altKey; event.shiftKey;
 
-        if (ctrl || cmd || alt || shift) {
-            let opacity = !event.target.hasAttribute("opacity") ? 0.25 : 
-                +event.target.getAttribute("opacity") === 1 ? 0.25 : 1;
-            event.target.setAttribute("opacity", opacity);
-        } else {
-            event.target.setAttribute("opacity", 1);
-            for (const mark of SVG.state().svg_marks) {
-                if (mark === event.target) continue;
-                mark.setAttribute("opacity", 0.25);
-            }
-        }
+        // if (ctrl || cmd || alt || shift) {
+        //     let opacity = !event.target.hasAttribute("opacity") ? 0.25 : 
+        //         +event.target.getAttribute("opacity") === 1 ? 0.25 : 1;
+        //     event.target.setAttribute("opacity", opacity);
+        // } else {
+        //     event.target.setAttribute("opacity", 1);
+        //     for (const mark of SVG.state().svg_marks) {
+        //         if (mark === event.target) continue;
+        //         mark.setAttribute("opacity", 0.25);
+        //     }
+        // }
 
-        var keys = (event.ctrlKey ? " ctrl " : "") + (event.shiftKey ? " shift " : "") + (event.altKey ? " alt " : "");
-        document.getElementById("logfile").innerHTML += event.type + " [" + keys + "] " + SVG.state().svg.id + " to select mark <br/>";
+        // var keys = (event.ctrlKey ? " ctrl " : "") + (event.shiftKey ? " shift " : "") + (event.altKey ? " alt " : "");
+        // let tooltips = document.querySelectorAll(".tooltip");
+        // if (tooltips.length) tooltips.forEach(d => d.style['visibility'] = 'hidden');
+        // d3.selectAll(".hover").attr("display", "none")
+        // document.getElementById("logfile").innerHTML += event.type + " [" + keys + "] " + SVG.state().svg.id + " to select mark <br/>";
     }
 
     function show_data(event) {
@@ -6127,6 +6073,7 @@ function create_hover(SVG, control) {
         for (const mark of marks) {
             // if (mark.style['opacity'] && +mark.style['opacity'] !== 1) return;
             ++i;
+            // if (i == 2) break;
             line(SVG, event, mark, i);
         }
         if (marks.length > 1) {
@@ -6134,9 +6081,11 @@ function create_hover(SVG, control) {
             [...tooltip.children]
                 .sort((a,b) => +a.children[2].innerHTML < +b.children[2].innerText ? 1 : -1)
                 .forEach(node => tooltip.appendChild(node));
-            for (let i = 0; i < tooltip.children.length - 1; ++i) {
-                tooltip.children[i].children[2].innerHTML = +tooltip.children[i].children[2].innerHTML - 
-                    +tooltip.children[i + 1].children[2].innerHTML;
+            if (marks[0].type !== "polyline") {
+                for (let i = 0; i < tooltip.children.length - 1; ++i) {
+                    tooltip.children[i].children[2].innerHTML = +tooltip.children[i].children[2].innerHTML - 
+                        +tooltip.children[i + 1].children[2].innerHTML;
+                }
             }
         }
     }
@@ -6197,13 +6146,16 @@ select.applyBrush = function(SVG, x, y, width, height) {
 
     if (SVG.state().svg_marks.length > 1) {
         let tooltips = [document.getElementById("tooltipbrush1"), document.getElementById("tooltipbrush2")];
+        console.log(tooltips);
         for (const tooltip of tooltips) {
             [...tooltip.children]
                 .sort((a,b) => +a.children[2].innerHTML < +b.children[2].innerText ? 1 : -1)
                 .forEach(node => tooltip.appendChild(node));
-            for (let i = 0; i < tooltip.children.length - 1; ++i) {
-                tooltip.children[i].children[2].innerHTML = +tooltip.children[i].children[2].innerHTML - 
-                    +tooltip.children[i + 1].children[2].innerHTML;
+            if (SVG.state().svg_marks[0].type !== "polyline") {
+                for (let i = 0; i < tooltip.children.length - 1; ++i) {
+                    tooltip.children[i].children[2].innerHTML = +tooltip.children[i].children[2].innerHTML - 
+                        +tooltip.children[i + 1].children[2].innerHTML;
+                }
             }
         }
     }
@@ -6238,6 +6190,10 @@ select.updateBrush = function(SVG) {
         }
     }
 };
+
+function identity(x) {
+    return x;
+}
 
 var top = 1,
     right = 2,
@@ -6279,7 +6235,7 @@ function axis(orient, scale, SVG) {
 
   function axis() {
     var values = tickValues == null ? (scale.ticks ? scale.ticks.apply(scale, tickArguments) : scale.domain()) : tickValues,
-        format = tickFormat == null ? (scale.tickFormat ? scale.tickFormat.apply(scale, tickArguments) : identity$1) : tickFormat,
+        format = tickFormat == null ? (scale.tickFormat ? scale.tickFormat.apply(scale, tickArguments) : identity) : tickFormat,
         position = (scale.bandwidth ? center : number)(scale.copy(), offset);
     values = orient === left || orient === right ? values.reverse() : values;
 
@@ -6434,14 +6390,14 @@ function annotate(SVG) {
 
 let bind = function(SVG) {
     function listener (event) {
-        if (!SVG.state().interactions.annotate.flag) return;
+        if (!SVG.state().interactions.annotate.flag || SVG.state().svg.parentElement.style['visibility'] === "hidden") return;
 
         let x_click = event.clientX - SVG.state().svg.getBoundingClientRect().left,
             y_click = event.clientY - SVG.state().svg.getBoundingClientRect().top;
         
         if (x_click < SVG.state().x_axis.range[0] || y_click < SVG.state().y_axis.range[1]) return;
 
-        let text = prompt('Type here');
+        let text = prompt('Annotation text:');
         if (!text) return;
 
         const annotations = [
@@ -6468,12 +6424,144 @@ let bind = function(SVG) {
             .attr("class", "annotation-group")
             .call(makeAnnotations);
         
-        var keys = (event.ctrlKey ? " ctrl " : "") + (event.shiftKey ? " shift " : "") + (event.altKey ? " alt " : "");
-        document.getElementById("logfile").innerHTML += event.type + " [" + keys + "] " + SVG.state().svg.id + " to annotate <br/>";
+        (event.ctrlKey ? " ctrl " : "") + (event.shiftKey ? " shift " : "") + (event.altKey ? " alt " : "");
+        // document.getElementById("logfile").innerHTML += event.type + " [" + keys + "] " + SVG.state().svg.id + " to annotate <br/>";
     }  
 
     document.addEventListener('mouseup', listener);
 };
+
+function dragElement(SVG) {
+    var pos3 = 0, pos4 = 0;
+    document.addEventListener('mousedown', dragMouseDown);
+    var elmnt;
+
+    function dragMouseDown(e) {
+        if (SVG.state().svg.parentElement.style['visibility'] === 'hidden') return;
+        
+        e = e || window.event;
+        // e.preventDefault();
+        // get the mouse cursor position at startup:
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        // elmnt.onmouseup = closeDragElement;
+        // call a function whenever the cursor moves:
+        // elmnt.onmousemove = elementDrag;
+        elmnt = null;
+
+        for (const mark of SVG.state().svg_marks) {
+            if (mark.hasAttribute("__legend__")) continue;
+            let bb = mark.getBoundingClientRect();
+            if (e.clientX >= +bb.left && e.clientX <= +bb.right && e.clientY >= +bb.top && e.clientY <= +bb.bottom) {
+                elmnt = mark;
+                break;
+            }
+        }
+        if (elmnt) {
+            document.addEventListener('mousemove', elementDrag);
+            document.addEventListener('mouseup', closeDragElement);
+            elmnt.__y__ = e.clientY;
+        }
+    }
+
+    function elementDrag(e) {
+
+        e = e || window.event;
+        e.preventDefault();
+        // calculate the new cursor position:
+        pos3 - e.clientX;
+        pos4 - e.clientY;
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        // set the element's new position:
+        elmnt.setAttribute("transform", "translate(0," + (e.clientY - elmnt.__y__) + ")");
+
+        // let d = constrain_elements(SVG);
+    }
+
+    function closeDragElement() {
+        // stop moving when mouse button is released:
+        // elmnt.onmouseup = null;
+        // elmnt.onmousemove = null;
+        document.removeEventListener('mousemove', elementDrag);
+        document.removeEventListener('mouseup', closeDragElement);
+        // constrain_elements(SVG);
+
+        let groups = new Map();
+        let offset, ordering;
+        let color = window.getComputedStyle(elmnt).fill;
+
+        for (const mark of SVG.state().svg_marks) {
+            if (mark.hasAttribute("__legend__")) continue;
+            if (mark === elmnt) offset = +mark.getBoundingClientRect().left;
+            let o = +mark.getBoundingClientRect().left;
+            groups[o] ? groups[o].push(mark) : groups[o] = [mark];
+        }
+
+        groups[offset].sort(function(a, b) {
+            let y1 = +a.getBoundingClientRect().bottom;
+            let y2 = +b.getBoundingClientRect().bottom;
+            return y1 > y2 ? -1 : 1
+        });
+    
+        for (let i = 0; i < groups[offset].length; ++i) {
+            if (groups[offset][i] === elmnt) {
+                ordering = i;
+                break;
+            }
+        }
+
+        for (const [_, group] of Object.entries(groups)) {
+            let el;
+            for (const mark of group) {
+                if (window.getComputedStyle(mark).fill === color) {
+                    el = mark;
+                    break;
+                }
+            }
+
+            el.setAttribute("y", +group[ordering - 1].getAttribute("y") - +el.getAttribute("height"));
+            el.setAttribute("transform", "translate(0, 0)");
+
+            for (let i = ordering; i < group.length; ++i) {
+                if (group[i] === el) continue;
+                let e = i === ordering ? el : group[i - 1];
+                group[i].setAttribute("y", +e.getAttribute("y") - +group[i].getAttribute("height"));
+            }
+        }
+
+        // Legend
+        ordering = SVG.state().legend.length - ordering - 1;
+        SVG.state().legend[ordering];
+        let curr;
+        for (let i = 0; i < SVG.state().legend.length; ++i) {
+            if (window.getComputedStyle(SVG.state().legend[i]['glyph']).fill === color) {
+                curr = i;
+                break;
+            }
+        }
+        
+        for (let i = curr; i < ordering; ++i) {
+            let parent1 = SVG.state().legend[curr]['label'].parentElement;
+            let parent2 = SVG.state().legend[i + 1]['label'].parentElement;
+            parent1.appendChild(SVG.state().legend[i + 1]['label']);
+            parent1.appendChild(SVG.state().legend[i + 1]['glyph']);
+            parent2.appendChild(SVG.state().legend[curr]['label']);
+            parent2.appendChild(SVG.state().legend[curr]['glyph']);
+        }
+
+        // console.log(l['label'])
+        // console.log(SVG.state().legend[ordering + 1]['label'])
+        // l['label'].setAttribute("y", +SVG.state().legend[ordering + 1]['label'].getAttribute("y"));
+        // l['glyph'].setAttribute("y", +SVG.state().legend[ordering - 1]['glyph'].getAttribute("y") - 
+        //     +SVG.state().legend[ordering]['glyph'].getAttribute("height"));
+    }
+}    
+
+function arrange(SVG) {
+    if (!SVG.state().x_axis.ordinal.length) return;
+    dragElement(SVG);
+}
 
 function SVG() {
     var state = {
@@ -6535,6 +6623,9 @@ function SVG() {
             },
             annotate: {
                 flag: false
+            },
+            arrange: {
+                flag: false
             }
         }
     };
@@ -6558,7 +6649,7 @@ function SVG() {
                     y_min = j;
                 }
             }
-  
+
             Math.abs(x_offset - state.x_axis.ticks[x_min]['offset']) < Math.abs(y_offset - state.y_axis.ticks[y_min]['offset']) ? 
             state.x_axis.ticks[x_min]['label'] = state.axis_text_marks[i] :
             state.y_axis.ticks[y_min]['label'] = state.axis_text_marks[i];
@@ -6610,7 +6701,7 @@ function SVG() {
         if (title_x && Math.abs(max_y - state.svg.getBoundingClientRect().bottom) < 50) {
             title_x.__title__ = true;
             state.titles.x = title_x;    
-        }
+        } 
 
         for (const text of state.text_marks) {
             if (text.__title__) continue;
@@ -6618,11 +6709,17 @@ function SVG() {
             let text_x = (+text.getBoundingClientRect().left + +text.getBoundingClientRect().right) / 2,
                 text_y = (+text.getBoundingClientRect().top + +text.getBoundingClientRect().bottom) / 2;
             let min_pos = 10000, min_mark;
+            console.log(text);
             for (const mark of state.svg_marks) {
-                let mark_x = (+mark.getBoundingClientRect().left + +mark.getBoundingClientRect().right / 2) / 2,
-                    mark_y = (+mark.getBoundingClientRect().top + +mark.getBoundingClientRect().bottom) / 2;
-                
+                let mark_x = (+mark.getBoundingClientRect().left + +mark.getBoundingClientRect().right) / 2,
+                    mark_y = (+mark.getBoundingClientRect().bottom + +mark.getBoundingClientRect().bottom) / 2;
+                // let diff = Math.abs(mark_x - text_x) + Math.abs(mark_y - text_y);
                 let diff = Math.abs(mark_x - text_x) + Math.abs(mark_y - text_y);
+                // console.log([text_x, text_y])
+                // console.log([mark_x, mark_y])
+                // console.log(diff)
+                // console.log(mark)
+                // console.log('')
                 if (diff < min_pos) {
                     min_pos = diff;
                     min_mark = mark;
@@ -6632,6 +6729,8 @@ function SVG() {
             min_mark.removeAttribute("__mark__");
             text.setAttribute("__legend__", true);
             min_mark.setAttribute("__legend__", "true");
+            // min_mark.style['pointer-events'] = 'fill';
+            // console.log(min_mark)
             state.legend.push({'label': text, 'glyph': min_mark});
         }
     };
@@ -6677,7 +6776,9 @@ function SVG() {
             let tick_top = SVG.state().y_axis.ticks[SVG.state().y_axis.ticks.length - 1]['ticks'][0];
             tick_bottom = +(tick_bottom.hasAttribute("transform") ? tick_bottom.getAttribute("transform").match(/(-?\d+\.?-?\d*)/g)[1] : tick_bottom._global_transform[1] - SVG.state().y_axis.global_range[1]);
             tick_top = +(tick_top.hasAttribute("transform") ? tick_top.getAttribute("transform").match(/(-?\d+\.?-?\d*)/g)[1] : tick_top._global_transform[1] - SVG.state().y_axis.global_range[1]);
-    
+            // tick_bottom = SVG.state().y_axis.global_range[1];
+            // tick_top = SVG.state().y_axis.global_range[0];
+
             let new_domain_y = SVG.state().y_axis.range.map(
                 SVG.state().y_axis.scale.copy().range([tick_top, tick_bottom]).invert, SVG.state().y_axis.scale
             );
@@ -6724,10 +6825,13 @@ function SVG() {
                     filter(SVG, value.control);
                     break;
                 case INTERACTION_CONSTANTS.INTERACTION_TYPES.SORT:
-                    sort(SVG);
+                    // sort(SVG);
                     break;
                 case INTERACTION_CONSTANTS.INTERACTION_TYPES.ANNOTATE:
                     annotate(SVG);
+                    break;
+                case INTERACTION_CONSTANTS.INTERACTION_TYPES.ARRANGE:
+                    arrange(SVG);
                     break;
             }
         }
@@ -6800,8 +6904,8 @@ function SVG() {
             state.interactions.annotate.flag = false;
             state.svg.style['cursor'] = 'move';
 
-            document.getElementById("logfile").innerHTML += "Click " + state.svg.id + " " +
-                (+pan_elem.style['opacity'] === 0.4 ? "disable" : "enable") + " pan <br/>";
+            // document.getElementById("logfile").innerHTML += "Click " + state.svg.id + " " +
+                // (+pan_elem.style['opacity'] === 0.4 ? "disable" : "enable") + " pan <br/>";
         });
         brush_elem.addEventListener("click", function(event) {
             if (state.svg.parentNode.style['visibility'] === 'hidden') return;
@@ -6815,8 +6919,8 @@ function SVG() {
             state.interactions.brush.flag = !state.interactions.brush.flag;
             state.svg.style['cursor'] = 'crosshair';
 
-            document.getElementById("logfile").innerHTML += "Click " + state.svg.id + " " +
-                (+brush_elem.style['opacity'] === 0.4 ? "disable" : "enable") + " brush <br/>";
+            // document.getElementById("logfile").innerHTML += "Click " + state.svg.id + " " +
+                // (+brush_elem.style['opacity'] === 0.4 ? "disable" : "enable") + " brush <br/>";
         });
         filter_elem.addEventListener("click", function(event) {
             if (state.svg.parentNode.style['visibility'] === 'hidden') return;
@@ -6827,16 +6931,47 @@ function SVG() {
             // }
             // if (!state.interactions.filter.active || !document.querySelectorAll('[visibility="hidden"]')) {
                 state.interactions.filter.active = !state.interactions.filter.active;
+                state.interactions.brush.flag = false;
+            state.interactions.annotate.flag = false;
             // } 
-
+            let el;
             for (const mark of state.svg_marks) {
+                if (mark.hasAttribute("__legend__")) continue;
                 mark.style['visibility'] = state.interactions.filter.active ? 
                     +mark.getAttribute("opacity") === 1 ? 'visible' : 'hidden'
                     : 'visible';
-            }
+                if (mark.style['visibility'] === 'visible') el = mark;
 
-            document.getElementById("logfile").innerHTML += "Click " + state.svg.id + " " +
-                (state.interactions.filter.active ? "enable" : "disable") + " filter <br/>";
+                // for (const tick of state.x_axis.ticks) {
+                //     let offset = (+mark.getBoundingClientRect().left + +mark.getBoundingClientRect().right) / 2;
+                //     let t_offset = (+tick['ticks'][0].getBoundingClientRect().left + +tick['ticks'][0].getBoundingClientRect().right) / 2;
+                //     let l_offset = (+tick['label'].getBoundingClientRect().left + +tick['label'].getBoundingClientRect().right) / 2;
+                //     if (Math.abs(offset - t_offset) < 1 && mark.style['visibility'] !== 'visible') {
+                //         // tick['label'].style['visibility'] = 'hidden';
+                //         tick['ticks'][0].style['visibility'] = 'hidden';
+                //     }
+                //     if (Math.abs(offset - l_offset) < 20 && mark.style['visibility'] !== 'visible') {
+                //         tick['label'].style['visibility'] = 'hidden';
+                //     }
+                // }
+            }
+            console.log(el);
+
+            // for (const l of state.legend) {
+            //     console.log(l)
+            //     if (window.getComputedStyle(l['glyph']).fill !== window.getComputedStyle(el).stroke) {
+            //         l['label'].setAttribute("opacity", 0);
+            //         l['glyph'].setAttribute("opacity", 0);
+            //     } else {
+            //         l['label'].setAttribute("opacity", 1);
+            //         l['glyph'].setAttribute("opacity", 1);
+            //         l['label'].style['visibility'] = 'visible';
+            //         l['glyph'].style['visibility'] = 'visible';
+            //     }
+            // }
+
+            // document.getElementById("logfile").innerHTML += "Click " + state.svg.id + " " +
+                // (state.interactions.filter.active ? "enable" : "disable") + " filter <br/>";
         });
         annotate_elem.addEventListener("click", function(event) {
             if (state.svg.parentNode.style['visibility'] === 'hidden') return;
@@ -6851,8 +6986,8 @@ function SVG() {
             state.svg.style['cursor'] = 'pointer';
 
             // +annotate_elem.style['opacity'] === 0.4 ? annotate.unbind() : annotate.bind(SVG);
-            document.getElementById("logfile").innerHTML += "Click " + state.svg.id + " " +
-                (+annotate_elem.style['opacity'] === 0.4 ? "disable" : "enable") + " annotate <br/>";
+            // document.getElementById("logfile").innerHTML += "Click " + state.svg.id + " " +
+                // (+annotate_elem.style['opacity'] === 0.4 ? "disable" : "enable") + " annotate <br/>";
         });
     };
 
@@ -6860,10 +6995,11 @@ function SVG() {
         for (const mark of state.svg_marks) {
             if (mark.nodeName !== "path" || (!state.x_axis.ticks.length && !state.y_axis.ticks.length) || (mark.nodeName === "path" && mark.type === "ellipse")) {
                 if (mark.__data__) {
-                    if (typeof mark.__data__ === "string") {
+                    if (typeof mark.__data__ === "string" || typeof mark.__data__ === "number") {
                         var iterable = mark.__data__;
                         break;
                     }
+
                     let has_datum = "datum" in mark.__data__;
                     let has_properties = "properties" in mark.__data__;
                     let has_data = "data" in mark.__data__;
@@ -6937,9 +7073,9 @@ function SVG() {
         document.getElementById("filter_mode").style['display'] = 'block';
 
         for (const mark of state.svg_marks) {
-            if (mark.style["visibility"] === "hidden") continue;
+            if (mark.style["visibility"] === "hidden" || mark.hasAttribute("__legend__")) continue;
 
-            if ((mark.type === "line" || mark.type === "polygon") && state.x_axis.ticks.length && state.y_axis.ticks.length) {
+            if ((mark.type === "line" || mark.type === "polygon" || mark.type === "polyline") && state.x_axis.ticks.length && state.y_axis.ticks.length) {
                 state.interactions.brush.active = true;
                 select.applyBrush(SVG, x, y, width, height);
                 return;
@@ -7058,12 +7194,21 @@ function SVG() {
         let diff_2_y = +state.y_axis.ticks[2]['label'].innerHTML - +state.y_axis.ticks[1]['label'].innerHTML;
     
         let diff_1_x = +state.x_axis.ticks[1]['label'].innerHTML - +state.x_axis.ticks[0]['label'].innerHTML;
-        let diff_2_x = +state.x_axis.ticks[2]['label'].innerHTML - +state.x_axis.ticks[1]['label'].innerHTML;
+        if (state.x_axis.ticks.length < 3) {
+            var diff_2_x = 0;
+        } else {
+            var diff_2_x = +state.x_axis.ticks[2]['label'].innerHTML - +state.x_axis.ticks[1]['label'].innerHTML;
+        }
 
         let diff_tick_a = state.x_axis.ticks[1]['ticks'][0].getBoundingClientRect().left - 
             state.x_axis.ticks[0]['ticks'][0].getBoundingClientRect().left;
-        let diff_tick_b = state.x_axis.ticks[2]['ticks'][0].getBoundingClientRect().left - 
-            state.x_axis.ticks[1]['ticks'][0].getBoundingClientRect().left;
+
+        if (state.x_axis.ticks.length < 3) {
+            var diff_tick_b = 0;
+        } else {
+            var diff_tick_b = state.x_axis.ticks[2]['ticks'][0].getBoundingClientRect().left - 
+                state.x_axis.ticks[1]['ticks'][0].getBoundingClientRect().left;
+        }
 
         if (Math.abs(diff_1_x - diff_2_x) > 5e-1 || Math.abs(diff_tick_a - diff_tick_b) > 5e-1) {
             // let tick_diff_1 = state.x_axis.ticks['ticks'][1].getBoundingClientRect().left - 
@@ -7149,23 +7294,23 @@ function SVG() {
     return SVG;
 }
 
-function infer_type_from_path(element) { 
+function inferTypeFromPath(element) { 
     let commands = svgPathParser.parseSVG(element.getAttribute("d"));
     if (!commands.length) return;
 
     element.contour = commands;
-    let end_cmd = commands[commands.length - 1];
+    let endCmd = commands[commands.length - 1];
 
-    if (commands.length === 3 && commands[1].code === "A" && end_cmd.code === "A") {
+    if (commands.length === 3 && commands[1].code === "A" && endCmd.code === "A") {
         element.type = "ellipse";
-    } else if (end_cmd.code !== "Z") {
+    } else if (endCmd.code !== "Z") {
         element.type = "line";
     } else {
         element.type = "polygon";
     }
 }
 
-function analyze_axis(element, SVG, transform) {
+function analyzeAxis(element, SVG, transform) {
     element._global_transform = [...transform];
 
     if (element.nodeName === INTERACTION_CONSTANTS.SVG_TYPE.SVG_GROUP) {
@@ -7183,7 +7328,10 @@ function analyze_axis(element, SVG, transform) {
             for (const mark_type of INTERACTION_CONSTANTS.SVG_TYPE.SVG_MARK) {
                 if (element.nodeName === mark_type) {
                     let is_x = element.hasAttribute("x2") ? +element.getAttribute("x2") : 0;
+                    is_x = !is_x ? Math.abs((+element.getBoundingClientRect().bottom - +element.getBoundingClientRect().top)) < 1 : is_x;
+                    
                     let is_y = element.hasAttribute("y2") ? +element.getAttribute("y2") : 0;
+                    is_y = !is_y ? Math.abs((+element.getBoundingClientRect().left - +element.getBoundingClientRect().right)) < 1 : is_y;
 
                     if (is_x) SVG.state().y_axis.ticks.push(element);
                     if (is_y) SVG.state().x_axis.ticks.push(element);
@@ -7193,11 +7341,11 @@ function analyze_axis(element, SVG, transform) {
     }
 
     for (const child of element.childNodes) {
-        analyze_axis(child, SVG, [...transform]);
+        analyzeAxis(child, SVG, [...transform]);
     }
 }
 
-function analyze_DOM_tree(element, SVG, transform) {
+function analyzeDomTree(element, SVG, transform) {
     if (element === null) {
         return;
     }
@@ -7217,12 +7365,10 @@ function analyze_DOM_tree(element, SVG, transform) {
         }
 
         let c_name = element.className.animVal;
-        if (c_name.includes("legend")) {
-            skip = true;
-        } else if (c_name.includes("tick") || c_name.includes("grid") ||  c_name.includes("label") /*|| c_name.includes("title")*/) {
+        if (c_name.includes("legend")) ; else if (c_name.includes("tick") || c_name.includes("grid") ||  c_name.includes("label") /*|| c_name.includes("title")*/) {
             skip = true;
             for (const child of element.childNodes) {
-                analyze_axis(child, SVG, [...transform]);
+                analyzeAxis(child, SVG, [...transform]);
             }
         }
     } else {
@@ -7242,7 +7388,12 @@ function analyze_DOM_tree(element, SVG, transform) {
             }
 
             if (element.nodeName === mark_type) {
-                if (mark_type === "path") infer_type_from_path(element);
+                if (mark_type === "path") {
+                    if (!element.hasAttribute("d")) break;
+                    inferTypeFromPath(element);
+                } else if (mark_type === "polyline") {
+                    element.type = "polyline";
+                }
 
                 if (element.className && element.className.animVal === INTERACTION_CONSTANTS.SVG_TYPE.TICK_DOMAIN) {
                     SVG.state().has_domain = true;
@@ -7259,20 +7410,20 @@ function analyze_DOM_tree(element, SVG, transform) {
 
     if (!skip) {
         for (const child of element.childNodes) {
-            analyze_DOM_tree(child, SVG, [...transform]);
+            analyzeDomTree(child, SVG, [...transform]);
         }
     }
 }
 
 function inspect(element) {
     let svg = new SVG();
-    analyze_DOM_tree(element, svg, [0, 0]);
+    analyzeDomTree(element, svg, [0, 0]);
     svg.analyze_axes().infer_view().infer_mark_attributes();
     console.log(svg.state());
     return svg;
 }
 
-function add_interactions(checkbox, SVG) {
+function addInteractions(SVG) {
     for (const [key, value] of Object.entries(SVG.state().interactions)) {
         value.control = document.querySelector("#" + key);
         const axis_control = document.querySelector("#" + key + "_axis");
@@ -7281,13 +7432,9 @@ function add_interactions(checkbox, SVG) {
     return SVG;
 }
 
-function hydrate(svg_id, checkbox_id) {
-    let svg = document.querySelector(svg_id);
-    if (!svg) return;
-    
-    let checkbox = document.querySelector(checkbox_id);
-    let SVG = inspect(svg);
-    add_interactions(checkbox, SVG).hydrate();
+function hydrate(svg) {
+    if (typeof svg === "string") svg = document.querySelector(svg);
+    if (svg) addInteractions(inspect(svg)).hydrate();
 }
 
 export { hydrate };

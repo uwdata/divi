@@ -1,6 +1,6 @@
 import { INTERACTION_CONSTANTS } from "./constants";
 // import { svg_objects } from "./inspect";
-import { axisBottom, axisLeft } from "./d3/axis_old";
+// import { axisBottom, axisLeft } from "./d3/axis_old";
 import { parseSVG } from 'svg-path-parser';
 import zoom from './d3/zoom/zoom.js';
 import { Transform } from './d3/zoom/transform.js';
@@ -26,25 +26,27 @@ export function _zoom(SVG, control, axis_control) {
     const marks = svg.selectAll('[__mark__="true"]');
 
     // if (marks.node().parentElement.id !== "_g_clip") {
-    for (const node of marks.nodes()) {
-        let container = node.parentElement;
-        if (container.id !== "_g_clip") {
-            container = document.createElementNS("http://www.w3.org/2000/svg", "g");
-            container.id = "_g_clip";
-            container.setAttribute('clip-path', 'url(#clip-' + SVG.state().svg.id + ')'); 
-
-            node.parentElement.appendChild(container);
-        }  
-        container.appendChild(node);
+    if (SVG.state().x_axis.scale && SVG.state().y_axis.scale) {
+        for (const node of marks.nodes()) {
+            let container = node.parentElement;
+            if (container.id !== "_g_clip") {
+                container = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                container.id = "_g_clip";
+                container.setAttribute('clip-path', 'url(#clip-' + SVG.state().svg.id + ')'); 
+    
+                node.parentElement.appendChild(container);
+            }  
+            container.appendChild(node);
+        }
     }
 
-    // if (marks.node().parentElement.id !== "_g_clip") {
-    //     let container = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    //     container.id = "_g_clip";
-    //     marks.node().parentElement.appendChild(container);
-    //     marks.nodes().forEach(d => container.appendChild(d));
-    // }
-    // marks.node().parentElement.setAttribute('clip-path', 'url(#clip-' + SVG.state().svg.id + ')');
+    if (marks.node().parentElement.id !== "_g_clip") {
+        let container = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        container.id = "_g_clip";
+        marks.node().parentElement.appendChild(container);
+        marks.nodes().forEach(d => container.appendChild(d));
+    }
+    marks.node().parentElement.setAttribute('clip-path', 'url(#clip-' + SVG.state().svg.id + ')');
     var left_bound = marks.node()._global_transform[0] + SVG.state().svg.getBoundingClientRect().left;
     var top_bound = marks.node()._global_transform[1] + SVG.state().svg.getBoundingClientRect().top;
 
@@ -62,6 +64,24 @@ export function _zoom(SVG, control, axis_control) {
     g_y_axis.call(zoomY).attr("pointer-events", "none");
 
     let zoom_callback = function({sourceEvent, transform}) {
+        if (sourceEvent.type === "wheel" || sourceEvent.type === "dblclick") {
+            if (SVG.state().svg.parentNode.style['visibility'] === 'hidden') return;
+
+            let pan_elem = document.getElementById("pan_mode");
+            let brush_elem = document.getElementById("brush_mode");
+            let filter_elem = document.getElementById("filter_mode");
+            let annotate_elem = document.getElementById("annotate_mode");
+    
+            pan_elem.style['opacity'] = 1;
+            brush_elem.style['opacity'] = 0.4;
+            annotate_elem.style['opacity'] = 0.4;
+    
+            SVG.state().interactions.pan.flag = true;
+            SVG.state().interactions.brush.flag = false;
+            SVG.state().interactions.annotate.flag = false;
+            SVG.state().svg.style['cursor'] = 'move';
+        }
+
         // var zoom_enabled = document.getElementById("zoom").checked;
         // var pan_enabled = document.getElementById("pan").checked;
         sourceEvent.preventDefault();
@@ -91,7 +111,6 @@ export function _zoom(SVG, control, axis_control) {
         const y = (transform.y - z.y) / ty().k;
 
         if (!SVG.state().x_axis.axis && !SVG.state().y_axis.axis) {
-            console.log('here')
             let cliX = sourceEvent.clientX - marks.node()._global_transform[0] - SVG.state().svg.getBoundingClientRect().left;
             let cliY = sourceEvent.clientY - marks.node()._global_transform[1] - SVG.state().svg.getBoundingClientRect().top;
 
@@ -101,7 +120,7 @@ export function _zoom(SVG, control, axis_control) {
             } else {
                 control_zoom_X && g_x_axis.call(zoomX.scaleBy, k, [cliX, cliY]);
                 control_zoom_Y && g_y_axis.call(zoomY.scaleBy, k, [cliX, cliY]);
-                SVG.disambiguate("zoom", true);
+                // SVG.disambiguate("zoom", true);
             }
             marks.attr('transform', 'translate(' + tx().x + ',' + ty().y + ') scale(' + tx().k + ',' + ty().k + ')');
             svg.selectAll('text').attr('transform','translate(' + tx().x + ',' + ty().y + ') scale(' + tx().k + ',' + ty().k + ')');
@@ -150,11 +169,11 @@ export function _zoom(SVG, control, axis_control) {
 
         var keys = (sourceEvent.ctrlKey ? " ctrl " : "") + (sourceEvent.shiftKey ? " shift " : "") + (sourceEvent.altKey ? " alt " : "");
         if (sourceEvent.type === 'mousemove' && control_pan_X) {
-            document.getElementById("logfile").innerHTML += sourceEvent.type + " [" + keys + "] " + SVG.state().svg.id + " to pan [" +
-            (zoom_X && zoom_Y ? "2D" : (zoom_X ? "X-AXIS" : "Y-AXIS")) + "] <br/>";
+            // document.getElementById("logfile").innerHTML += sourceEvent.type + " [" + keys + "] " + SVG.state().svg.id + " to pan [" +
+            // (zoom_X && zoom_Y ? "2D" : (zoom_X ? "X-AXIS" : "Y-AXIS")) + "] <br/>";
         } else if (sourceEvent.type !== 'mousemove' && control_zoom_X) {
-            document.getElementById("logfile").innerHTML += sourceEvent.type + " [" + keys + "] " + SVG.state().svg.id + " to zoom [" +
-            (zoom_X && zoom_Y ? "2D" : (zoom_X ? "X-AXIS" : "Y-AXIS")) + "] <br/>";
+            // document.getElementById("logfile").innerHTML += sourceEvent.type + " [" + keys + "] " + SVG.state().svg.id + " to zoom [" +
+            // (zoom_X && zoom_Y ? "2D" : (zoom_X ? "X-AXIS" : "Y-AXIS")) + "] <br/>";
         }
         
         marks.attr("transform", function() {
