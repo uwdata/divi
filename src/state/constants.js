@@ -16,11 +16,12 @@ export const Meta = 'meta';
 export const MouseOver = 'mouseover';
 export const MouseLeave = 'mouseleave';
 
+export const Axis = 'axis';
 export const Tick = 'tick';
 export const TickDomain = 'domain';
 export const Legend = 'legend';
-export const Grid = 'grid';
-export const Label = 'label';
+// export const Grid = 'grid';
+// export const Label = 'label';
 export const Background = 'background';
 export const Foreground = 'foreground';
 

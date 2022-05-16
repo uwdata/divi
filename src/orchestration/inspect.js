@@ -1,6 +1,6 @@
 import {
     SvgContainer, SvgGroup, Tick, TickDomain, Background, 
-    Foreground, Grid, Label, Circle, Ellipse, Line, Polygon, 
+    Foreground, Axis, Circle, Ellipse, Line, Polygon, 
     Polyline, Rect, Path, Text
 } from '../state/constants.js';
 
@@ -42,6 +42,8 @@ function inferTypeFromPath(element) {
 
 function analyzeAxis(element, state, transform) {
     if (!element) return;
+    if (element.className && (element.className.baseVal === Background || 
+        element.className.baseVal === Foreground)) return;
 
     if (element.nodeName === SvgGroup) {
         parseTransform(element, transform);
@@ -58,8 +60,8 @@ function analyzeAxis(element, state, transform) {
         let isY = element.hasAttribute('y2') ? +element.getAttribute('y2') : 0;
         isY = !isY ? Math.abs(element.clientRect.left - element.clientRect.right) < 1 : isY;
 
-        if (isX) state.xAxis.ticks.push(element);
-        if (isY) state.yAxis.ticks.push(element);
+        if (isX) state.yAxis.ticks.push(element);
+        if (isY) state.xAxis.ticks.push(element);
     }
 
     for (const child of element.childNodes) {
@@ -80,7 +82,7 @@ function analyzeDomTree(element, state, transform) {
         parseTransform(element, transform);
 
         let cName = element.className.baseVal;
-        if (cName.includes(Tick) || cName.includes(Grid) || cName.includes(Label) /*|| c_name.includes("title")*/) {
+        if (cName.includes(Tick) || cName.includes(Axis)) {/*cName.includes(Grid) || cName.includes(Label)) || c_name.includes("title")*/
             skip = true;
             for (const child of element.childNodes) {
                 analyzeAxis(child, state, new Transform(transform));
