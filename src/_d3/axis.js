@@ -1,4 +1,3 @@
-import { svg } from "d3";
 import identity from "./identity.js";
 
 var top = 1,

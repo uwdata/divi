@@ -1,6 +1,6 @@
 {
   "name": "automatic-interaction",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Automatic interaction library for SVG visualizations",
   "main": "index.js",
   "repository": "https://github.com/Luke-S-Snyder/AutomaticInteraction.git",
@@ -9,8 +9,7 @@
   "scripts": {
     "prebuild": "rimraf dist && mkdir dist",
     "build": "rollup -c -w",
-    "test": "mocha 'test/**/*-test.js' && eslint src test",
-    "prepublishOnly": "yarn test && yarn build",
+    "prepublishOnly": "yarn build",
     "serve": "wds --watch"
   },
   "devDependencies": {
@@ -23,10 +22,8 @@
     "@babel/core": "^7.17.0",
     "@rollup/plugin-commonjs": "^21.0.1",
     "@rollup/plugin-node-resolve": "^13.1.3",
-    "@types/svg-path-parser": "^1.1.3",
     "babel": "^6.23.0",
-    "d3": "^7.4.4",
-    "parse-svg-path": "^0.1.2",
+    "d3-array": "^3.1.6",
     "rimraf": "^3.0.2",
     "rollup-plugin-babel": "^4.4.0",
     "rollup-plugin-bundle-imports": "^1.5.1",

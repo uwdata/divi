@@ -1,14 +1,14 @@
 import { INTERACTION_CONSTANTS } from "./constants";
 // import { svg_objects } from "./inspect";
 // import { axisBottom, axisLeft } from "./d3/axis_old";
-import { parseSVG } from 'svg-path-parser';
-import zoom from './d3/zoom/zoom.js';
+// import { parseSVG } from 'svg-path-parser';
+import * as _zoom from './d3/zoom/zoom.js';
 import { Transform } from './d3/zoom/transform.js';
 import { zoomTransform } from "d3";
 // import { ticks } from "d3";
 // import { ZoomTransform } from 'd3-zoom';
 
-export function _zoom(SVG, control, axis_control) {
+export function zoom(SVG, control, axis_control) {
     var svg = d3.select("#" + SVG.state().svg.id);
 
     if (SVG.state().x_axis.scale && !SVG.state().x_axis.ordinal.length) SVG.state().x_axis.axis.scale(SVG.state().x_axis.scale)();
