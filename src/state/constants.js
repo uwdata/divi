@@ -36,3 +36,8 @@ export const Polyline = 'polyline';
 export const Rect = 'rect';
 export const Path = 'path';
 export const Text = 'text';
+
+export const Left = 'left';
+export const Right = 'right';
+export const Top = 'top';
+export const Bottom = 'bottom';

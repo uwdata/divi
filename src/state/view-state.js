@@ -10,7 +10,6 @@ export class ViewState {
             domain: [null, null],
             ordinal: [],
             range: [null, null],
-            globalRange: [null, null],
             ticks: [],
             scale: null,
             axis: null
@@ -19,7 +18,6 @@ export class ViewState {
             domain: [null, null],
             ordinal: [],
             range: [null, null],
-            globalRange: [null, null],
             ticks: [],
             scale: null,
             axis: null

@@ -1,4 +1,6 @@
-import identity from "./identity.js";
+import identity from './identity.js';
+import { copyElement } from '../util/util.js';
+import { Transform } from '../util/transform.js';
 
 var top = 1,
     right = 2,
@@ -28,7 +30,7 @@ function entering() {
   return !this.__axis;
 }
 
-function axis(orient, scale, SVG) {
+function axis(orient, scale, state) {
   var tickArguments = [],
       tickValues = null,
       tickFormat = null,
@@ -42,8 +44,8 @@ function axis(orient, scale, SVG) {
       diff = null, 
       range_index = orient === top || orient === bottom ? 0 : 1,
       scale_transform = null,
-      svg_axis = orient === top || orient === bottom ? SVG.state().x_axis : SVG.state().y_axis,
-      ticks = svg_axis.ticks;
+      svgAxis = orient === top || orient === bottom ? state.xAxis : state.yAxis,
+      ticks = svgAxis.ticks;
 
   function axis() {
     var values = tickValues == null ? (scale.ticks ? scale.ticks.apply(scale, tickArguments) : scale.domain()) : tickValues,
@@ -51,89 +53,104 @@ function axis(orient, scale, SVG) {
         position = (scale.bandwidth ? center : number)(scale.copy(), offset)
     values = orient === left || orient === right ? values.reverse() : values;
 
-    function ordinal_transform(element, transform) {
-        const global_position =
-          element.getBoundingClientRect().right - element.parentElement._global_transform[0] - SVG.state().svg.getBoundingClientRect().left;
+    // function ordinalTransform(element, transform) {
+    //     const global_position =
+    //       element.getBoundingClientRect().right - element.parentElement._global_transform[0] - SVG.state().svg.getBoundingClientRect().left;
         
-        if (!element._t) element._t = [global_position, 
-          element.hasAttribute("transform") ? +element.getAttribute("transform").match(/(-?\d+\.?\d*e?-?\d*)/g)[0] : global_position];
-        let new_pos = transform.applyX(element._t[0]);
+    //     if (!element._t) element._t = [global_position, 
+    //       element.hasAttribute("transform") ? +element.getAttribute("transform").match(/(-?\d+\.?\d*e?-?\d*)/g)[0] : global_position];
+    //     let new_pos = transform.applyX(element._t[0]);
 
-        new_pos < svg_axis.range[0] || new_pos > svg_axis.range[1] ? 
-          element.style.display = "none" : element.style.display = "block";
+    //     new_pos < svg_axis.range[0] || new_pos > svg_axis.range[1] ? 
+    //       element.style.display = "none" : element.style.display = "block";
 
-        return (new_pos - element._t[0]) + element._t[1];
-    }
+    //     return (new_pos - element._t[0]) + element._t[1];
+    // }
 
-    function update_tick(tick, value) {
-      let label = tick['label'];
-      let tick_marks = tick['ticks'];
+    function updateTick(tick, value) {
+      const label = tick.label;
+      const tickMarks = tick.marks;
 
-      label.innerHTML = svg_axis.ordinal.length || label.innerHTML == format(value) ? label.innerHTML : format(value);
+      label.innerHTML = svgAxis.ordinal.length || label.innerHTML === format(value) ? label.innerHTML : format(value);
 
-      let offset_label = label.hasAttribute("transform") ?
-        (orient === top || orient === bottom ? 
-          label.getAttribute("transform").match(/(-?\d+\.?\d*e?-?\d*)/g)[1] :
-          label.getAttribute("transform").match(/(-?\d+\.?\d*e?-?\d*)/g)[0]) :
-        0;
+      // const offset_label = label.hasAttribute("transform") ?
+      //   (orient === top || orient === bottom ? 
+      //     label.getAttribute("transform").match(/(-?\d+\.?\d*e?-?\d*)/g)[1] :
+      //     label.getAttribute("transform").match(/(-?\d+\.?\d*e?-?\d*)/g)[0]) :
+      //   0;
 
-      let text_anchor = label.hasAttribute("transform") ?
-        (orient === top || orient === bottom ? 
-          label.getAttribute("transform").match(/(-?\d+\.?\d*e?-?\d*)/g)[0] :
-          label.getAttribute("transform").match(/(-?\d+\.?\d*e?-?\d*)/g)[1]) :
-        (orient === top || orient === bottom ? 
-          label._global_transform[0] :
-          label._global_transform[1]);;
-      diff = diff == null ? +text_anchor - position(value) : diff;
+      // let text_anchor = label.hasAttribute("transform") ?
+      //   (orient === top || orient === bottom ? 
+      //     label.getAttribute("transform").match(/(-?\d+\.?\d*e?-?\d*)/g)[0] :
+      //     label.getAttribute("transform").match(/(-?\d+\.?\d*e?-?\d*)/g)[1]) :
+      //   (orient === top || orient === bottom ? 
+      //     label._global_transform[0] :
+      //     label._global_transform[1]);;
+      // diff = diff == null ? +text_anchor - position(value) : diff;
 
-      if (scale_transform) {
-        var label_t = transform(ordinal_transform(label, scale_transform), +Math.abs(offset_label) > 1e-2 ? +offset_label : 0);
-      } else {
-        var label_t = transform(position(value) + (Math.abs(diff) < 5 ? diff : 0) + svg_axis.global_range[range_index] - label._global_transform[range_index], +Math.abs(offset_label) > 1e-2 ? +offset_label : 0);
+      // if (scale_transform) {
+      //   var label_t = transform(ordinal_transform(label, scale_transform), +Math.abs(offset_label) > 1e-2 ? +offset_label : 0);
+      // } else {
+      //   var label_t = transform(position(value) + (Math.abs(diff) < 5 ? diff : 0) + svg_axis.global_range[range_index] - label._global_transform[range_index], +Math.abs(offset_label) > 1e-2 ? +offset_label : 0);
+      // }
+
+      // let rotate = label.hasAttribute("transform") && label.getAttribute("transform").includes("rotate") ? +label.getAttribute("transform").match(/(-?\d+\.?\d*e?-?\d*)/g).pop() : null;
+      if (label.clientRect) {
+        const lx = label.clientRect.left + label.clientRect.width / 2 - state.svg.clientRect.left;
+        const ly = label.clientRect.top + label.clientRect.height / 2 - state.svg.clientRect.top;
+  
+        const translateX = orient === bottom ? position(value) - lx : 0;
+        const translateY = orient === left ? position(value) - ly : 0; 
+  
+        label.setAttribute('transform', label.localTransform.getTransform(new Transform(translateX, translateY)));
       }
-
-      let rotate = label.hasAttribute("transform") && label.getAttribute("transform").includes("rotate") ? +label.getAttribute("transform").match(/(-?\d+\.?\d*e?-?\d*)/g).pop() : null;
-      label.setAttribute("transform", label_t + (rotate ? " rotate(" + rotate + ")" : ""));
       
-      for (const mark of tick_marks) {
-        let offset_mark = mark.hasAttribute("transform") ?
-        (orient === top || orient === bottom ? 
-          mark.getAttribute("transform").match(/(-?\d+\.?\d*e?-?\d*)/g)[1] :
-          mark.getAttribute("transform").match(/(-?\d+\.?\d*e?-?\d*)/g)[0]) :
-        0;
+      for (const mark of tickMarks) {
+        // let offset_mark = mark.hasAttribute("transform") ?
+        // (orient === top || orient === bottom ? 
+        //   mark.getAttribute("transform").match(/(-?\d+\.?\d*e?-?\d*)/g)[1] :
+        //   mark.getAttribute("transform").match(/(-?\d+\.?\d*e?-?\d*)/g)[0]) :
+        // 0;
 
-        if (scale_transform) {
-          var mark_t = transform(ordinal_transform(label, scale_transform), +Math.abs(offset_label) > 1e-2 ? +offset_label : 0);
-        } else {
-          var mark_t = transform(position(value) + svg_axis.global_range[range_index] - label._global_transform[range_index], +Math.abs(offset_mark) > 1e-2 ? +offset_mark : 0);
-        }
-        mark.setAttribute("transform", mark_t);
+        // if (scale_transform) {
+        //   var mark_t = transform(ordinal_transform(label, scale_transform), +Math.abs(offset_label) > 1e-2 ? +offset_label : 0);
+        // } else {
+        //   var mark_t = transform(position(value) + svg_axis.global_range[range_index] - label._global_transform[range_index], +Math.abs(offset_mark) > 1e-2 ? +offset_mark : 0);
+        // }
+        if (!mark.clientRect) continue;
+        const tx = mark.clientRect.left + mark.clientRect.width / 2 - state.svg.clientRect.left;
+        const ty = mark.clientRect.top + mark.clientRect.height / 2 - state.svg.clientRect.top;
+
+        const translateX = orient === bottom ? position(value) - tx : 0;
+        const translateY = orient === left ? position(value) - ty : 0; 
+        if (translateY) console.log([value, position(value)])
+        // if (!mark.localTransform) continue;
+        mark.setAttribute('transform', mark.localTransform.getTransform(new Transform(translateX, translateY)));
       }
     }
 
     for (var counter = 0; counter < values.length && counter < ticks.length; ++counter) {
-      update_tick(ticks[counter], svg_axis.ordinal.length ? svg_axis.ordinal[counter] : values[counter]);
+      updateTick(ticks[counter], svgAxis.ordinal.length ? svgAxis.ordinal[counter] : values[counter]);
     }
 
     for ( ; counter < values.length; ++counter) {
-      let new_tick = { 
-        'label': ticks[0]['label'].cloneNode(), 
-        'ticks': ticks[0]['ticks'].map(d => { let e = d.cloneNode(); e._global_transform = d._global_transform; return e; }), 
+      let newTick = { 
+        'label': copyElement(ticks[0].label), 
+        'marks': ticks[0].marks.map(tick => copyElement(tick)), 
         'offset': null
       };
-      new_tick['label']._global_transform = ticks[0]['label']._global_transform;
 
-      update_tick(new_tick, values[counter]);
-      ticks[0]['label'].parentElement.appendChild(new_tick['label']);
-      ticks[0]['ticks'].forEach((d, i) => d.parentElement.appendChild(new_tick['ticks'][i]));
-      ticks.push(new_tick);
+      updateTick(newTick, values[counter]);
+      ticks[0].label.parentElement.appendChild(newTick.label);
+      ticks[0].marks.forEach((d, i) => d.parentElement.insertBefore(newTick.marks[i], d));
+      ticks.push(newTick);
     }
 
-    let l = ticks.length;
-    for (let i = 0; counter < l; ++counter) {
-      let pos = ticks.length - 1 - i;
-      ticks[pos]['label'].remove();
-      ticks[pos]['ticks'].forEach(d => d.remove());
+    const length = ticks.length;
+    for ( ; counter < length; ++counter) {
+      const pos = ticks.length - 1;
+      if (ticks[pos].label) ticks[pos].label.remove();
+      ticks[pos].marks.forEach(d => d.remove());
       ticks.pop();
     }
   }

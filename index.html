@@ -94,17 +94,18 @@
                     </div>
                 </div>
 
-            <div style= "position:absolute;display:flex;margin-top:30px;margin-left:300px;">
+            <div style= "position:absolute;display:flex;margin-top:30px;margin-left:0px;">
                 <!-- <div id="vis" style='visibility:visible'></div>  -->
                 <!-- <div id="linevis" style="visibility:visible;"></div>  -->
                 <!-- <div id="stackedvis" style="visibility:visible;"></div> -->
-                <div id="vega" style="visibility:visible"></div>
+                <!-- <div id="vega" style="visibility:visible"></div> -->
                 <!-- <div id="barchart" style="visibility:visible;"></div> -->
                 <!-- <div id="log" style="position:visible"></div> -->
                 <!-- <div id="hex" style="visibility:visible;"></div> -->
                 <!-- <div id="stackedbar" style="visibility:visible;"></div> -->
                 <!-- <div id="map" style="visibility:visible;"></div> -->
                 <!-- <div id="glyphmap" style="visibility:visible;"></div> -->
+                <div id="trendline" style="visibility:visible;"></div>
                 <div id="ggplot" style="display:none;">
                     <svg width="720" height="450" id="ggplot">
                         <g>
@@ -404,7 +405,7 @@
             // createScatterPlot();
             // createLineChart(); 
             // createStackedChart();
-            createVegaLineChart();
+            // createVegaLineChart();
             // createBarChart();
             // createLogChart();
             // createHexChart();
@@ -412,6 +413,11 @@
             // createMap();
             // createGlyphMap();
             // AutomaticInteraction.hydrate("#ggplot");
+            $(document).ready(function() {
+                $("#trendline").load('examples/visualizations/trendline.svg', null, function() {
+                    AutomaticInteraction.hydrate("#trendline");
+                });
+            });
 
             $("#menu_mode").on("click", function(event) {
                 console.log('here')
