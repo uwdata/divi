@@ -1,216 +1,325 @@
-import { min, max } from 'd3-array';
+import { min, max, mean } from 'd3-array';
+import { text } from 'd3-fetch';
 import { scaleTime, scaleBand, scaleLinear } from 'd3-scale';
-import { Bottom, Left, Right, Top } from '../state/constants';
+import { Bottom, CategoricalColorLegend, Left, Right, SizeLegend, Top } from '../state/constants';
 import { axisBottom, axisLeft } from '../_d3/axis';
 import { getFormatVal } from './attribute-parsers';
-import { compareTickStyles, computeBounds, computeCenterPos } from './util';
+import { computeCenterPos, flattenRGB } from './util';
 
-const epsilon = 0.5;
-
-// export function groupLabels(state) {
-//     function offset(tick, text) {
-//         if (!text) return Number.MAX_VALUE;
-
-//         const axis = tick['ticks'][0].className.baseVal;
-//         const xOffset = Math.abs((text.clientRect.left + text.clientRect.right) / 2 - tick['offset']);
-//         const yOffset = Math.abs((text.clientRect.top + text.clientRect.bottom) / 2 - tick['offset']);
-
-//         return axis.includes('x-axis') ? xOffset : yOffset;
-//     }
-
-//     const axes = [state.xAxis, state.yAxis];
-//     for (const axis of axes) {
-//         const ticks = axis.ticks;
-
-//         for (const tick of ticks) {
-//             for (const axisTextMark of state.axisTextMarks) {
-//                 const currOffset = offset(tick, tick['label']);
-//                 const newOffset = offset(tick, axisTextMark);
-
-//                 if (newOffset < currOffset) {
-//                     const axis = tick['ticks'][0].className.baseVal;
-//                     const tie = Math.abs(newOffset - currOffset) < epsilon && tick['label']
-//                     ? axis.includes('x-axis') ? tick['label'].clientRect.top - axisTextMark.clientRect.top
-//                     : axisTextMark.clientRect.left - tick['label'].clientRect.left
-//                     : 1; 
-
-//                     if (tie > 0) tick['label'] = axisTextMark;
-//                 }
-//             }
-
-//             tick['label'].tick = true;
-//         }
-//     }
-
-//     state.axisTextMarks.filter(textMark => !textMark.tick).map(textMark => state.textMarks.push(textMark));
-//     state.axisTextMarks = state.axisTextMarks.filter(textMark => textMark.tick);
-// }
-
-// export function groupAxis(axis, index) {
-//     let positionMap = { };
-
-//     for (let i = 0; i < axis.ticks.length; ++i) {
-//         let offset = axis.ticks[i].clientRect[index];
-//         axis.ticks[i].setAttribute('class', (index === 'left' ? 'x-axis' : 'y-axis') + ' tick');
-
-//         offset in positionMap ? positionMap[offset]['ticks'].push(axis.ticks[i]) 
-//         : positionMap[offset] = { 'label': null, 'ticks': [axis.ticks[i]] };
-//     }
-
-//     axis.ticks = [];
-//     for (const [key, value] of Object.entries(positionMap)) {
-//         value['offset'] = +key;
-//         axis.ticks.push(value);
-//     }
-
-//     axis.ticks.sort((first, second) => +first['offset'] < +second['offset'] ? -1 : (+first['offset'] > +second['offset'] ? 1 : 0))
-// }
-
-export function groupLegend(state) {
-    let titleX, titleY,
-        minX = 10000, maxY = 0;
-    for (const text of state.textMarks) {
-        if (text.clientRect.left < minX) {
-            minX = text.clientRect.left;
-            titleY = text;
-        }
-        if (text.clientRect.bottom > maxY) {
-            maxY = text.clientRect.bottom;
-            titleX = text;
-        }
-    }
-
-    if (titleY && Math.abs(minX - state.svg.clientRect.left) < 50) {
-        titleY.__title__ = true;
-        state.titles.y = titleY;
-    }
-    if (titleX && Math.abs(maxY - state.svg.clientRect.bottom) < 50) {
-        titleX.__title__ = true;
-        state.titles.x = titleX;    
-    } 
-
-    for (const text of state.textMarks) {
-        if (text.__title__) continue;
-
-        let textX = (text.clientRect.left + text.clientRect.right) / 2,
-            textY = (text.clientRect.top + text.clientRect.bottom) / 2;
-        let minPos = 10000, minMark;
-
-        for (const mark of state.svgMarks) {
-            let markX = (mark.clientRect.left + mark.clientRect.right) / 2,
-                markY = (mark.clientRect.bottom + mark.clientRect.bottom) / 2;
-            // let diff = Math.abs(mark_x - text_x) + Math.abs(mark_y - text_y);
-            let diff = Math.abs(markX - textX) + Math.abs(markY - textY);
-
-            if (diff < minPos) {
-                minPos = diff;
-                minMark = mark;
-            }
-        }
-
-        minMark.removeAttribute('__mark__');
-        text.setAttribute('__legend__', true);
-        minMark.setAttribute('__legend__', 'true');
-        // min_mark.style['pointer-events'] = 'fill';
-        // console.log(min_mark)
-        state.legend.push({'label': text, 'glyph': minMark});
-    }
-}
+const epsilon = 5;
 
 export function identifyAxes(state) {
-    function collectOrphanTicks(axes) {
-        for (const axis of axes) {
-            for (const tick of axis.ticks) {
-                let newTicks = [];
-  
-                for (const tickMark of tick.marks) {
-                    for (const mark of state.svgMarks) {
-                        if (!mark.__tick__ && compareTickStyles(mark, tickMark)) {
-                                mark.removeAttribute('__mark__');
-                                mark.__tick__ = true;
-                                newTicks.push({'label': null, marks: [mark]});
-                            }
-                    }
+    function parseLegends(legends) {
+        for (const legend of legends) {
+            const mark1Style = window.getComputedStyle(legend.marks[0].mark);
+            const mark2Style = window.getComputedStyle(legend.marks[1].mark);
+            let matchingAttr = null;
+
+            if (mark1Style.fill !== mark2Style.fill) {
+                matchingAttr = 'fill';
+            } else if (mark1Style.color !== mark2Style.color) {
+                matchingAttr = 'color';
+            } else if (mark1Style.stroke !== mark2Style.stroke) {
+                matchingAttr = 'stroke';
+            }
+
+            if (matchingAttr) {
+                legend.type = CategoricalColorLegend;
+                legend.matchingAttr = matchingAttr;
+            } else {
+                legend.type = SizeLegend;
+            }
+
+            for (const {mark} of legend.marks) {
+                mark.role = 'legend';
+                mark.legend = legend;
+            }
+
+            state.legends.push(legend);
+        }
+    }
+
+    function assignTitles(titles) {
+        function calculatePos(el) {
+            const elBB = el.getBoundingClientRect();
+            return [elBB.left + elBB.width / 2, elBB.top + elBB.height / 2];
+        }
+
+        function getClosestTitle(x, y) {
+            const closestTitle = {title: null, distance: Number.MAX_VALUE};
+            for (const title of titles) {
+                const [titleX, titleY] = calculatePos(title);
+                const posDiff = Math.abs(titleX - x) + Math.abs(titleY - y);
+
+                if (posDiff < closestTitle.distance) {
+                    closestTitle.title = title;
+                    closestTitle.distance = posDiff;
                 }
-
-                axis.ticks = axis.ticks.concat(newTicks);
-            }
-        }
-    }
-
-    function pruneTicks(axis, position) {
-        for (const tick of axis.ticks) {
-            for (const mark of tick.marks) {
-                const [lh, rh] = computeBounds(mark, position);
-                if (lh > tick.range[0] && rh < tick.range[1]) {
-                    mark.setAttribute('__mark__', true);
-                    mark.__tick__ = false;
-                }
             }
 
-            tick.marks = tick.marks.filter(d => d.__tick__);
+            return closestTitle.title;
         }
+
+        [state.xAxis, state.yAxis].forEach(axis => {
+            const axisPos = axis.ticks.filter(d => d.label).map(tickGroup => calculatePos(tickGroup.label));
+            axis.title = getClosestTitle(mean(axisPos.map(d => d[0])), mean(axisPos.map(d => d[1])));
+            if (axis.title) axis.title.role = 'axis-title';
+        });
+        state.legends.map(legend => {
+            const legendPos = legend.marks.filter(d => d.label).map(mark => calculatePos(mark.label));
+            legend.title = getClosestTitle(mean(legendPos.map(d => d[0])), mean(legendPos.map(d => d[1])));
+            if (legend.title) legend.title.role = 'legend-title';
+        });
+
+        state.title = titles.filter(d => !d.role)[0];
     }
 
-    function collectGroups(groups) {
-        let candidateAxes = [];
-        for (const [position, group] of Object.entries(groups)) {
-            for (const [_, value] of Object.entries(group)) {
-                if (value.length > 1) candidateAxes.push([position, value]);
-            }
-        }
-        return candidateAxes;
-    }
+    function collectOrphanTicks(orphanTicks) {
+        for (const {alignment, tick: orphanTick} of orphanTicks) {
+            const isX = alignment === Top || alignment === Bottom;
+            const axis = isX ? state.xAxis : state.yAxis;
+            const orphanBB = orphanTick.getBoundingClientRect();
+            let matched = false;
+            
+            for (let i = 0; i < axis.ticks.length; ++i) {
+                for (const tick of axis.ticks[i].ticks) {
+                    const tickBB = tick.getBoundingClientRect();
+                    const sizeMatch = isX ? orphanBB.height === tickBB.height : orphanBB.width === tickBB.width;
+                    const offset = isX ? Math.abs(orphanBB.left + orphanBB.width / 2 - tickBB.left - tickBB.width / 2)
+                    : Math.abs(orphanBB.top + orphanBB.height / 2 - tickBB.top - tickBB.height / 2);
+                    
+                    if (offset < epsilon && sizeMatch) {
+                        matched = true;
+                        const orphanStyle = window.getComputedStyle(orphanTick);
+                        const tickStyle = window.getComputedStyle(tick);
 
-    function pruneGroups(groups) {
-        // Identify aligned marks as ticks
-        for (const [position, group] of groups) {
-            for (const textMark of group) {
-                textMark.removeAttribute('textLength');
-                const tick = {label: textMark, marks: [], range: [Number.MAX_VALUE, Number.MIN_VALUE]};
-                const textOffset = computeCenterPos(textMark, position === Right ? Top : Right);
-
-                for (const mark of state.svgMarks) {
-                    const markOffset = computeCenterPos(mark, position === Right ? Top : Right);
-                    if (Math.abs(textOffset - markOffset) < epsilon) {
-                        mark.removeAttribute('__mark__');
-                        mark.__tick__ = true;
-
-                        const minPos = mark.clientRect[position === Right ? Left : position];
-                        const maxPos = mark.clientRect[position === Top ? Bottom : position];
-                        if ((position === Right && maxPos > tick.range[1]) || (position === Top && minPos < tick.range[0])) {
-                            tick.range[0] = minPos;
-                            tick.range[1] = maxPos;
+                        if (parseInt(orphanStyle.strokeWidth, 10) < parseInt(tickStyle.strokeWidth, 10) || 
+                            flattenRGB(orphanStyle.stroke) > flattenRGB(tickStyle.stroke)) {
+                            axis.ticks[i].ticks = axis.ticks[i].ticks.filter(d => d !== tick);
+                            axis.ticks[i].ticks.push(orphanTick);
                         }
-
-                        tick.marks.push(mark);
                     }
                 }
+            }
 
-                const axis = position === Right ? state.yAxis : state.xAxis;
-                axis.ticks.push(tick);
+            if (!matched) {
+                axis.ticks.push({label: null, ticks: [orphanTick]});
+            }
+        }
+    }
+
+    function groupAxes(axes) {
+        const axisMap = new Map();
+        const orphanTicks = [];
+
+        for (const [alignment, axis] of axes) {
+            for (const {text, tick} of axis) {
+                if (!text) {
+                    orphanTicks.push({alignment: alignment, tick: tick});
+                    continue;
+                }
+
+                axisMap.has(text) ? axisMap.get(text).ticks.push(tick) 
+                : axisMap.set(text, {alignment: alignment, ticks: [tick]});
             }
         }
 
-        pruneTicks(state.xAxis, Top);
-        pruneTicks(state.yAxis, Right);
-        collectOrphanTicks([state.xAxis, state.yAxis]);
-
-        // Remove ticks from mark
-        state.svgMarks = state.svgMarks.filter(d => !d.__tick__);
-    }
-
-    const positionMaps = {[Right]: {}, [Top]: {}}
-    
-    for (const textMark of state.textMarks) {
-        for (const [position, _map] of Object.entries(positionMaps)) {
-            const offset = textMark.clientRect[position];
-            offset in _map ? _map[offset].push(textMark) : _map[offset] = [textMark];
+        for (const [text, {alignment, ticks}] of axisMap.entries()) {
+            if (alignment === Top || alignment === Bottom) {
+                state.xAxis.ticks.push({label: text, ticks: ticks});
+            } else {
+                state.yAxis.ticks.push({label: text, ticks: ticks});
+            }
         }
+        
+        collectOrphanTicks(orphanTicks);
+        [state.xAxis.ticks, state.yAxis.ticks].forEach(axis => axis.forEach(
+            tickGroup => tickGroup.ticks.forEach(tick => tick.role = 'tick')
+        ));
     }
 
-    const candidateAxes = collectGroups(positionMaps);
-    pruneGroups(candidateAxes);
+    function collectTicks() {
+        const positionMap = {};
+        for (const svgMark of state.svgMarks) {
+            const markBB = svgMark.getBoundingClientRect();
+            const xOffset = 'x:' + [markBB.left, markBB.width, markBB.height].join(',');
+            const yOffset = 'y:' + [markBB.top, markBB.width, markBB.height].join(',');
+    
+            xOffset in positionMap ? positionMap[xOffset].push(svgMark) : positionMap[xOffset] = [svgMark];
+            yOffset in positionMap ? positionMap[yOffset].push(svgMark) : positionMap[yOffset] = [svgMark];
+        }
+    
+        return positionMap;
+    }
+
+    function collectTextKeys() {
+        const groups = new WeakMap();
+
+        for (const textMark of state.textMarks) {
+            const group = {closestMark: null, distance: Number.MAX_VALUE};
+    
+            for (const svgMark of state.svgMarks) {
+                const textBB = textMark.getBoundingClientRect();
+                const markBB = svgMark.getBoundingClientRect();
+    
+                const textCenter = {x: textBB.left + textBB.width / 2, y: textBB.top + textBB.height / 2};
+                const posDiff = min([
+                    Math.abs(textCenter.x - markBB.right) + Math.abs(textCenter.y - markBB.top),
+                    Math.abs(textCenter.x - markBB.right) + Math.abs(textCenter.y - markBB.bottom),
+                    Math.abs(textCenter.x - markBB.left) + Math.abs(textCenter.y - markBB.top),
+                    Math.abs(textCenter.x - markBB.left) + Math.abs(textCenter.y - markBB.bottom)
+                ]);
+    
+                if (posDiff < group.distance) {
+                    group.closestMark = svgMark;
+                    group.distance = posDiff;
+                }
+            }
+
+            groups.set(textMark, group);
+        }
+
+        return groups;
+    }
+
+    function separateOthers(others, textKeys) {
+        const legends = [], titles = [];
+
+        for (const [alignment, group] of others) {
+            if (group.length === 1) {
+                titles.push(...group);
+            } else {
+                let isLegend = true;
+                for (const text of group) {
+                    const textBB = text.getBoundingClientRect();
+                    const markBB = textKeys.get(text).closestMark.getBoundingClientRect();
+
+                    if (alignment === Left || alignment === Right) {
+                        if (textBB.left - markBB.right < 0 && markBB.left - textBB.right < 0) {
+                            isLegend = false;
+                        }
+                    } else if (textBB.top - markBB.bottom < 0 && markBB.top - textBB.bottom < 0) {
+                        isLegend = false;
+                    }
+                }
+
+                if (isLegend) {
+                    legends.push({title: '', marks: group.map(text => {
+                        return {label: text, mark: textKeys.get(text).closestMark};
+                     })});
+                } else {
+                    titles.push(...group);
+                }
+            }
+        }
+
+        return [legends, titles];
+    }
+
+    function pruneGroups(candidateGroups) {
+        const axes = [], others = [];
+        const tickCandidates = collectTicks();
+        const textKeys = collectTextKeys();
+
+        for (const {alignment, marks: textGroup} of candidateGroups) {
+            if (textGroup.length === 1) {
+                others.push([alignment, textGroup]);
+                continue;
+            }
+            let anyMatched = false;
+
+            for (const [_, tickGroup] of Object.entries(tickCandidates)) {
+                if (tickGroup.length < textGroup.length) continue;
+
+                let textMatched = true;
+                const tickStyles = {};
+                const matchedTicks = new WeakMap();
+
+                for (const text of textGroup) {
+                    const textBB = textKeys.get(text).closestMark.getBoundingClientRect();
+                    let tickMatch = false; 
+
+                    for (const tick of tickGroup) {
+                        const tickBB = tick.getBoundingClientRect();
+                        const xOffset = Math.abs(textBB.left + textBB.width / 2 - tickBB.left - tickBB.width / 2);
+                        const yOffset = Math.abs(textBB.top + textBB.height / 2 - tickBB.top - tickBB.height / 2);
+
+                        if ((xOffset < epsilon || yOffset < epsilon) && !matchedTicks.get(tick)) {
+                            matchedTicks.set(tick, text);
+                            tickMatch = true;
+
+                            const style = window.getComputedStyle(tick);
+                            const tickStyle = [style.stroke, style.color, style.fill, tickBB.width, tickBB.height].join(',');
+                            tickStyles[tickStyle] = tickStyle in tickStyles ? tickStyles[tickStyle] + 1 : 1;
+                            break;
+                        }
+                    }
+
+                    if (!tickMatch) {
+                        textMatched = false;
+                        break;
+                    }
+                }
+
+                const styleKey = Object.keys(tickStyles)[0];
+                if (textMatched && tickStyles[styleKey] === textGroup.length) {
+                    axes.push([alignment, tickGroup.map(d => {
+                        return {tick: d, text: matchedTicks.get(d)};
+                    })]);
+                    anyMatched = true;
+                }
+            }
+
+            if (!anyMatched) {
+                others.push([alignment, textGroup]);
+            }
+        }
+
+        return [axes, ...separateOthers(others, textKeys)];
+    }
+
+    function collectCandidateGroups() {
+        const positions = {[Right]: {}, [Left]: {}, [Top]: {}, [Bottom]: {}};
+
+        for (const textMark of state.textMarks) {
+            for (const [position, _map] of Object.entries(positions)) {
+                const {[position]: offset} = textMark.getBoundingClientRect();
+                offset in _map ? _map[offset].push(textMark) : _map[offset] = [textMark];
+            }
+        }
+
+        const markAssignment = new WeakMap();
+        const alignmentMap = new WeakMap();
+        for (const [alignment, candidateGroup] of Object.entries(positions)) {
+            for (const [_, marks] of Object.entries(candidateGroup)) {
+                for (const mark of marks) {
+                    if (!markAssignment.get(mark) || marks.length > markAssignment.get(mark).length) {
+                        markAssignment.set(mark, marks);
+                        alignmentMap.set(marks, alignment);
+                    }
+                }
+            }
+        }
+
+        let candidateGroups = [];
+        for (const textMark of state.textMarks) {
+            const marks = markAssignment.get(textMark);
+            if (!candidateGroups.includes(marks)) {
+                candidateGroups.push(marks);
+            }
+        }
+        candidateGroups = candidateGroups.map(d => {
+            return {alignment: alignmentMap.get(d), marks: d};
+        });
+
+        return candidateGroups;
+    }
+    
+    const candidateGroups = collectCandidateGroups();
+    const [axes, legends, titles] = pruneGroups(candidateGroups);
+    groupAxes(axes);
+    parseLegends(legends);
+    assignTitles(titles);
 }
 
 export function computeDomain(axis) {

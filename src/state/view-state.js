@@ -12,7 +12,8 @@ export class ViewState {
             range: [null, null],
             ticks: [],
             scale: null,
-            axis: null
+            axis: null,
+            title: null
         };
         this.yAxis = {
             domain: [null, null],
@@ -20,14 +21,12 @@ export class ViewState {
             range: [null, null],
             ticks: [],
             scale: null,
-            axis: null
+            axis: null,
+            title: null
         };
         
-        this.legend = [];
-        this.titles = {
-            x: null,
-            y: null
-        };
+        this.legends = [];
+        this.title = null;
         
         this.interactions = {
             selection: {

@@ -1,4 +1,5 @@
-import { Right, Left, Top } from "../state/constants";
+import { Right, Left, Top } from '../state/constants';
+import { sum } from 'd3-array';
 
 export function copyElement(element) {
     const newElement = element.cloneNode(true);
@@ -21,16 +22,23 @@ export function computeBounds(element, orient) {
 }
 
 export function compareTickStyles(element1, element2) {
-  if (element1.clientRect.height !== element2.clientRect.height && 
-      element1.clientRect.width !== element2.clientRect.width) return false;
+  // if (element1.clientRect.height !== element2.clientRect.height && 
+  //     element1.clientRect.width !== element2.clientRect.width &&
+  //     !matchAll) {
+  //   return false;
+  // }
 
   const style1 = window.getComputedStyle(element1);
   const style2 = window.getComputedStyle(element2);
 
   for (const key of style1) {
-    if (key === 'stroke-width') continue;
+    // if (key === 'stroke-width') continue;
     if (style1[key] !== style2[key]) return false;
   }
 
   return true;
+}
+
+export function flattenRGB(rgb) {
+  return sum(rgb.replace(/[^\d,]/g, '').split(','));
 }

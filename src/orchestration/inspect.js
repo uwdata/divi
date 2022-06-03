@@ -20,7 +20,7 @@ function extractElementInformation(element, transform) {
     //     width: +clientRect.width,
     //     height: +clientRect.height
     // }
-    element.clientRect = element.getBoundingClientRect();
+    // element.clientRect = element.getBoundingClientRect();
     element.localTransform = parseTransform(element, false);
     element.globalPosition = parseTransform(element, true, new Transform(transform));
 
