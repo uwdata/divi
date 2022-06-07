@@ -1,4 +1,4 @@
-import { INTERACTION_CONSTANTS } from "./constants";
+import { max, min } from "d3-array";
 
 function getFormattedDate(date) {
     var year = date.getFullYear();
@@ -12,8 +12,8 @@ function getFormattedDate(date) {
     return month + '/' + day + '/' + year;
   }  
 
-function create_tooltip(id, c=null) {
-    if (document.querySelector("#" + id)) return;
+function createTooltip(id, c=null) {
+    if (document.querySelector('#' + id)) return;
 
     const div = document.createElement("div");
     div.id = id;
@@ -158,73 +158,113 @@ function line(SVG, event, mark, i, id=null, c=null) {
 }
 
 
-function create_hover(SVG, control) {
+function createHover(state) {
     function mouseleave() {
         console.log('leave')
-        SVG.state().interactions.brush.on_elem = false;
+        state.interactions.brush.on_elem = false;
         let tooltip = document.querySelector("#tooltip");
         tooltip.style['visibility'] = 'hidden';
     }
     
     function highlight(event) {
-        SVG.state().interactions.selection.active = true;
+        state.interactions.selection.active = true;
+        if (event.target.role === 'legend') {
+            document.getElementById("filterMode").style['opacity'] = 1;
+            document.getElementById("filterMode").style['display'] = 'block';
 
-        document.getElementById("filter_mode").style['opacity'] = 1;
-        document.getElementById("filter_mode").style['display'] = 'block';
-        if (event.target.hasAttribute("__legend__")) {
             event.target.active = true;
-            let p = SVG.state().legend.filter(d => d['glyph'].active);
-            let min_c = d3.min(p.map(d => {
-                return (+d['glyph'].getBoundingClientRect().bottom - +d['glyph'].getBoundingClientRect().top) / 1;
-            }));
-            let max_c = d3.max(p.map(d => {
-                return (+d['glyph'].getBoundingClientRect().bottom - +d['glyph'].getBoundingClientRect().top) / 1;
-            }));
-            console.log([min_c, max_c])
-
-            let color = window.getComputedStyle(event.target).fill;
-            let color1 = color;
-            color = "none";
-            let width, height;
-            if (color === "none") {
-                width = (+event.target.getBoundingClientRect().bottom - +event.target.getBoundingClientRect().top) / 1;
-                // height = (+event.target.getBoundingClientRect().bottom - +event.target.getBoundingClientRect().top) / 2;
-            }
-            for (const mark of SVG.state().svg_marks) {
-                let condition;
-                if (color === "none") {
-                    if (window.getComputedStyle(mark).fill !== color1) continue;
-                    let m_width = (+mark.getBoundingClientRect().bottom - +mark.getBoundingClientRect().top) / 1;
-                    // let m_height = (+mark.getBoundingClientRect().bottom - +mark.getBoundingClientRect().top) / 2;
-                    condition = min_c > m_width || m_width > max_c;
-                } else {
-                    condition = window.getComputedStyle(mark).fill != color;
-                }
-                if (condition) {
+            event.target.legend.marks.forEach(d => {
+                if (!d.mark.active) d.mark.setAttribute('opacity', 0.25);
+                else d.mark.setAttribute('opacity', 1);
+            });
+            const minC = min(event.target.legend.marks.filter(d => d.mark.active).map(d => +d.label.innerHTML ? +d.label.innerHTML : d.label.__data__));
+            const maxC = max(event.target.legend.marks.filter(d => d.mark.active).map(d => +d.label.innerHTML ? +d.label.innerHTML : d.label.__data__));
+            console.log([minC, maxC])
+            for (const mark of state.svgMarks) {
+                if (window.getComputedStyle(mark).fill !== window.getComputedStyle(event.target).fill) continue;
+                let condition = mark.__inferred__data__[event.target.legend.title ? event.target.legend.title.innerHTML : 'legend'];
+                condition = condition >= minC && condition <= maxC;
+                if (!condition) {
                     mark.setAttribute("opacity", 0.25);
                 } else {
                     mark.setAttribute("opacity", 1);
                 }
             }
-            var keys = (event.ctrlKey ? " ctrl " : "") + (event.shiftKey ? " shift " : "") + (event.altKey ? " alt " : "");
-            // document.getElementById("logfile").innerHTML += event.type + " [" + keys + "] " + SVG.state().svg.id + " to filter by legend <br/>";
-            
             return;
-        } 
+        } else if (!event.target.getAttribute('__mark__')) return;
+
+        document.getElementById("filterMode").style['opacity'] = 1;
+        document.getElementById("filterMode").style['display'] = 'block';
+
+        let pan_elem = document.getElementById("panMode");
+        let brush_elem = document.getElementById("brushMode");
+        let filter_elem = document.getElementById("filterMode");
+        let annotate_elem = document.getElementById("annotateMode");
+
+        pan_elem.style['opacity'] = 0.4;
+        brush_elem.style['opacity'] = 1;
+        annotate_elem.style['opacity'] = 0.4;
+
+        state.interactions.pan.flag = false;
+        state.interactions.brush.flag = true;
+        state.interactions.annotate.flag = false;
+        state.svg.style['cursor'] = 'crosshair';
+
+
+        // if (event.target.hasAttribute("__legend__")) {
+        //     event.target.active = true;
+        //     let p = SVG.state().legend.filter(d => d['glyph'].active);
+        //     let min_c = d3.min(p.map(d => {
+        //         return (+d['glyph'].getBoundingClientRect().bottom - +d['glyph'].getBoundingClientRect().top) / 1;
+        //     }));
+        //     let max_c = d3.max(p.map(d => {
+        //         return (+d['glyph'].getBoundingClientRect().bottom - +d['glyph'].getBoundingClientRect().top) / 1;
+        //     }));
+        //     console.log([min_c, max_c])
+
+        //     let color = window.getComputedStyle(event.target).fill;
+        //     let color1 = color;
+        //     color = "none";
+        //     let width, height;
+        //     if (color === "none") {
+        //         width = (+event.target.getBoundingClientRect().bottom - +event.target.getBoundingClientRect().top) / 1;
+        //         // height = (+event.target.getBoundingClientRect().bottom - +event.target.getBoundingClientRect().top) / 2;
+        //     }
+        //     for (const mark of SVG.state().svg_marks) {
+        //         let condition;
+        //         if (color === "none") {
+        //             if (window.getComputedStyle(mark).fill !== color1) continue;
+        //             let m_width = (+mark.getBoundingClientRect().bottom - +mark.getBoundingClientRect().top) / 1;
+        //             // let m_height = (+mark.getBoundingClientRect().bottom - +mark.getBoundingClientRect().top) / 2;
+        //             condition = min_c > m_width || m_width > max_c;
+        //         } else {
+        //             condition = window.getComputedStyle(mark).fill != color;
+        //         }
+        //         if (condition) {
+        //             mark.setAttribute("opacity", 0.25);
+        //         } else {
+        //             mark.setAttribute("opacity", 1);
+        //         }
+        //     }
+        //     var keys = (event.ctrlKey ? " ctrl " : "") + (event.shiftKey ? " shift " : "") + (event.altKey ? " alt " : "");
+        //     // document.getElementById("logfile").innerHTML += event.type + " [" + keys + "] " + SVG.state().svg.id + " to filter by legend <br/>";
+            
+        //     return;
+        // } 
 
         let ctrl = event.ctrlKey, cmd = event.metaKey, alt = event.altKey, shift = event.shiftKey;
 
-        // if (ctrl || cmd || alt || shift) {
-        //     let opacity = !event.target.hasAttribute("opacity") ? 0.25 : 
-        //         +event.target.getAttribute("opacity") === 1 ? 0.25 : 1;
-        //     event.target.setAttribute("opacity", opacity);
-        // } else {
-        //     event.target.setAttribute("opacity", 1);
-        //     for (const mark of SVG.state().svg_marks) {
-        //         if (mark === event.target) continue;
-        //         mark.setAttribute("opacity", 0.25);
-        //     }
-        // }
+        if (ctrl || cmd || alt || shift) {
+            let opacity = !event.target.hasAttribute("opacity") ? 0.25 : 
+                +event.target.getAttribute("opacity") === 1 ? 0.25 : 1;
+            event.target.setAttribute("opacity", opacity);
+        } else {
+            event.target.setAttribute("opacity", 1);
+            for (const mark of state.svgMarks) {
+                if (mark === event.target) continue;
+                mark.setAttribute("opacity", 0.25);
+            }
+        }
 
         // var keys = (event.ctrlKey ? " ctrl " : "") + (event.shiftKey ? " shift " : "") + (event.altKey ? " alt " : "");
         // let tooltips = document.querySelectorAll(".tooltip");
@@ -233,10 +273,10 @@ function create_hover(SVG, control) {
         // document.getElementById("logfile").innerHTML += event.type + " [" + keys + "] " + SVG.state().svg.id + " to select mark <br/>";
     }
 
-    function show_data(event) {
-        SVG.state().interactions.brush.on_elem = true;
+    function showData(event) {
+        state.interactions.brush.on_elem = true;
 
-        create_tooltip("tooltip");
+        createTooltip("tooltip");
         let tooltip = document.querySelector("#tooltip");
         let data = "";
         let mark = event.target;
@@ -278,16 +318,16 @@ function create_hover(SVG, control) {
     }
 
     function mousedown(event) {
-        let marks = SVG.state().svg_marks;
+        let marks = state.svgMarks;
         for (const mark of marks) {
             mark.style['opacity'] = mark.style['opacity'] && mark.style['opacity'] === 0.5 ? 1 : 0.5; 
         }
         this.style['opacity'] = this.style['opacity'] && this.style['opacity'] === 1 ? 0.5 : 1; 
     }
 
-    for (const mark of SVG.state().svg_marks) {
-        if (!mark.type || mark.type === "ellipse" || (!SVG.state().x_axis.ticks.length && !SVG.state().y_axis.ticks.length)) {
-            mark.addEventListener('mouseenter', show_data);
+    for (const mark of state.svgMarks) {
+        if (true || !mark.type || mark.type === 'ellipse' || (!state.xAxis.ticks.length && !state.yAxis.ticks.length)) {
+            mark.addEventListener('mouseenter', showData);
             mark.addEventListener('mouseleave', mouseleave);
         } else {
             SVG.state().svg.addEventListener('mousemove', showline);
@@ -299,9 +339,16 @@ function create_hover(SVG, control) {
             });
         }
         mark.style['cursor'] = 'pointer';
-        mark.addEventListener('click', highlight);
         // mark.addEventListener('mousedown', mousedown);
     }
+    if (state.legends[0]) {
+        state.legends[0].marks.forEach(d => {
+            d.mark.style['pointer-events'] = 'fill';
+            d.mark.style['cursor'] = 'pointer';
+        });
+    } 
+    
+    document.addEventListener('click', highlight);
 
     control.addEventListener("change", function() {
         if (!this.checked) {
@@ -311,7 +358,7 @@ function create_hover(SVG, control) {
         } 
 
         for (const mark of SVG.state().svg_marks) {
-            if (!mark.type || mark.type === "ellipse" || (!SVG.state().x_axis.ticks.length && !SVG.state().y_axis.ticks.length)) {
+            if (true || !mark.type || mark.type === "ellipse" || (!SVG.state().x_axis.ticks.length && !SVG.state().y_axis.ticks.length)) {
                 this.checked ? mark.addEventListener('mouseenter', show_data) : mark.removeEventListener('mouseenter', show_data);
                 this.checked ? mark.addEventListener('mouseleave', mouseleave) : mark.removeEventListener('mouseleave', mouseleave);
             } else {
@@ -328,24 +375,24 @@ function add_click(SVG) {
     }
 }
 
-function select(SVG, control) {
-    create_hover(SVG, control);
+function select(state) {
+    createHover(state);
     // add_click(svg_objects);
 }
 
-select.applyBrush = function(SVG, x, y, width, height) {
+select.applyBrush = function(state, x, y, width, height) {
     d3.selectAll(".brush_tooltip").remove();
 
     let event1 = { clientX: x, pageX: x, clientY: y, pageY: y };
     let event2 = { clientX: x + +width, pageX: x + +width, clientY: y + +height, pageY: y + +height}
     let i = 0;
-    for (const mark of SVG.state().svg_marks) {
+    for (const mark of state.svgMarks) {
         ++i;
-        line(SVG, event1, mark, i, "brush1", "brush_tooltip");
-        line(SVG, event2, mark, i, "brush2", "brush_tooltip");
+        line(state, event1, mark, i, "brush1", "brush_tooltip");
+        line(state, event2, mark, i, "brush2", "brush_tooltip");
     }
 
-    if (SVG.state().svg_marks.length > 1) {
+    if (state.svgMmarks.length > 1) {
         let tooltips = [document.getElementById("tooltipbrush1"), document.getElementById("tooltipbrush2")];
         console.log(tooltips)
         for (const tooltip of tooltips) {

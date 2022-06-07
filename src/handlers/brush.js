@@ -1,7 +1,5 @@
-import { drag } from "d3";
-import { INTERACTION_CONSTANTS } from "./constants";
 
-function dragElement(elmnt, SVG, constrains) {
+function dragElement(elmnt, state, constrains) {
     var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     elmnt.onmousedown = dragMouseDown;
 
@@ -28,9 +26,10 @@ function dragElement(elmnt, SVG, constrains) {
         if (!constrains[1]) elmnt.setAttribute("y", elmnt.getAttribute("y") - pos2);
         if (!constrains[0]) elmnt.setAttribute("x", elmnt.getAttribute("x") - pos1);
 
-        SVG.filter(
-            +elmnt.getAttribute("x") + +SVG.state().svg.getBoundingClientRect().left,
-            +elmnt.getAttribute("y") + +SVG.state().svg.getBoundingClientRect().top,
+        filter(
+            state,
+            +elmnt.getAttribute("x") + +state.svg.getBoundingClientRect().left,
+            +elmnt.getAttribute("y") + +state.svg.getBoundingClientRect().top,
             elmnt.getAttribute("width"),
             elmnt.getAttribute("height")
         );
@@ -43,13 +42,13 @@ function dragElement(elmnt, SVG, constrains) {
     }
 }    
 
-export function brush(SVG, control, axis_control) {
+export function brush(state, filter, unfilter) {
     // if (SVG.state().svg_marks[0].nodeName === "path") {
     //     return;
     // }
 
     let rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-    rect.setAttribute("fill", "gray");
+    rect.style["fill"] = "gray";
     rect.setAttribute("opacity", 0.35)
     rect.setAttribute("x", 0);
     rect.setAttribute("y", 0);
@@ -59,8 +58,9 @@ export function brush(SVG, control, axis_control) {
     // rect.style['cursor'] = 'move';
     // rect.style['strokeWidth'] = '2px';
     rect.style['stroke'] = '#fff';
+    console.log(rect);
 
-    let svg = SVG.state().svg;
+    let svg = state.svg;
     svg.appendChild(rect);
 
     let mousedown = false,
@@ -69,14 +69,15 @@ export function brush(SVG, control, axis_control) {
     function update_rect() {
         if (+rect.getAttribute("width") === 0 || +rect.getAttribute("height") === 0) return;
         if (constrains[0]) {
-            rect.setAttribute("x", SVG.state().x_axis.global_range[0]);
-            rect.setAttribute("width", SVG.state().x_axis.global_range[1] - SVG.state().x_axis.global_range[0]);
+            rect.setAttribute("x", state.xAxis.range[0]);
+            rect.setAttribute("width", state.xAxis.range[1] - state.xAxis.range[0]);
         } else if (constrains[1]) {
-            rect.setAttribute("y", SVG.state().y_axis.global_range[1]);
-            rect.setAttribute("height", SVG.state().y_axis.global_range[0] - SVG.state().y_axis.global_range[1]);
+            rect.setAttribute("y", state.yAxis.range[1]);
+            rect.setAttribute("height", state.yAxis.range[0] - state.yAxis.range[1]);
         }
 
-        SVG.filter(
+        filter(
+            state,
             +rect.getAttribute("x") + +svg.getBoundingClientRect().left,
             +rect.getAttribute("y") + +svg.getBoundingClientRect().top,
             rect.getAttribute("width"),
@@ -85,7 +86,7 @@ export function brush(SVG, control, axis_control) {
     }
     
     function mousedown_callback(e) {
-        if (!SVG.state().interactions.brush.flag || SVG.state().interactions.brush.on_elem) return;
+        if (!state.interactions.brush.flag || state.interactions.brush.on_elem) return;
         // let intersects = false;
         //     for (const mark of SVG.state().svg_marks) {
         //         if (mark.type === "line" || mark.type === "polygon") continue;
@@ -108,18 +109,18 @@ export function brush(SVG, control, axis_control) {
             return;
         }
 
-        SVG.state().interactions.brush.active = true;
+        state.interactions.brush.active = true;
 
-        var left_bound = SVG.state().svg_marks[0]._global_transform[0] + SVG.state().svg.getBoundingClientRect().left;
-        var top_bound = SVG.state().svg_marks[0]._global_transform[1] + SVG.state().svg.getBoundingClientRect().top;
+        var left_bound = state.svg.getBoundingClientRect().left;
+        var top_bound = state.svg.getBoundingClientRect().top;
 
-        let x_flag = e.clientX - left_bound > SVG.state().x_axis.range[0], 
-            y_flag = e.clientY - top_bound < SVG.state().y_axis.range[0];
-
+        let x_flag = e.clientX - left_bound > state.xAxis.range[0], 
+            y_flag = e.clientY - top_bound < state.yAxis.range[0];
+        
         let brush_Y = !x_flag && y_flag;
         let brush_X = (x_flag && !y_flag) || 
-            ((SVG.state().svg_marks[0].type === "line" || SVG.state().svg_marks[0].type === "polyline" || SVG.state().svg_marks[0].type === "polygon") && !brush_Y && 
-            SVG.state().x_axis.ticks.length);
+            ((state.svgMarks[0].type === "line" || state.svgMarks[0].type === "polyline" || state.svgMarks[0].type === "polygon") && !brush_Y && 
+            state.xAxis.ticks.length);
 
         // let std = SVG.std();
         // if (std < 0.5 && !brush_X && !brush_Y) {
@@ -131,19 +132,19 @@ export function brush(SVG, control, axis_control) {
         // }
 
         constrains[0] || brush_Y ? 
-            rect.setAttribute("width", SVG.state().x_axis.global_range[1] - SVG.state().x_axis.global_range[0]) : 
+            rect.setAttribute("width", state.xAxis.range[1] - state.xAxis.range[0]) : 
             rect.setAttribute("width", 0);
         constrains[1] || brush_X ? 
-            rect.setAttribute("height", SVG.state().y_axis.global_range[0] - SVG.state().y_axis.global_range[1]) :
+            rect.setAttribute("height", state.yAxis.range[0] - state.yAxis.range[1]) :
             rect.setAttribute("height", 0);
 
         e.preventDefault();
         mousedown = true;
         constrains[0] || brush_Y ? 
-            rect.setAttribute("x", SVG.state().x_axis.global_range[0]) :
+            rect.setAttribute("x", state.xAxis.range[0]) :
             rect.setAttribute("x", e.clientX - svg.getBoundingClientRect().left);
         constrains[1] || brush_X ? 
-            rect.setAttribute("y", SVG.state().y_axis.global_range[1]) :
+            rect.setAttribute("y", state.yAxis.range[1]) :
             rect.setAttribute("y", e.clientY - svg.getBoundingClientRect().top);
 
         var keys = (e.ctrlKey ? " ctrl " : "") + (e.shiftKey ? " shift " : "") + (e.altKey ? " alt " : "");
@@ -152,29 +153,32 @@ export function brush(SVG, control, axis_control) {
     }
 
     function mousemove_callback(e) {
+        
         // var brush_shift = document.getElementById("brush-shift").className.split(" ").indexOf("bg-primary") > -1 &&
         //     document.getElementById("brush-drag").className.split(" ").indexOf("bg-primary") <= -1;
         // var brush_shift = false;
         // if ((brush_shift && !e.shiftKey) || (!brush_shift && e.shiftKey)) return;
-        var left_bound = SVG.state().svg_marks[0]._global_transform[0] + SVG.state().svg.getBoundingClientRect().left;
-        var top_bound = SVG.state().svg_marks[0]._global_transform[1] + SVG.state().svg.getBoundingClientRect().top;
+        var left_bound = /*state.svgMarks[0].globalPosition.translate.x + */state.svg.getBoundingClientRect().left;
+        var top_bound = /*state.svgMarks[0].globalPosition.translate.y +*/ state.svg.getBoundingClientRect().top;
 
-        let x_flag = e.clientX - left_bound > SVG.state().x_axis.range[0], 
-            y_flag = e.clientY - top_bound < SVG.state().y_axis.range[0];
+        let x_flag = e.clientX - left_bound > state.xAxis.range[0], 
+            y_flag = e.clientY - top_bound < state.yAxis.range[0];
         let brush_Y = !x_flag && y_flag;
         let brush_X = (x_flag && !y_flag) ||
-            ((SVG.state().svg_marks[0].type === "line" || SVG.state().svg_marks[0].type === "polyline" || SVG.state().svg_marks[0].type === "polygon") && !brush_Y &&
-            SVG.state().x_axis.ticks.length);
+            ((state.svgMarks[0].type === "line" || state.svgMarks[0].type === "polyline" || state.svgMarks[0].type === "polygon") && !brush_Y &&
+            state.xAxis.ticks.length);
 
         if (mousedown) {
+            let tooltips = document.querySelectorAll(".tooltip");
+            if (tooltips.length) tooltips.forEach(d => d.style['visibility'] = 'hidden');
             e.preventDefault();
             let width = e.clientX - rect.getAttribute("x") - svg.getBoundingClientRect().left;
             let height = e.clientY - rect.getAttribute("y") - svg.getBoundingClientRect().top;
             constrains[0] || brush_Y ? 
-                rect.setAttribute("width", SVG.state().x_axis.global_range[1] - SVG.state().x_axis.global_range[0]) :
+                rect.setAttribute("width", state.xAxis.range[1] - state.xAxis.range[0]) :
                 rect.setAttribute("width", Math.abs(width));
             constrains[1] || brush_X ?
-                rect.setAttribute("height", SVG.state().y_axis.global_range[0] - SVG.state().y_axis.global_range[1]) :
+                rect.setAttribute("height", state.yAxis.range[0] - state.yAxis.range[1]) :
                 rect.setAttribute("height", Math.abs(height));
             
 
@@ -182,7 +186,8 @@ export function brush(SVG, control, axis_control) {
             let y_translate = !brush_X && height < 0 ? height : 0;
             rect.setAttribute("transform", "translate(" + x_translate + "," + y_translate + ")");
             // if (SVG.state().svg_marks[0].type !== "line" && SVG.state().svg_marks[0].type !== "polygon") {
-                SVG.filter(
+                filter(
+                    state,
                     +rect.getAttribute("x") + +svg.getBoundingClientRect().left + x_translate,
                     +rect.getAttribute("y") + +svg.getBoundingClientRect().top + y_translate,
                     Math.abs(+rect.getAttribute("width")),
@@ -194,11 +199,11 @@ export function brush(SVG, control, axis_control) {
     };
 
     function mouseup_callback(e) {
-        if (!SVG.state().interactions.brush.active) return;
-        SVG.state().interactions.brush.active = false;
+        if (!state.interactions.brush.active) return;
+        state.interactions.brush.active = false;
         mousedown = false;
         if (+rect.getAttribute("width") === 0 || +rect.getAttribute("height") === 0) { 
-            SVG.unfilter();
+            unfilter(state);
             // document.getElementById('pan_disam').style['display'] = 'none';
             // SVG.disambiguate("brush", true);
             d3.selectAll(".brush_tooltip").remove();
@@ -215,7 +220,7 @@ export function brush(SVG, control, axis_control) {
 
     control.addEventListener('change', function() {
         if (!this.checked) { 
-            SVG.unfilter();
+            unfilter(state);
             rect.setAttribute("width", 0);
             rect.setAttribute("height", 0);
         }
@@ -242,5 +247,5 @@ export function brush(SVG, control, axis_control) {
         update_rect();
     }));
 
-    dragElement(rect, SVG, constrains);
+    dragElement(rect, state, constrains);
 }

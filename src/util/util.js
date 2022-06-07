@@ -11,14 +11,16 @@ export function copyElement(element) {
   }
 
 export function computeCenterPos(element, orient) {
-  const offset = orient === Right || orient === Left ? element.clientRect.width / 2 : element.clientRect.height / 2;
-  return element.clientRect[orient] + (orient === Left || orient === Top ? offset : -offset);
+  const clientRect = element.getBoundingClientRect();
+  const offset = orient === Right || orient === Left ? clientRect.width / 2 : clientRect.height / 2;
+  return clientRect[orient] + (orient === Left || orient === Top ? offset : -offset);
 }
 
 export function computeBounds(element, orient) {
+  const clientRect = element.getBoundingClientRect();
   return orient === Right || orient === Left 
-  ? [element.clientRect.left, element.clientRect.right] 
-  : [element.clientRect.top, element.clientRect.bottom];
+  ? [clientRect.left, clientRect.right] 
+  : [clientRect.top, clientRect.bottom];
 }
 
 export function compareTickStyles(element1, element2) {
@@ -41,4 +43,9 @@ export function compareTickStyles(element1, element2) {
 
 export function flattenRGB(rgb) {
   return sum(rgb.replace(/[^\d,]/g, '').split(','));
+}
+
+export function convertPtToPx(pt) {
+  if (!pt.includes('pt')) return pt;
+  return +pt.split('pt')[0] * 4/3;
 }

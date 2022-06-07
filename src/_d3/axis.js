@@ -1,6 +1,7 @@
 import identity from './identity.js';
 import { copyElement } from '../util/util.js';
 import { Transform } from '../util/transform.js';
+import { count } from 'd3-array';
 
 var top = 1,
     right = 2,
@@ -95,13 +96,14 @@ function axis(orient, scale, state) {
       // }
 
       // let rotate = label.hasAttribute("transform") && label.getAttribute("transform").includes("rotate") ? +label.getAttribute("transform").match(/(-?\d+\.?\d*e?-?\d*)/g).pop() : null;
+      const svgRect = state.svg.getBoundingClientRect();
+
       if (label.clientRect) {
-        const lx = label.clientRect.left + label.clientRect.width / 2 - state.svg.clientRect.left;
-        const ly = label.clientRect.top + label.clientRect.height / 2 - state.svg.clientRect.top;
+        const lx = label.clientRect.left + label.clientRect.width / 2 - svgRect.left;
+        const ly = label.clientRect.top + label.clientRect.height / 2 - svgRect.top;
   
         const translateX = orient === bottom ? position(value) - lx : 0;
         const translateY = orient === left ? position(value) - ly : 0; 
-  
         label.setAttribute('transform', label.localTransform.getTransform(new Transform(translateX, translateY)));
       }
       
@@ -118,12 +120,12 @@ function axis(orient, scale, state) {
         //   var mark_t = transform(position(value) + svg_axis.global_range[range_index] - label._global_transform[range_index], +Math.abs(offset_mark) > 1e-2 ? +offset_mark : 0);
         // }
         if (!mark.clientRect) continue;
-        const tx = mark.clientRect.left + mark.clientRect.width / 2 - state.svg.clientRect.left;
-        const ty = mark.clientRect.top + mark.clientRect.height / 2 - state.svg.clientRect.top;
+        const tx = mark.clientRect.left + mark.clientRect.width / 2 - svgRect.left;
+        const ty = mark.clientRect.top + mark.clientRect.height / 2 - svgRect.top;
 
         const translateX = orient === bottom ? position(value) - tx : 0;
         const translateY = orient === left ? position(value) - ty : 0; 
-        if (translateY) console.log([value, position(value)])
+        // if (translateY) console.log([value, position(value)])
         // if (!mark.localTransform) continue;
         mark.setAttribute('transform', mark.localTransform.getTransform(new Transform(translateX, translateY)));
       }
@@ -137,7 +139,6 @@ function axis(orient, scale, state) {
       let newTick = { 
         'label': copyElement(ticks[0].label), 
         'marks': ticks[0].marks.map(tick => copyElement(tick)), 
-        'offset': null
       };
 
       updateTick(newTick, values[counter]);

@@ -1,20 +1,20 @@
 
-export function annotate(SVG) {
-    bind(SVG);
+export function annotate(state) {
+    bind(state);
 }
 
 // annotate.unbind = function() {
 //     document.removeEventListener('click', listener);
 // }
 
-let bind = function(SVG) {
+let bind = function(state) {
     function listener (event) {
-        if (!SVG.state().interactions.annotate.flag || SVG.state().svg.parentElement.style['visibility'] === "hidden") return;
+        if (!state.interactions.annotate.flag || state.svg.parentElement.style['visibility'] === "hidden") return;
 
-        let x_click = event.clientX - SVG.state().svg.getBoundingClientRect().left,
-            y_click = event.clientY - SVG.state().svg.getBoundingClientRect().top;
+        let x_click = event.clientX - state.svg.getBoundingClientRect().left,
+            y_click = event.clientY - state.svg.getBoundingClientRect().top;
         
-        if (x_click < SVG.state().x_axis.range[0] || y_click < SVG.state().y_axis.range[1]) return;
+        if (x_click < state.xAxis.range[0] || y_click < state.yAxis.range[1]) return;
 
         let text = prompt('Annotation text:');
         if (!text) return;
@@ -25,8 +25,8 @@ let bind = function(SVG) {
                 label: text
                 // title: "d3.annotationLabel"
               },
-              x: event.clientX - SVG.state().svg.getBoundingClientRect().left,
-              y: event.clientY - SVG.state().svg.getBoundingClientRect().top,
+              x: event.clientX - state.svg.getBoundingClientRect().left,
+              y: event.clientY - state.svg.getBoundingClientRect().top,
               dy: 20,
               dx: 20,
               connector: {
@@ -38,12 +38,12 @@ let bind = function(SVG) {
             .type(d3.annotationLabel)
             .annotations(annotations)
 
-        d3.select("#" + SVG.state().svg.id)
+        d3.select("#" + state.svg.id)
             .append("g")
             .attr("class", "annotation-group")
             .call(makeAnnotations)
         
-        var keys = (event.ctrlKey ? " ctrl " : "") + (event.shiftKey ? " shift " : "") + (event.altKey ? " alt " : "");
+        // var keys = (event.ctrlKey ? " ctrl " : "") + (event.shiftKey ? " shift " : "") + (event.altKey ? " alt " : "");
         // document.getElementById("logfile").innerHTML += event.type + " [" + keys + "] " + SVG.state().svg.id + " to annotate <br/>";
     }  
 

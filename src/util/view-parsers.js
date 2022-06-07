@@ -4,11 +4,17 @@ import { scaleTime, scaleBand, scaleLinear } from 'd3-scale';
 import { Bottom, CategoricalColorLegend, Left, Right, SizeLegend, Top } from '../state/constants';
 import { axisBottom, axisLeft } from '../_d3/axis';
 import { getFormatVal } from './attribute-parsers';
-import { computeCenterPos, flattenRGB } from './util';
+import { computeCenterPos, convertPtToPx, flattenRGB } from './util';
 
 const epsilon = 5;
 
 export function identifyAxes(state) {
+    const candidateGroups = collectCandidateGroups();
+    const [axes, legends, titles] = pruneGroups(candidateGroups);
+    groupAxes(axes);
+    parseLegends(legends);
+    assignTitles(titles);
+
     function parseLegends(legends) {
         for (const legend of legends) {
             const mark1Style = window.getComputedStyle(legend.marks[0].mark);
@@ -80,9 +86,10 @@ export function identifyAxes(state) {
             const axis = isX ? state.xAxis : state.yAxis;
             const orphanBB = orphanTick.getBoundingClientRect();
             let matched = false;
+            orphanTick.role = 'orphan-tick';
             
             for (let i = 0; i < axis.ticks.length; ++i) {
-                for (const tick of axis.ticks[i].ticks) {
+                for (const tick of axis.ticks[i].marks) {
                     const tickBB = tick.getBoundingClientRect();
                     const sizeMatch = isX ? orphanBB.height === tickBB.height : orphanBB.width === tickBB.width;
                     const offset = isX ? Math.abs(orphanBB.left + orphanBB.width / 2 - tickBB.left - tickBB.width / 2)
@@ -95,15 +102,15 @@ export function identifyAxes(state) {
 
                         if (parseInt(orphanStyle.strokeWidth, 10) < parseInt(tickStyle.strokeWidth, 10) || 
                             flattenRGB(orphanStyle.stroke) > flattenRGB(tickStyle.stroke)) {
-                            axis.ticks[i].ticks = axis.ticks[i].ticks.filter(d => d !== tick);
-                            axis.ticks[i].ticks.push(orphanTick);
+                            axis.ticks[i].marks = axis.ticks[i].marks.filter(d => d !== tick);
+                            axis.ticks[i].marks.push(orphanTick);
                         }
                     }
                 }
             }
 
             if (!matched) {
-                axis.ticks.push({label: null, ticks: [orphanTick]});
+                axis.ticks.push({label: null, marks: [orphanTick]});
             }
         }
     }
@@ -126,15 +133,15 @@ export function identifyAxes(state) {
 
         for (const [text, {alignment, ticks}] of axisMap.entries()) {
             if (alignment === Top || alignment === Bottom) {
-                state.xAxis.ticks.push({label: text, ticks: ticks});
+                state.xAxis.ticks.push({label: text, marks: ticks});
             } else {
-                state.yAxis.ticks.push({label: text, ticks: ticks});
+                state.yAxis.ticks.push({label: text, marks: ticks});
             }
         }
         
         collectOrphanTicks(orphanTicks);
         [state.xAxis.ticks, state.yAxis.ticks].forEach(axis => axis.forEach(
-            tickGroup => tickGroup.ticks.forEach(tick => tick.role = 'tick')
+            tickGroup => tickGroup.marks.forEach(tick => tick.role = 'tick')
         ));
     }
 
@@ -314,12 +321,19 @@ export function identifyAxes(state) {
 
         return candidateGroups;
     }
-    
-    const candidateGroups = collectCandidateGroups();
-    const [axes, legends, titles] = pruneGroups(candidateGroups);
-    groupAxes(axes);
-    parseLegends(legends);
-    assignTitles(titles);
+}
+
+export function cleanMarks(state) {
+    for (const mark of state.svgMarks) {
+        const clientRect = mark.getBoundingClientRect();
+        if (clientRect.width >= state.xAxis.range[1] - state.xAxis.range[0] &&
+            clientRect.height >= state.yAxis.range[0] - state.yAxis.range[1]) {
+                mark.role = 'viewport';
+            }
+    }
+
+    state.svgMarks.filter(d => d.role).forEach(d => d.removeAttribute('__mark__'));
+    state.svgMarks = state.svgMarks.filter(d => !d.role);
 }
 
 export function computeDomain(axis) {
@@ -337,6 +351,8 @@ export function computeDomain(axis) {
 }
 
 export function configureAxes(state) {
+    const svgClientRect = state.svg.getBoundingClientRect();
+
     if (state.xAxis.scale && !state.xAxis.ordinal.length) {
         // Infer original X-axis domain
         // const tickLeft = state.xAxis.ticks[0]['ticks'][0].globalPosition['translate'].x;
@@ -344,17 +360,17 @@ export function configureAxes(state) {
         // const tickLeft = state.xAxis.ticks[0].marks[0].clientRect.left;
         // const tickRight = state.xAxis.ticks[state.xAxis.ticks.length - 1].marks[0].clientRect.left;
         const tickLeft = computeCenterPos(
-            state.xAxis.ticks.filter(d => getFormatVal(d.label) === state.xAxis.domain[0])[0].label, Left
+            state.xAxis.ticks.filter(d => getFormatVal(d.label) === state.xAxis.domain[0])[0].marks[0], Left
         );
         const tickRight = computeCenterPos(
-            state.xAxis.ticks.filter(d => getFormatVal(d.label) === state.xAxis.domain[1])[0].label, Left
+            state.xAxis.ticks.filter(d => getFormatVal(d.label) === state.xAxis.domain[1])[0].marks[0], Left
         );
         
-        const ticks = [tickLeft, tickRight].map(d => d - state.svg.clientRect.left);
+        const ticks = [tickLeft, tickRight].map(d => d - svgClientRect.left);
         const newDomainX = state.xAxis.range.map(
             state.xAxis.scale.copy().range(ticks).invert, state.xAxis.scale
         );
-
+        
         state.xAxis.scale.domain(newDomainX);
     }
 
@@ -365,60 +381,55 @@ export function configureAxes(state) {
         // const tickTop = state.yAxis.ticks[0].marks[0].clientRect.top;
         // const tickBottom = state.yAxis.ticks[state.yAxis.ticks.length - 1].marks[0].clientRect.top;
         const tickTop = computeCenterPos(
-            state.yAxis.ticks.filter(d => getFormatVal(d.label) === state.yAxis.domain[0])[0].label, Top
+            state.yAxis.ticks.filter(d => getFormatVal(d.label) === state.yAxis.domain[0])[0].marks[0], Top
         );
         const tickBottom = computeCenterPos(
-            state.yAxis.ticks.filter(d => getFormatVal(d.label) === state.yAxis.domain[1])[0].label, Top
+            state.yAxis.ticks.filter(d => getFormatVal(d.label) === state.yAxis.domain[1])[0].marks[0], Top
         );
 
-        const ticks = [tickTop, tickBottom].map(d => d - state.svg.clientRect.top);
+        const ticks = [tickTop, tickBottom].map(d => d - svgClientRect.top);
         const newDomainY = state.yAxis.range.map(
             state.yAxis.scale.copy().range(ticks).invert, state.yAxis.scale
         );
-        
+
         state.yAxis.scale.domain(newDomainY);
     }
 }
 
 export function constructAxes(state) {
-    function pruneMarks() {
-        for (const mark of state.svgMarks) {
-            if (mark.clientRect.width >= state.xAxis.range[1] - state.xAxis.range[0] &&
-                mark.clientRect.height >= state.yAxis.range[0] - state.yAxis.range[1]) {
-                    mark.removeAttribute('__mark__');
-                }
-        }
-        state.svgMarks = state.svgMarks.filter(d => d.hasAttribute('__mark__'));
-    }
-
     identifyAxes(state);
     computeDomain(state.xAxis);
     computeDomain(state.yAxis);
 
-    const width = +state.svg.getAttribute('width');
-    const height = +state.svg.getAttribute('height');
+    const width = convertPtToPx(state.svg.getAttribute('width'));
+    const height = convertPtToPx(state.svg.getAttribute('height'));
+    console.log([width, height])
+    const svgClientRect = state.svg.getBoundingClientRect();
 
     if (!state.xAxis.ticks.length && !state.yAxis.ticks.length) {
         state.xAxis.range = [0, width];
         state.yAxis.range = [height, 0];
+        cleanMarks(state);
         return;
     }
 
-    let yTick = state.yAxis.ticks[0];
-    let xTick = state.xAxis.ticks[0];
-    console.log(xTick.marks[0])
-    console.log(xTick.marks[0].clientRect)
+    const yTick = state.yAxis.ticks[0].marks[0];
+    const yTickBB = yTick.getBoundingClientRect(); 
+    const yTickRange = [yTickBB.left, yTickBB.left + yTickBB.width];
 
-    const xMin = yTick.range[0] - state.svg.clientRect.left;
-    const xMax = min([yTick.range[1] - state.svg.clientRect.left, width]);
-    const yMin = xTick.range[1] - state.svg.clientRect.top;
-    const yMax = min([xTick.range[0] - state.svg.clientRect.top, height]);
+    const xTick = state.xAxis.ticks[0].marks[0];
+    const xTickBB = xTick.getBoundingClientRect();
+    const xTickRange = [xTickBB.top + xTickBB.height, xTickBB.top];
+    console.log(xTickRange)
+    const xMin = yTickRange[0] - svgClientRect.left;
+    const xMax = min([yTickRange[1] - svgClientRect.left, width]);
+    const yMin = xTickRange[1] - svgClientRect.top;
+    const yMax = min([xTickRange[0] - svgClientRect.top, height]);
     console.log([xMin, xMax]);
     console.log([yMin, yMax]);
 
     state.xAxis.range = [xMin, xMax];
     state.yAxis.range = [yMax, yMin];
-    pruneMarks();
 
     state.xAxis.scale = (state.xAxis.domain[0] instanceof Date ? scaleTime() : (state.xAxis.ordinal.length ? scaleBand() : scaleLinear()))
         .domain(state.xAxis.ordinal.length ? state.xAxis.ordinal : state.xAxis.domain)
@@ -437,6 +448,7 @@ export function constructAxes(state) {
     // });
 
     configureAxes(state);
+    cleanMarks(state);
     
     // TO-DO: Domain path 0.5 difference.
     // if (state.hasDomain) {

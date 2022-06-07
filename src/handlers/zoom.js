@@ -2,48 +2,50 @@ import { zoomTransform, zoom as _zoom, zoomIdentity } from '../_d3/zoom';
 import { select } from 'd3-selection';
 import { Line, Polygon, Polyline } from '../state/constants';
 import { Transform } from '../util/transform';
+import noevent from '../_d3/zoom/noevent';
 
 export function zoom(state) {
     const svg = select('#' + state.svg.id);
 
     if (state.xAxis.scale && !state.xAxis.ordinal.length) state.xAxis.axis.scale(state.xAxis.scale)();
     if (state.yAxis.scale && !state.yAxis.ordinal.length) state.yAxis.axis.scale(state.yAxis.scale)();
+    
+    const marks = svg.selectAll('[__mark__="true"]');
 
     svg.append('defs')
         .append('clipPath')
         .attr('id', 'clip-' + state.svg.id)
         .append('rect')
-        .attr('x', state.xAxis.range[0])
-        .attr('y', state.yAxis.range[1])
+        .attr('x', 0)
+        .attr('y', 0)
         .attr('width', Math.abs(state.xAxis.range[1] - state.xAxis.range[0]))
         .attr('height', Math.abs(state.yAxis.range[0] - state.yAxis.range[1]));
-
-    const marks = svg.selectAll('[__mark__="true"]');
-
-    // if (state.xAxis.scale && state.yAxis.scale) {
-    //     for (const node of marks.nodes()) {
-    //         let container = node.parentElement;
-    //         if (container.id !== '_g_clip') {
-    //             container = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    //             container.id = '_g_clip';
-    //             container.setAttribute('clip-path', 'url(#clip-' + state.svg.id + ')'); 
     
-    //             node.parentElement.appendChild(container);
-    //         }  
-    //         container.appendChild(node);
-    //     }
-    // }
+    if (state.xAxis.scale && state.yAxis.scale) {
+        for (const node of marks.nodes()) {
+            if (node.parentElement.hasAttribute('clip-path')) continue;
+            let container = node.parentElement;
+            if (container.id !== '_g_clip') {
+                container = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                container.id = '_g_clip';
+                container.setAttribute('clip-path', 'url(#clip-' + state.svg.id + ')'); 
+    
+                node.parentElement.appendChild(container);
+            }  
+            container.appendChild(node);
+        }
+    }
 
     // if (marks.node().parentElement.id !== '_g_clip') {
-    //     let container = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    //     const container = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     //     container.id = '_g_clip';
     //     marks.node().parentElement.appendChild(container);
     //     marks.nodes().forEach(d => container.appendChild(d));
     // }
     // marks.node().parentElement.setAttribute('clip-path', 'url(#clip-' + state.svg.id + ')');
     // return;
-    // var left_bound = marks.node()._global_transform[0] + SVG.state().svg.getBoundingClientRect().left;
-    // var top_bound = marks.node()._global_transform[1] + SVG.state().svg.getBoundingClientRect().top;
+    var left_bound = state.svg.getBoundingClientRect().left;
+    var top_bound = state.svg.getBoundingClientRect().top;
 
     // var g_x_axis = d3.select(".x-axis.tick").select(function() { return this.parentNode; });
     // var g_y_axis = d3.select(".y-axis.tick").select(function() { return this.parentNode; });
@@ -59,6 +61,35 @@ export function zoom(state) {
     gYAxis.call(zoomY).attr('pointer-events', 'none');
 
     function zoomCallback({sourceEvent, transform}) {
+        var zoom_enabled = true,
+        pan_enabled = true,
+        control_zoom_X = true,
+        control_zoom_Y = true,
+        control_pan_X = state.interactions.pan.flag,
+        control_pan_Y = state.interactions.pan.flag,
+        pan_shift = false;
+
+        let zoom_X = sourceEvent.clientX - left_bound > state.xAxis.range[0], 
+            zoom_Y = sourceEvent.clientY - top_bound < state.yAxis.range[0];
+
+        if (sourceEvent.type === "wheel" || sourceEvent.type === "dblclick") {
+            if (state.svg.parentNode.style['visibility'] === 'hidden') return;
+
+            let pan_elem = document.getElementById("panMode");
+            let brush_elem = document.getElementById("brushMode");
+            let filter_elem = document.getElementById("filterMode");
+            let annotate_elem = document.getElementById("annotateMode");
+    
+            pan_elem.style['opacity'] = 1;
+            brush_elem.style['opacity'] = 0.4;
+            annotate_elem.style['opacity'] = 0.4;
+    
+            state.interactions.pan.flag = true;
+            state.interactions.brush.flag = false;
+            state.interactions.annotate.flag = false;
+            state.svg.style['cursor'] = 'move';
+        }
+
         sourceEvent.preventDefault();
 
         const k = transform.k / z.k;
@@ -72,12 +103,21 @@ export function zoom(state) {
             // let cliX = sourceEvent.clientX - marks.node()._global_transform[0] - SVG.state().svg.getBoundingClientRect().left;
             // let cliY = sourceEvent.clientY - marks.node()._global_transform[1] - SVG.state().svg.getBoundingClientRect().top;
 
+            // if (k === 1) {
+                //         control_pan_X && g_x_axis.call(zoomX.translateBy, x, 0);
+                //         control_pan_Y && g_y_axis.call(zoomY.translateBy, 0, y);
+                //     } else {
+                //         control_zoom_X && g_x_axis.call(zoomX.scaleBy, k, [cliX, cliY]);
+                //         control_zoom_Y && g_y_axis.call(zoomY.scaleBy, k, [cliX, cliY]);
+                //         // SVG.disambiguate("zoom", true);
+                //     }
+
             if (k === 1) {
-                gXAxis.call(zoomX.translateBy, x, 0);
-                gYAxis.call(zoomY.translateBy, 0, y);
+                control_pan_X && gXAxis.call(zoomX.translateBy, x, 0);
+                control_pan_Y && gYAxis.call(zoomY.translateBy, 0, y);
             } else {
-                gXAxis.call(zoomX.scaleBy, k, [cliX, cliY]);
-                gYAxis.call(zoomY.scaleBy, k, [cliX, cliY]);
+                control_zoom_X && zoom_X && gXAxis.call(zoomX.scaleBy, k, [cliX, cliY]);
+                control_zoom_Y && zoom_Y &&gYAxis.call(zoomY.scaleBy, k, [cliX, cliY]);
             }
             state.yAxis.axis.scale(ty().rescaleY(state.yAxis.scale))();
             state.xAxis.axis.scale(tx().rescaleX(state.xAxis.scale))();

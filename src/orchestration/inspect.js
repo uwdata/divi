@@ -20,7 +20,7 @@ function extractElementInformation(element, transform) {
     //     width: +clientRect.width,
     //     height: +clientRect.height
     // }
-    // element.clientRect = element.getBoundingClientRect();
+    element.clientRect = element.getBoundingClientRect();
     element.localTransform = parseTransform(element, false);
     element.globalPosition = parseTransform(element, true, new Transform(transform));
 
@@ -97,6 +97,7 @@ function analyzeDomTree(element, state, transform) {
         // }
     } else if (element.nodeName === Text) {
         extractElementInformation(element, transform);
+        element.removeAttribute('textLength');
         state.textMarks.push(element);
         element.style['pointer-events'] = 'none';
         element.style['user-select'] = 'none';
