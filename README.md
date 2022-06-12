@@ -1,6 +1,6 @@
-# Automatic Interaction
+# AutoIxN
 
-Dynamic orchestration of static visualizations
+Automatic Interaction: Dynamic orchestration of static visualizations
 
 ## Instructions
 
