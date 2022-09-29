@@ -1,4 +1,4 @@
-function createVegaLineChart() {
+function createScatterPlot() {
   const spec = {
     "$schema": "https://vega.github.io/schema/vega/v5.json",
     "description": "A basic scatter plot example depicting automobile statistics.",
@@ -100,24 +100,11 @@ function createVegaLineChart() {
       }
     ]
   }
-  // var view = new vega.View(spec)
-  // .logLevel(vega.Warn) // set view logging level
-  // .renderer('svg')     // set render type (defaults to 'canvas')
-  // .initialize('#view') // set parent DOM element
-  // .hover(); 
 
   var view = new vega.View(vega.parse(spec), { renderer: 'svg' });
   view.toSVG().then(function(svg) {
-    document.querySelector("#vega").innerHTML = svg;
-    document.querySelector("#vega svg").id = "vegachart";
-    AutomaticInteraction.hydrate("#vegachart", "#control");
+    document.querySelector("#container").innerHTML = svg;
+    document.querySelector("#container svg").id = "chart";
+    AutomaticInteraction.hydrate("#chart");
   });
-
-  // vegaEmbed("#vega", spec, {renderer: "svg"}).then(function(result) {
-  //   result.view.toSVG().then(function(svg) {
-  //     document.querySelector("#vega").innerHTML = svg;
-  //     document.querySelector("#vega svg").id = "vegachart";
-  //     AutomaticInteraction.hydrate("#vegachart", "#control");
-  //   });
-  // });
 }

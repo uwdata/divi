@@ -38,8 +38,8 @@ function createLogChart() {
         .x(function(d) { return x(d[0]); })
         .y(function(d) { return y(d[1]); });
 
-    var svg = d3.select("#log").append("svg")
-        .attr("id", "logchart")
+    var svg = d3.select("#container").append("svg")
+        .attr("id", "chart")
         .attr("width", width + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom)
     .append("g")
@@ -78,5 +78,5 @@ function createLogChart() {
     //       )
     // }));
 
-    AutomaticInteraction.hydrate("#logchart", "#control");
+    AutomaticInteraction.hydrate("#chart");
 }

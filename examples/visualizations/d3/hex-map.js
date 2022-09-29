@@ -3,11 +3,11 @@ function createHexChart() {
     var height = 300;
 
     // The svg
-    var svg = d3.select("#hex")
+    var svg = d3.select("#container")
         .append("svg")
         .attr("width", width)
         .attr("height", height)
-        .attr("id", "hexchart");
+        .attr("id", "chart");
 
     // Map and projection
     var projection = d3.geoMercator()
@@ -44,7 +44,7 @@ function createHexChart() {
                 .style("font-size", 11)
                 .style("fill", "white")
 
-                AutomaticInteraction.hydrate("#hexchart", "#control");
+                AutomaticInteraction.hydrate("#chart");
         })
 
 }

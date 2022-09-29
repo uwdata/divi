@@ -5,11 +5,11 @@ function createBarChart() {
         height = 720 - margin.top - margin.bottom;
 
     // append the svg object to the body of the page
-    var svg = d3.select("#barchart")
+    var svg = d3.select("#container")
     .append("svg")
         .attr("width", width + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom)
-        .attr("id", "svg_bar")
+        .attr("id", "chart")
     .append("g")
         .attr("transform",
             "translate(" + margin.left + "," + margin.top + ")");
@@ -51,6 +51,6 @@ function createBarChart() {
             .attr("height", function(d) { return height - y(d.Value); })
             .attr("fill", "#69b3a2")
         
-        AutomaticInteraction.hydrate("#svg_bar", "#control");
+        AutomaticInteraction.hydrate("#chart");
     })
 }

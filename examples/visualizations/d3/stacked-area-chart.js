@@ -8,11 +8,11 @@ function createStackedChart() {
       height = 720 - margin.top - margin.bottom
 
   // append the svg object to the body of the page
-  let svg = d3.select("#stackedvis")
+  let svg = d3.select("#container")
     .append("svg")
       .attr("width", width + margin.left + margin.right)
       .attr("height", height + margin.top + margin.bottom)
-      .attr("id", "stackedchart")
+      .attr("id", "chart")
     .append("g")
       .attr("transform",
             "translate(" + margin.left + "," + margin.top + ")");
@@ -63,6 +63,6 @@ function createStackedChart() {
           .y1(function(d) { return y(d[1]); })
       )
 
-      AutomaticInteraction.hydrate("#stackedchart", "#control");
+      AutomaticInteraction.hydrate("#chart");
   })
 }

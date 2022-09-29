@@ -8,11 +8,11 @@ function createLineChart() {
       height = 720 - margin.top - margin.bottom
 
   // append the svg object to the body of the page
-  var svg_line = d3.select("#linevis")
+  var svg_line = d3.select("#container")
     .append("svg")
       .attr("width", width + margin.left + margin.right)
       .attr("height", height + margin.top + margin.bottom)
-      .attr("id", "linechart")
+      .attr("id", "chart")
     .append("g")
       .attr("transform",
             "translate(" + margin.left + "," + margin.top + ")");
@@ -54,6 +54,6 @@ function createLineChart() {
           .y(function(d) { return y(d.value) })
           )
 
-      AutomaticInteraction.hydrate("#linechart", "Zoom");
+      AutomaticInteraction.hydrate("#chart");
   })
 }

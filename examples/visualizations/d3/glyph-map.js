@@ -33,9 +33,9 @@ function createGlyphMap() {
               let length = d3.scaleLinear([0, d3.max(data, d => d.value)], [0, 200]);
               let spike = (length, width = 7) => `M${-width / 2},0L0,${-length}L${width / 2},0`;
 
-            const svg = d3.select("#glyphmap")
+            const svg = d3.select("#container")
             .append("svg")
-            .attr("id", "glyphmapsvg")
+            .attr("id", "chart")
             .attr("width", 2000)
             .attr('height', 2000);
             
@@ -113,7 +113,7 @@ function createGlyphMap() {
             .text(d => `${d.title}
             ${d3.format(d.value)}`);
 
-            AutomaticInteraction.hydrate("#glyphmapsvg")
+            AutomaticInteraction.hydrate("#chart")
         });
     });
     });

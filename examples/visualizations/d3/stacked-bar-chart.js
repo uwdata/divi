@@ -5,11 +5,11 @@
       height = 720 - margin.top - margin.bottom;
 //       g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-    let svg = d3.select("#stackedbar")
+    let svg = d3.select("#container")
       .append("svg")
       .attr("width", width + margin.left + margin.right)
       .attr("height", height + margin.top + margin.bottom)
-      .attr("id", "stackedbarsvg")
+      .attr("id", "chart")
       .append("g")
       .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
   
@@ -24,7 +24,7 @@
   var z = d3.scaleOrdinal()
       .range(["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"]);
   
-    d3.csv("https://raw.githubusercontent.com/Luke-S-Snyder/AutomaticInteraction/main/examples/data/data.csv").then(function(data) {
+    d3.csv("https://raw.githubusercontent.com/Luke-S-Snyder/AutoIxN/main/examples/data/data.csv?token=GHSAT0AAAAAABZA5UE4MFW72BQUCJRFMRA4YZWF3PQ").then(function(data) {
         for (const d of data) {
             for (i = 1, t = 0; i < data.columns.length; ++i) t += d[data.columns[i]] = +d[data.columns[i]];
             d.total = t;
@@ -90,6 +90,6 @@
         .attr("dy", "0.32em")
         .text(function(d) { return d; });
 
-        AutomaticInteraction.hydrate("#stackedbarsvg", "Zoom");
+        AutomaticInteraction.hydrate("#chart");
   });
  }

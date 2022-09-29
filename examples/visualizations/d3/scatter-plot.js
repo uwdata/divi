@@ -5,7 +5,7 @@ function createScatterPlot() {
         height = 720 - margin.top - margin.bottom
 
     // append the svg object to the body of the page
-    let svg = d3.select("#vis")
+    let svg = d3.select("#container")
         .append("svg")
         .attr("width", width + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom)
@@ -71,6 +71,6 @@ function createScatterPlot() {
 
         // d3.selectAll(".tick").attr("opacity", 0.5);
 
-        AutomaticInteraction.hydrate("#chart", "Zoom");
+        AutomaticInteraction.hydrate("#chart");
     })
 }

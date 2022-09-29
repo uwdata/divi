@@ -66,11 +66,11 @@ function createVegaMultiView() {
     // .hover(); 
   
     vegaEmbed('#vegamultiview1', spec1, {renderer: 'svg'}).then(function() {
-        // vegaEmbed('#vegamultiview2', spec2, {renderer: 'svg'}).then(function() {
+        vegaEmbed('#vegamultiview2', spec2, {renderer: 'svg'}).then(function() {
             const svg1 = document.querySelector('#vegamultiview1 svg');
-            // const svg2 = document.querySelector('#vegamultiview2 svg');
-            AutomaticInteraction.hydrate(svg1);
-        // });
+            const svg2 = document.querySelector('#vegamultiview2 svg');
+            AutomaticInteraction.hydrate([svg1, svg2]);
+        });
     });
 
     // var view = new vega.View(vega.parse(spec1), { loader: vega.loader(),
