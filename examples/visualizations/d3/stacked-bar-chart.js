@@ -24,7 +24,7 @@
   var z = d3.scaleOrdinal()
       .range(["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"]);
   
-    d3.csv("https://raw.githubusercontent.com/Luke-S-Snyder/AutoIxN/main/examples/data/data.csv?token=GHSAT0AAAAAABZA5UE4MFW72BQUCJRFMRA4YZWF3PQ").then(function(data) {
+    d3.csv("../../../examples/data/data.csv").then(function(data) {
         for (const d of data) {
             for (i = 1, t = 0; i < data.columns.length; ++i) t += d[data.columns[i]] = +d[data.columns[i]];
             d.total = t;
