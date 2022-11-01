@@ -59,35 +59,17 @@ function createVegaMultiView() {
         "width": 600,
         "mark": "bar"
       }
-    // var view = new vega.View(spec)
-    // .logLevel(vega.Warn) // set view logging level
-    // .renderer('svg')     // set render type (defaults to 'canvas')
-    // .initialize('#view') // set parent DOM element
-    // .hover(); 
   
-    vegaEmbed('#vegamultiview1', spec1, {renderer: 'svg'}).then(function() {
-        vegaEmbed('#vegamultiview2', spec2, {renderer: 'svg'}).then(function() {
-            const svg1 = document.querySelector('#vegamultiview1 svg');
-            const svg2 = document.querySelector('#vegamultiview2 svg');
+    var view1 = new vega.View(vega.parse(vegaLite.compile(spec1).spec), { renderer: 'svg' });
+    var view2 = new vega.View(vega.parse(vegaLite.compile(spec2).spec), { renderer: 'svg' });
+    view1.toSVG().then(function(svg1) {
+        view2.toSVG().then(function(svg2) {
+            document.querySelector("#chart1").innerHTML = svg1;
+            document.querySelector("#chart1 svg").id = "chart1";
+            document.querySelector("#chart2").innerHTML = svg2;
+            document.querySelector("#chart2 svg").id = "chart2";
             AutomaticInteraction.hydrate([svg1, svg2]);
-        });
+        })
     });
-
-    // var view = new vega.View(vega.parse(spec1), { loader: vega.loader(),
-    //     logLevel: vega.Warn, renderer: 'none' }).initialize().finalize();
-    // view.toSVG().then(function(svg) {
-    // console.log(svg);
-    //   document.querySelector("#vegamultiview1").innerHTML = svg;
-    //   document.querySelector("#vegamultiview1 svg").id =  "vegachart";
-    // //   AutomaticInteraction.hydrate("#vegachart");
-    // });
-  
-    // vegaEmbed("#vega", spec, {renderer: "svg"}).then(function(result) {
-    //   result.view.toSVG().then(function(svg) {
-    //     document.querySelector("#vega").innerHTML = svg;
-    //     document.querySelector("#vega svg").id = "vegachart";
-    //     AutomaticInteraction.hydrate("#vegachart", "#control");
-    //   });
-    // });
   }
   
