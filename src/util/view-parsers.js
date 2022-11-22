@@ -6,10 +6,10 @@ import { axisBottom, axisLeft } from '../_d3/axis';
 import { getFormatVal } from './attribute-parsers';
 import { computeCenterPos, convertPtToPx, flattenRGB } from './util';
 
-const epsilon = 5;
+const epsilon = 0.1;
 
-export function identifyAxes(state) {
-    const candidateGroups = collectCandidateGroups();
+export function parseChart(state) {
+    const candidateGroups = collectCandidateTextGroups();
     const [axes, legends, titles] = pruneGroups(candidateGroups);
     groupAxes(axes);
     parseLegends(legends);
@@ -37,7 +37,7 @@ export function identifyAxes(state) {
             }
 
             for (const {mark} of legend.marks) {
-                mark.role = 'legend';
+                mark._role = 'legend';
                 mark.legend = legend;
             }
 
@@ -69,55 +69,28 @@ export function identifyAxes(state) {
         [state.xAxis, state.yAxis].forEach(axis => {
             const axisPos = axis.ticks.filter(d => d.label).map(tickGroup => calculatePos(tickGroup.label));
             axis.title = getClosestTitle(mean(axisPos.map(d => d[0])), mean(axisPos.map(d => d[1])));
-            if (axis.title) axis.title.role = 'axis-title';
+            if (axis.title) axis.title._role = 'axis-title';
         });
         state.legends.map(legend => {
             const legendPos = legend.marks.filter(d => d.label).map(mark => calculatePos(mark.label));
             legend.title = getClosestTitle(mean(legendPos.map(d => d[0])), mean(legendPos.map(d => d[1])));
-            if (legend.title) legend.title.role = 'legend-title';
+            if (legend.title) legend.title._role = 'legend-title';
         });
 
-        state.title = titles.filter(d => !d.role)[0];
-    }
-
-    function collectOrphanTicks(orphanTicks) {
-        for (const {alignment, tick: orphanTick} of orphanTicks) {
-            const isX = alignment === Top || alignment === Bottom;
-            const axis = isX ? state.xAxis : state.yAxis;
-            const orphanBB = orphanTick.getBoundingClientRect();
-            let matched = false;
-            orphanTick.role = 'orphan-tick';
-            
-            for (let i = 0; i < axis.ticks.length; ++i) {
-                for (const tick of axis.ticks[i].marks) {
-                    const tickBB = tick.getBoundingClientRect();
-                    const sizeMatch = isX ? orphanBB.height === tickBB.height : orphanBB.width === tickBB.width;
-                    const offset = isX ? Math.abs(orphanBB.left + orphanBB.width / 2 - tickBB.left - tickBB.width / 2)
-                    : Math.abs(orphanBB.top + orphanBB.height / 2 - tickBB.top - tickBB.height / 2);
-                    
-                    if (offset < epsilon && sizeMatch) {
-                        matched = true;
-                        const orphanStyle = window.getComputedStyle(orphanTick);
-                        const tickStyle = window.getComputedStyle(tick);
-
-                        if (parseInt(orphanStyle.strokeWidth, 10) < parseInt(tickStyle.strokeWidth, 10) || 
-                            flattenRGB(orphanStyle.stroke) > flattenRGB(tickStyle.stroke)) {
-                            axis.ticks[i].marks = axis.ticks[i].marks.filter(d => d !== tick);
-                            axis.ticks[i].marks.push(orphanTick);
-                        }
-                    }
-                }
-            }
-
-            if (!matched) {
-                axis.ticks.push({label: null, marks: [orphanTick]});
-            }
-        }
+        state.title = titles.filter(d => !d._role)[0];
     }
 
     function groupAxes(axes) {
         const axisMap = new Map();
         const orphanTicks = [];
+        
+        function addTicks(text, alignment, ticks) {
+            if (alignment === Top || alignment === Bottom) {
+                state.xAxis.ticks.push({label: text, marks: ticks});
+            } else {
+                state.yAxis.ticks.push({label: text, marks: ticks});
+            }
+        }
 
         for (const [alignment, axis] of axes) {
             for (const {text, tick} of axis) {
@@ -127,30 +100,31 @@ export function identifyAxes(state) {
                 }
 
                 axisMap.has(text) ? axisMap.get(text).ticks.push(tick) 
-                : axisMap.set(text, {alignment: alignment, ticks: [tick]});
+                    : axisMap.set(text, {alignment: alignment, ticks: [tick]});
             }
         }
 
         for (const [text, {alignment, ticks}] of axisMap.entries()) {
-            if (alignment === Top || alignment === Bottom) {
-                state.xAxis.ticks.push({label: text, marks: ticks});
-            } else {
-                state.yAxis.ticks.push({label: text, marks: ticks});
-            }
+            addTicks(text, alignment, ticks);
         }
         
-        collectOrphanTicks(orphanTicks);
+        if (orphanTicks.length >= axisMap.size - 1) {
+            for (const {alignment, tick} of orphanTicks) {
+                addTicks(null, alignment, [tick]);
+            }
+        }
+
         [state.xAxis.ticks, state.yAxis.ticks].forEach(axis => axis.forEach(
-            tickGroup => tickGroup.marks.forEach(tick => tick.role = 'tick')
+            tickGroup => tickGroup.marks.forEach(tick => tickGroup.label ? tick._role = 'tick' : tick._role = 'orphan-tick')
         ));
     }
 
-    function collectTicks() {
+    function collectCandidateTicks() {
         const positionMap = {};
         for (const svgMark of state.svgMarks) {
             const markBB = svgMark.getBoundingClientRect();
-            const xOffset = 'x:' + [markBB.left, markBB.width, markBB.height].join(',');
-            const yOffset = 'y:' + [markBB.top, markBB.width, markBB.height].join(',');
+            const xOffset = 'x:' + [(markBB.left + markBB.right) / 2, markBB.width, markBB.height].join(',');
+            const yOffset = 'y:' + [(markBB.top + markBB.bottom) / 2, markBB.width, markBB.height].join(',');
     
             xOffset in positionMap ? positionMap[xOffset].push(svgMark) : positionMap[xOffset] = [svgMark];
             yOffset in positionMap ? positionMap[yOffset].push(svgMark) : positionMap[yOffset] = [svgMark];
@@ -163,6 +137,7 @@ export function identifyAxes(state) {
         const groups = new WeakMap();
 
         for (const textMark of state.textMarks) {
+            // console.log([textMark, textMark.getBoundingClientRect(), textMark.getBBox()])
             const group = {closestMark: null, distance: Number.MAX_VALUE};
     
             for (const svgMark of state.svgMarks) {
@@ -178,19 +153,32 @@ export function identifyAxes(state) {
                 ]);
     
                 if (posDiff < group.distance) {
+                    // if (Math.abs(group.distance - posDiff) < 2) break
                     group.closestMark = svgMark;
                     group.distance = posDiff;
+                    // group.m = svgMark.getBoundingClientRect()
+                    // group.d = svgMark.getBBox()
+                    // group.e = svgMark.getClientRects()
                 }
             }
 
             groups.set(textMark, group);
         }
 
+        // for (const textMark of state.textMarks) {
+        //     console.log([textMark, groups.get(textMark).closestMark])
+        // }
+
         return groups;
     }
 
     function separateOthers(others, textKeys) {
+        // console.log(others)
+        // console.log(others);
         const legends = [], titles = [];
+        // for (const text of others[2][1]) {
+        //     console.log([text, textKeys.get(text)]);
+        // }
 
         for (const [alignment, group] of others) {
             if (group.length === 1) {
@@ -225,21 +213,22 @@ export function identifyAxes(state) {
 
     function pruneGroups(candidateGroups) {
         const axes = [], others = [];
-        const tickCandidates = collectTicks();
-        const textKeys = collectTextKeys();
-
+        const tickCandidates = collectCandidateTicks(); // Get SVG candidate tick groups
+        const textKeys = collectTextKeys(); // Get closest mark to each text element
+        // console.log(tickCandidates)
         for (const {alignment, marks: textGroup} of candidateGroups) {
             if (textGroup.length === 1) {
                 others.push([alignment, textGroup]);
                 continue;
             }
             let anyMatched = false;
-
+            
             for (const [_, tickGroup] of Object.entries(tickCandidates)) {
+                // console.log(tickGroup)
                 if (tickGroup.length < textGroup.length) continue;
 
                 let textMatched = true;
-                const tickStyles = {};
+                const tickStyles = { };
                 const matchedTicks = new WeakMap();
 
                 for (const text of textGroup) {
@@ -250,8 +239,10 @@ export function identifyAxes(state) {
                         const tickBB = tick.getBoundingClientRect();
                         const xOffset = Math.abs(textBB.left + textBB.width / 2 - tickBB.left - tickBB.width / 2);
                         const yOffset = Math.abs(textBB.top + textBB.height / 2 - tickBB.top - tickBB.height / 2);
-
-                        if ((xOffset < epsilon || yOffset < epsilon) && !matchedTicks.get(tick)) {
+                        // console.log(tick, xOffset, yOffset)
+                        if (((xOffset < epsilon && tickBB.width < epsilon) || (yOffset < epsilon && tickBB.height < epsilon)) && !matchedTicks.get(tick)) {
+                            // console.log(xOffset, yOffset)
+                            // console.log('matched', textGroup, tickGroup, text, tick)
                             matchedTicks.set(tick, text);
                             tickMatch = true;
 
@@ -270,6 +261,7 @@ export function identifyAxes(state) {
 
                 const styleKey = Object.keys(tickStyles)[0];
                 if (textMatched && tickStyles[styleKey] === textGroup.length) {
+                    // console.log(tickGroup, tickStyles[styleKey], textGroup.length)
                     axes.push([alignment, tickGroup.map(d => {
                         return {tick: d, text: matchedTicks.get(d)};
                     })]);
@@ -282,16 +274,28 @@ export function identifyAxes(state) {
             }
         }
 
+        // console.log('axes')
+        // console.log(axes)
         return [axes, ...separateOthers(others, textKeys)];
     }
 
-    function collectCandidateGroups() {
+    function collectCandidateTextGroups() {
         const positions = {[Right]: {}, [Left]: {}, [Top]: {}, [Bottom]: {}};
 
         for (const textMark of state.textMarks) {
             for (const [position, _map] of Object.entries(positions)) {
                 const {[position]: offset} = textMark.getBoundingClientRect();
-                offset in _map ? _map[offset].push(textMark) : _map[offset] = [textMark];
+                let found = false;
+
+                for (const _key of Object.keys(_map)) { // Handle minor misalignments / offsets
+                    if (Math.abs(offset - _key) < epsilon) {
+                        found = true;
+                        _map[_key].push(textMark);
+                    }
+                }
+
+                if (!found) _map[offset] = [textMark];
+                // offset in _map ? _map[offset].push(textMark) : _map[offset] = [textMark];
             }
         }
 
@@ -309,17 +313,22 @@ export function identifyAxes(state) {
         }
 
         let candidateGroups = [];
-        for (const textMark of state.textMarks) {
+        for (let i = 0; i < state.textMarks.length; ++i) {
+            const textMark = state.textMarks[i];
             const marks = markAssignment.get(textMark);
+            // for (const mark of marks) {
+            //     if (mark !== textMark && markAssignment.get(mark) !== markAssignment.get(textMark)) {
+            //         marks.splice(i, 1);
+            //     }
+            // }
+            
             if (!candidateGroups.includes(marks)) {
                 candidateGroups.push(marks);
             }
         }
-        candidateGroups = candidateGroups.map(d => {
+        return candidateGroups.map(d => {
             return {alignment: alignmentMap.get(d), marks: d};
         });
-
-        return candidateGroups;
     }
 }
 
@@ -328,12 +337,23 @@ export function cleanMarks(state) {
         const clientRect = mark.getBoundingClientRect();
         if (clientRect.width >= state.xAxis.range[1] - state.xAxis.range[0] &&
             clientRect.height >= state.yAxis.range[0] - state.yAxis.range[1]) {
-                mark.role = 'viewport';
+                mark._role = 'viewport';
+                continue;
+            }
+        
+        const xLeft = state.xAxis.ticks[0].marks[0].getBoundingClientRect().left;
+        const xRight = state.xAxis.ticks[state.xAxis.ticks.length - 1].marks[0].getBoundingClientRect().right;
+        const yTop = state.yAxis.ticks[0].marks[0].getBoundingClientRect().top;
+        const yBottom = state.yAxis.ticks[state.yAxis.ticks.length - 1].marks[0].getBoundingClientRect().bottom;
+        if ((clientRect.left <= xLeft && clientRect.right >= xRight && clientRect.top >= yBottom) || 
+            (clientRect.top <= yTop && clientRect.bottom >= yBottom && clientRect.right <= xLeft)) {
+                // console.log(mark, xLeft, xRight, yTop, yBottom, clientRect)
+                mark._role = 'domain';
             }
     }
 
-    state.svgMarks.filter(d => d.role).forEach(d => d.removeAttribute('__mark__'));
-    state.svgMarks = state.svgMarks.filter(d => !d.role);
+    state.svgMarks.filter(d => d._role).forEach(d => d.removeAttribute('__mark__'));
+    state.svgMarks = state.svgMarks.filter(d => !d._role);
 }
 
 export function computeDomain(axis) {
@@ -396,8 +416,8 @@ export function configureAxes(state) {
     }
 }
 
-export function constructAxes(state) {
-    identifyAxes(state);
+export function deconstructChart(state) {
+    parseChart(state);
     computeDomain(state.xAxis);
     computeDomain(state.yAxis);
 
@@ -422,7 +442,9 @@ export function constructAxes(state) {
     const xTickRange = [xTickBB.top + xTickBB.height, xTickBB.top];
     console.log(xTickRange)
     const xMin = yTickRange[0] - svgClientRect.left;
-    const xMax = min([yTickRange[1] - svgClientRect.left, width]);
+    // console.log(xTick)
+    // console.log(state.xAxis.ticks[0].marks[state.xAxis.ticks[0].marks.length - 1])
+    const xMax = max([min([yTickRange[1] - svgClientRect.left, width]), state.xAxis.ticks[state.xAxis.ticks.length - 1].marks[0].getBoundingClientRect().right]);
     const yMin = xTickRange[1] - svgClientRect.top;
     const yMax = min([xTickRange[0] - svgClientRect.top, height]);
     console.log([xMin, xMax]);
