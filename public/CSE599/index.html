@@ -5,55 +5,206 @@
         <script type="module" src="./components/zoom.js"></script>
         <script type="module" src="./components/filter.js"></script>
         <script type="module" src="./components/annotate.js"></script>
+        <!-- <script type="module" src="./CSE599/components/select.js"></script>
+        <script type="module" src="./CSE599/components/zoom.js"></script>
+        <script type="module" src="./CSE599/components/filter.js"></script>
+        <script type="module" src="./CSE599/components/annotate.js"></script> -->
         <!-- <script type="module" src="./CSE599/components/brush.js"></script> -->
         <!-- <script src="https://cdn.jsdelivr.net/npm/d3@7"></script> -->
         <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
         <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
         <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+        <!-- <script src="../../../examples/visualizations/vega-lite/scatter-plot-1.js"></script>
+        <script src="../../../examples/visualizations/vega-lite/line-chart.js"></script>
+        <script src="../../../dist/automatic-interaction.min.js"></script> -->
+        <link rel="stylesheet" href="./style/style.css">
         <script src="../../examples/visualizations/vega-lite/scatter-plot-1.js"></script>
         <script src="../../examples/visualizations/vega-lite/line-chart.js"></script>
         <script src="../../dist/automatic-interaction.min.js"></script>
     </head>
     <body>
-        <div id="container2"></div>
-        Testing <text id="link3">some</text> text
-        <annotate-clause text="Insights here" x="200" y="30">
+        <h1 align="center">Living Figures:<br/> Declarative Specification of Text-Chart Linkings via Interaction Primitives</h1>
+        <h2 align="center">Luke S. Snyder</h2>
+        <h3>Introduction</h3>
+        NOTE: Please use Chrome or Safari browsers.
+        <br/><br/>
+        
+        This project explores the relationship between text and figures in authoring and communicating information on the web. Traditionally, authors must (1) generate separate figures for each text-figure linking (e.g., with traditional libraries like matplotlib or R) or (2) write code that directly modifies the figure state (e.g., JavaScript, D3, Idyll, etc.). 
+        <br/><br/>
+
+        In this project, we contribute a composable interaction grammar that allows authors to declaratively specify intermediate visualization states via text linkings, without needing to manage the internal state or underlying execution details. Specifically, authors can import any SVG visualization, declaratively manipulate and reuse this visualization via high-level web components to highlight salient information for the reader, and flexibly compose interaction primitives as desired.
+        <br/><br/>
+
+        Our interaction grammar relies on prior work in Automatic Interaction (AutoIxN) to deconstruct SVG visualizations and coordinate interaction events. When authors specify visualization states via interaction web components, AutoIxN applies the interaction primitive as though a user were actually interacting with the visualization. This leads to a number of questions for future consideration. Namely, (1) are interactions the best interface for authors to declatively manipulate visualization states, and (2) how might authors more directly specify visualization states with less textual code (although a goal of this project is to make it easy for authors to link text and charts in traditional web formats without the use of GUIs (e.g., Lyra 2))?
+        <br/><br/>
+
+        This remainder of this article is organized as follows: (1) A brief discussion of goals and progress, (2) overview of related work, and (3) demonstration and walk-through of the interactive prototype with a scatter plot and line chart from the Vega ecosystem.
+
+        <h4>Goals</h4>
+        The goals of this project are as follows:
+        <ol>
+            <li>Allow authors to link text to visualization states (e.g., selections, filters, annotations, etc.) without needing to interface with the visualization or code directly</li>
+            <li>Allow authors to link text with a variety of chart types and visualization libraries (i.e., target SVG)</li>
+            <li>Allow authors to freely compose interaction primitives in different ways for flexibility</li>
+        </ol>
+        <h4>Progress</h4>
+        We completed the following:
+        <ol>
+            <li>Declarative web components for selection, filter, navigation, and annotation interactions</li>
+            <li>Updated version of AutoIxN that coordinates and applies declarative interactions (i.e., no mouse / keyboard events)</li>
+            <li>Demonstration of two use cases (Vega scatter plot and line chart) with several different text-chart interaction linkings</li>
+        </ol>
+
+        <h3>Related Work</h3>
+        <h4>Interaction Taxonomies</h4>
+        Researchers have proposed various taxonomies to scaffold the interaction design space. <a href="https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=4376144&casa_token=dtrn272B-OkAAAAA:4SlVo8GnQmfZ6aK7E6_fJGRtL_oF8PcQpCnr0p-43d3vdqkxymebqrwAL1CkVJDilTzg-bzHiw&tag=1">Yi et al.</a> categorize visualization interaction techniques into seven high-level categories: <i>Select</i>, <i>Explore</i>, <i>Reconfigure</i>, <i>Encode</i>, <i>Elaborate</i>, <i>Filter</i>, and <i>Connect</i>. <a href="https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=6634168&casa_token=SZBk4mArVugAAAAA:WhZrg_fIs3N3ImU1PQ9dB5Z9pfjA9IrZjV4njzNpApZ5BnPVelnB3TO5RpENUYbosTp3EXugVg">Brehmer et al.</a> provide a multi-level typology of abstract visualization tasks to address <i>how</i> and <i>why</i> a task is performed, organizing concise descriptions and comparisons of various tasks. In their <i>how</i> typology, they provide associated interaction techniques, such as <i>Select</i>, <i>Navigate</i> (within Yi et al.'s <i>Explore</i> category), <i>Change</i> (within Yi et al.'s <i>Reconfigure</i> category), and <i>Filter</i>. We use these interaction taxonomies to cover an expressive gamut of interaction types, and to scaffold the interaction primitives in our own taxonomy. Specifically, our interaction grammar currently supports <i>Select</i>, <i>Explore</i>, <i>Filter</i>, and <i>Annotate</i> interactions; we plan to support more interactions in the future.
+
+        <h4>Deconstructing Visualizations</h4>
+        Deconstructing visualizations to extract meaningful chart information, such as marks, data attributes, and visual encoding channels, can support chart analysis, classification, and design re-targeting. <a href="https://dl.acm.org/doi/abs/10.1145/2047196.2047247?casa_token=BeV1HGLe40kAAAAA%3AuDOGg8fmxt2su-adMVrngH747RV3kwOpkTQZ5DyQg80iDHFCkO3xcxOqnLpDWZ5nUxRIF5DPQIH4">ReVision</a> and <a href="https://onlinelibrary.wiley.com/doi/pdf/10.1111/cgf.13193?casa_token=1Y5e7QgSXNsAAAAA:aoSWOyN_z7oUCa6uu5xG6kugMWg-CwN1eqeThowP2pgZhIgkzcPvp7A2g61Ai1VyMqSMzZGTjWkmRgg">REV</a> (Reverse-Engineering Visualizations) use computer vision techniques to automatically extract marks and infer visual encoding channels and data attributes from bitmap images. While our work targets structured SVG images, these techniques might support AutoIxN for a broader set of visualization media types in the future. Our SVG analysis for AutoIxN follows prior work on <a href="https://dl.acm.org/doi/abs/10.1145/2642918.2647411?casa_token=MuAAssZBenEAAAAA%3A0lU_HJBEHRkMYXf3Rl0l0tfpDq7x3GUeyXKQ6MLFCBs9W9iJEwp0ky6hZsxkj6UokgtJxuFTOdTS">deconstructing D3 visualizations</a>, as well as <a href="https://observablehq.com/@parkerziegler/hello-reviz">Reviz</a>, which produces partial visualization programs for re-targeting with Observerable Plot. Specifically, we walk the SVG DOM tree to extract important marks (e.g., axis tick marks, legends, titles, etc.) and use them to orchestrate downstream interaction primitives.
+
+        <h3>Interactive Prototype</h3>
+        The following interaction components are supported:
+        <div align="center">
+            <pre>
+                <code>
+    &lt;annotate-clause text x y>&lt;/annotate-clause>
+    &lt;filter-clause include>&lt;/filter-clause>
+    &lt;select-clause target value extentX extentY>&lt;/select-clause>
+    &lt;zoom-clause extentX extentY>&lt;/zoom-clause>
+                </code>
+            </pre>
+        </div>
+       For the annotation clause, <i>text</i> specifies the annotation text, and <i>x</i> and <i>y</i> specify the annotation location in <i>data</i> coordinates.
+       <br/>
+       For the filter clause, <i>include</i> operates as a boolean field specifying whether the filter clause is inclusive or exclusive.
+       <br/>
+       For the select clause, <i>target</i> specifies the chart components to select over (currently, only marks and legends are supported), <i>value</i> specifies the matching criteria for legend, and <i>extentX</i> and <i>extentY</i> specify the data selection bounds for marks.
+        <br/><br/>
+
+        <h4>Scatter Plot</h4>
+        <div id="container2" align="center"></div>
+        Consider the first text-chart linking for the above scatter plot that selects all marks with an acceleration between 15 and 20. Using a legend selection clause, the <text id="first">selection</text> is achieved with the following code, where <i>textId</i> specifies the <i>&lt;text></i> component to link to and <i>svgId</i> specifies the SVG container component to deconstruct and apply the interactions: 
+        <select-clause textId="first" svgId="container2" target="legend" value="[15, 20]"></select-clause>
+        <div align="center">
+            <pre>
+                <code>
+    &lt;select-clause textId="first" svgId="container2" target="legend" value="[15, 20]">&lt;/select-clause>
+                </code>
+            </pre>
+        </div>
+
+        We can inclusively <text id="second">filter</text> the selected marks by composing filter and select clauses:
+        <filter-clause include>
+        <select-clause textId="second" svgId="container2" target="legend" value="[15, 20]"></select-clause>
+    </filter-clause>
+        <div align="center">
+            <pre>
+                <code>
+    &lt;filter-clause include>
+    &lt;select-clause textId="second" svgId="container2" target="legend" value="[15, 20]">&lt;/select-clause>
+    &lt;/filter-clause>
+                </code>
+            </pre>
+        </div>
+        <br/>
+
+        We can focus a filtered selection as desired with <text id="third">zoom</text>, composing zoom, filter, and select clauses:
+        <zoom-clause extentX="[50, 150]" extentY="[20, 40]">
+        <filter-clause include>
+            <select-clause textId="third" svgId="container2" target="legend" value="[15, 20]"></select-clause>
+        </filter-clause>
+        </zoom-clause>
+            <div align="center">
+                <pre>
+                    <code>
+        &lt;zoom-clause extentX="[50, 150]" extentY="[20, 40]">
+        &lt;filter-clause include>
+        &lt;select-clause textId="third" svgId="container2" target="legend" value="[15, 20]">&lt;/select-clause>
+        &lt;/filter-clause>
+        &lt;/zoom-clause>
+                    </code>
+                </pre>
+            </div>
+            <br/>
+
+        We can also <text id="fourth">annotate</text> interesting findings, which can also be composed with other clauses (e.g., select):
+        <annotate-clause text="datsun 280-zx" x="138" y="32">
+            <select-clause textId="fourth" svgId="container2" target="marks" extentX="[120, 150]" extentY="[30, 35]"></select-clause>
+        </annotate-clause>
+        <div align="center">
+            <pre>
+                <code>
+        &lt;annotate-clause text="datsun 280-zx" x="138" y="32">
+            &lt;select-clause textId="fourth" svgId="container2" target="marks" extentX="[120, 150]" extentY="[30, 35]">&lt;/select-clause>
+        &lt;/annotate-clause>
+                </code>
+            </pre>
+        </div>
+        <br/>
+
+        <!-- <annotate-clause text="Insights here" x="200" y="30">
             <filter-clause include>
                 <select-clause target="legend" value="[15, 20]">
                     <zoom-clause textId="link3" svgId="container2" extentX="[0, 250]" extentY="[0, 50]">
                     </zoom-clause>
                 </select-clause>
             </filter-clause>
-        </annotate-clause>
+        </annotate-clause> -->
+        <h4>Line Chart</h4>
 
-        Testing <text id="link4">additional</text> text
-        <annotate-clause text="Insights here" x="100" y="40">
-            <filter-clause>
-                <select-clause textId="link4" svgId="container2" target="marks" extentX="[0, 200]" extentY="[0, 50]">
-                </select-clause>
-            </filter-clause>
-        </annotate-clause>
+        <div id="container1" align="center"></div>
+        Similar to the previous example, categorical legends can also be used as selections. For instance, we can link to <text id="AAPL">AAPL</text> via:
+            <select-clause textId="AAPL" svgId="container1" target="legend" value='["AAPL"]'></select-clause>
+        <div align="center">
+            <pre>
+                <code>
+        &lt;select-clause textId="AAPL" svgId="container1" target="legend" value='["AAPL"]'>&lt;/select-clause>
+                </code>
+            </pre>
+        </div>
+        <br/>
+        
+        Or <text id="compare">compare</text> a subset of stocks for comparison:
+        <filter-clause include>
+            <select-clause textId="compare" svgId="container1" target="legend" value='["GOOG", "MSFT"]'></select-clause>
+        </filter-clause>
+        <div align="center">
+            <pre>
+                <code>
+        &lt;filter-clause include>
+            &lt;select-clause textId="compare" svgId="container1" target="legend" value='["GOOG", "MSFT"]'>&lt;/select-clause>
+        &lt;/filter-clause>
+                </code>
+            </pre>
+        </div>
+        <br/>
 
-        <div id="container1"></div>
-        Testing <text id="link1">some</text> text
-        <annotate-clause text="Insights here" x="2009" y="90">
-            <filter-clause include>
-                <select-clause textId="link1" svgId="container1" target="legend" value='["AAPL"]'>
-                </select-clause>
-            </filter-clause>
-        </annotate-clause>
-
-        Testing <text id="link2">additional</text> text
-        <annotate-clause text="Insights here" x="2010" y="100">
-            <filter-clause>
-                <select-clause textId="link2" svgId="container1" target="legend" value='["AMZN"]'>
-                </select-clause>
-            </filter-clause>
-        </annotate-clause>
+        And <text id="test">annotate</text> for readers: 
+        <annotate-clause text="MSFT relatively unaffected" x="2009" y="50">
+        <annotate-clause text="GOOG greatly impacted by '08 crash" x="2009" y="275">
+        <filter-clause include>
+            <select-clause textId="test" svgId="container1" target="legend" value='["GOOG", "MSFT"]'></select-clause>
+        </filter-clause>
+    </annotate-clause>
+</annotate-clause>
+<div align="center">
+    <pre>
+        <code>
+            &lt;annotate-clause text="MSFT relatively unaffected" x="2009" y="50">
+            &lt;annotate-clause text="GOOG greatly impacted by '08 crash" x="2009" y="275">
+            &lt;filter-clause include>
+            &lt;select-clause textId="test" svgId="container1" target="legend" value='["GOOG", "MSFT"]'>&lt;/select-clause>
+            &lt;/filter-clause>
+            &lt;/annotate-clause>
+            &lt;/annotate-clause>
+        </code>
+    </pre>
+</div>
+<br/>
 
         <script>
-            createLineChart();
             createScatterPlot();
+            createLineChart();
         </script>
 
         <!-- <script>

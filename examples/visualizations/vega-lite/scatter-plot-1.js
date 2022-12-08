@@ -2,8 +2,8 @@ function createScatterPlot() {
   const spec = {
     "$schema": "https://vega.github.io/schema/vega/v5.json",
     "description": "A basic scatter plot example depicting automobile statistics.",
-    "width": 600,
-    "height": 600,
+    "width": 450,
+    "height": 450,
     "padding": 5,
 
     "data": [

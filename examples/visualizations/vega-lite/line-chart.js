@@ -4,8 +4,8 @@ function createLineChart() {
         "description": "Stock prices of 5 Tech Companies over Time.",
         "data": {"url": "https://vega.github.io/vega-datasets/data/stocks.csv"},
         "mark": "line",
-        "height": 400,
-        "width": 400,
+        "height": 450,
+        "width": 450,
         "encoding": {
             "x": {"field": "date", "type": "temporal"},
             "y": {"field": "price", "type": "quantitative"},
