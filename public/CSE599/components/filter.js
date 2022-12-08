@@ -60,7 +60,7 @@ export class Filter extends LitElement {
 
     hydrate(svg, copy) {
         this.manipulator = AutomaticInteraction.hydrate(svg);
-        this.manipulator.select(this.target, this.value, this.extentX, this.extentY);
+        this.manipulator.filter(this.include);
         this.emitSvg(this.manipulator.getState(), copy);
     }
 
