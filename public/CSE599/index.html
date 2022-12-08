@@ -1,0 +1,68 @@
+<html>
+    <head>
+        <title>Living Figures</title>
+        <script type="module" src="./CSE599/components/select.js"></script>
+        <script type="module" src="./CSE599/components/zoom.js"></script>
+        <script type="module" src="./CSE599/components/filter.js"></script>
+        <script type="module" src="./CSE599/components/annotate.js"></script>
+        <!-- <script type="module" src="./CSE599/components/brush.js"></script> -->
+        <!-- <script src="https://cdn.jsdelivr.net/npm/d3@7"></script> -->
+        <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+        <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+        <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+        <script src="../../../examples/visualizations/vega-lite/scatter-plot-1.js"></script>
+        <script src="../../../examples/visualizations/vega-lite/line-chart.js"></script>
+        <script src="../../../dist/automatic-interaction.min.js"></script>
+    </head>
+    <body>
+        <div id="container2"></div>
+        Testing <text id="link3">some</text> text
+        <annotate-clause text="Insights here" x="200" y="30">
+            <filter-clause include>
+                <select-clause target="legend" value="[15, 20]">
+                    <zoom-clause textId="link3" svgId="container2" extentX="[0, 250]" extentY="[0, 50]">
+                    </zoom-clause>
+                </select-clause>
+            </filter-clause>
+        </annotate-clause>
+
+        Testing <text id="link4">additional</text> text
+        <annotate-clause text="Insights here" x="100" y="40">
+            <filter-clause>
+                <select-clause textId="link4" svgId="container2" target="marks" extentX="[0, 200]" extentY="[0, 50]">
+                </select-clause>
+            </filter-clause>
+        </annotate-clause>
+        
+        <div id="container1"></div>
+        Testing <text id="link1">some</text> text
+        <annotate-clause text="Insights here" x="2009" y="90">
+            <filter-clause include>
+                <select-clause textId="link1" svgId="container1" target="legend" value='["AAPL"]'>
+                </select-clause>
+            </filter-clause>
+        </annotate-clause>
+
+        Testing <text id="link2">additional</text> text
+        <annotate-clause text="Insights here" x="2010" y="100">
+            <filter-clause>
+                <select-clause textId="link2" svgId="container1" target="legend" value='["AMZN"]'>
+                </select-clause>
+            </filter-clause>
+        </annotate-clause>
+
+        <script>
+            createLineChart();
+            createScatterPlot();
+        </script>
+
+        <!-- <script>
+              var p1Vals = [
+                [0.125/8, 0.125/4, 0.125/2, 0.125, 0.25, 0.5],
+                [0.125/4, 0.125/2, 0.125, 0.25, 0.5, 1],
+                [0.6, 0.62, 0.6, 0.7, 1, 1.6]
+            ];
+            var p1 = plot("Scatterplot Matrix", "Initialization Time (s)", "", [0, 0.5, 1, 1.5], p1Vals);
+        </script> -->
+    </body>
+</html>
