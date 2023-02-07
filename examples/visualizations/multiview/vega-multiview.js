@@ -25,7 +25,7 @@ function createVegaMultiView() {
             "field": "date",
             "timeUnit": "monthdate",
             "title": "Date",
-            "axis": {"format": "%b"}
+            "axis": {"format": "%m"}
             },
             "y": {
             "title": "Maximum Daily Temperature (C)",
@@ -34,8 +34,8 @@ function createVegaMultiView() {
             "type": "quantitative"
             }
         },
-        "width": 600,
-        "height": 300,
+        "width": 700,
+        "height": 400,
         "mark": "point"
         }
 
@@ -56,7 +56,7 @@ function createVegaMultiView() {
             "x": {"aggregate": "count"},
             "y": {"title": "Weather", "field": "weather"}
         },
-        "width": 600,
+        "width": 700,
         "mark": "bar"
       }
   
@@ -68,7 +68,7 @@ function createVegaMultiView() {
             document.querySelector("#chart1 svg").id = "chart1";
             document.querySelector("#chart2").innerHTML = svg2;
             document.querySelector("#chart2 svg").id = "chart2";
-            AutomaticInteraction.hydrate([svg1, svg2]);
+            AutomaticInteraction.hydrate(["#chart1 svg", "#chart2 svg"]);
         })
     });
   }
