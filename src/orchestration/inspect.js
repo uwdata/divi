@@ -1,33 +1,42 @@
 import {
-    SvgContainer, SvgGroup, Tick, TickDomain, Background, 
-    Foreground, Axis, Circle, Ellipse, Line, Polygon, 
-    Polyline, Rect, Path, Text
+    SvgContainer, SvgGroup, TickDomain, Background, Foreground, Circle, Ellipse, Line, Polygon, 
+    Polyline, Rect, Path, Text, DefaultSvgId, MarkRole
 } from '../state/constants.js';
 
 import { Transform } from '../util/transform.js';
 import { ViewState } from '../state/view-state.js';
-import { parseTransform } from '../util/attribute-parsers';
+import { parseTransform } from '../parsers/attribute-parsers';
 import * as parser from 'svg-path-parser';
+import { SVGToScreen } from '../util/util.js';
 
 const markTypes = [Circle, Ellipse, Line, Polygon, Polyline, Rect, Path];
+var id = 1;
 
-function extractElementInformation(element, transform) {
-    // element.clientRect = {
-    //     left: +clientRect.left,
-    //     right: +clientRect.right,
-    //     top: +clientRect.top,
-    //     bottom: +clientRect.bottom,
-    //     width: +clientRect.width,
-    //     height: +clientRect.height
-    // }
-    element.clientRect = element.getBoundingClientRect();
+function extractElementInformation(svg, element, transform) {
+    element._getBBox = element.nodeName === SvgContainer 
+        ? function() { return this.getBoundingClientRect(); } 
+        : function() {
+            const clientRect = this.getBoundingClientRect(), svgRect = this.getBBox();
+            const p1 = SVGToScreen(svg, this, svgRect.x, svgRect.y)
+            const p2 = SVGToScreen(svg, this, svgRect.x + svgRect.width, svgRect.y + svgRect.height);
+            const width = Math.abs(p1.x - p2.x), height = Math.abs(p1.y - p2.y);
+            const left = clientRect.left + clientRect.width / 2 - width / 2, 
+                top = clientRect.top + clientRect.height / 2 - height / 2;
+
+            return {
+                width: width,
+                height: height,
+                left: left,
+                right: left + width,
+                top: top,
+                bottom: top + height,
+                centerX: left + width / 2,
+                centerY: top + height / 2
+            }
+      }
+
     element.localTransform = parseTransform(element, false);
     element.globalPosition = parseTransform(element, true, new Transform(transform));
-
-    // element.globalPosition = {
-    //     x: element.clientRect.left + element.clientRect.width / 2 - svg.clientRect.left,
-    //     y: element.clientRect.top + element.clientRect.height / 2 - svg.clientRect.top
-    // }
 }
 
 function inferTypeFromPath(element) { 
@@ -36,77 +45,42 @@ function inferTypeFromPath(element) {
 
     element.contour = commands;
     let endCmd = commands[commands.length - 1];
+    const relCommands = ['v', 'h'];
 
     if (commands.length === 3 && commands[1].code === 'A' && endCmd.code === 'A') {
         element.type = Ellipse;
     } else if (endCmd.code !== 'Z') {
         element.type = Line;
+    } else if (commands.length === 5 && relCommands.includes(commands[1].code) && relCommands.includes(commands[2].code) && 
+        relCommands.includes(commands[3].code)) {
+            element.type = Rect;
     } else {
         element.type = Polygon;
     }
 }
 
-// function analyzeAxis(element, state, transform) {
-//     if (!element) return;
-//     if (element.className && (element.className.baseVal === Background || 
-//         element.className.baseVal === Foreground)) return;
-
-//     if (element.nodeName === SvgGroup) {
-//         parseTransform(element, true, transform);
-//     } else if (element.nodeName === Text) {
-//         extractElementInformation(element, transform);
-//         state.axisTextMarks.push(element);
-//         element.style['pointer-events'] = 'none';
-//         element.style['user-select'] = 'none';
-//     } else if (markTypes.includes(element.nodeName)) {
-//         extractElementInformation(element, transform);
-//         let isX = element.hasAttribute('x2') ? +element.getAttribute('x2') : 0;
-//         isX = !isX ? Math.abs(element.clientRect.bottom - element.clientRect.top) < 1 : isX;
-        
-//         let isY = element.hasAttribute('y2') ? +element.getAttribute('y2') : 0;
-//         isY = !isY ? Math.abs(element.clientRect.left - element.clientRect.right) < 1 : isY;
-
-//         if (isX) state.yAxis.ticks.push(element);
-//         if (isY) state.xAxis.ticks.push(element);
-//     }
-
-//     for (const child of element.childNodes) {
-//         analyzeAxis(child, state, new Transform(transform));
-//     }
-// }
-
 function analyzeDomTree(element, state, transform) {
     if (!element) return;
     if (element.className && (element.className.baseVal === Background || 
         element.className.baseVal === Foreground)) return;
-    // var skip = false;
 
     if (element.nodeName === SvgContainer) {
         state.svg = element;
-        extractElementInformation(element, transform);
-        if (!element.id) element.id = 'autoixn-svg';
+        extractElementInformation(state.svg, element, transform);
+        if (!element.id) element.id = DefaultSvgId + '-' + id++;
     } else if (element.nodeName === SvgGroup) {
         parseTransform(element, true, transform);
-
-        // let cName = element.className.baseVal;
-        // if (cName.includes(Tick) || cName.includes(Axis)) {/*cName.includes(Grid) || cName.includes(Label)) || c_name.includes("title")*/
-        //     skip = true;
-        //     for (const child of element.childNodes) {
-        //         analyzeAxis(child, state, new Transform(transform));
-        //     }
-        // }
     } else if (element.nodeName === Text) {
-        extractElementInformation(element, transform);
+        extractElementInformation(state.svg, element, transform);
         element.removeAttribute('textLength');
         state.textMarks.push(element);
         element.style['pointer-events'] = 'none';
         element.style['user-select'] = 'none';
     } else if (markTypes.includes(element.nodeName)) {
-        extractElementInformation(element, transform);
+        extractElementInformation(state.svg, element, transform);
         const markType = element.nodeName;
 
         if (markType === Path) {
-            // if (!element.hasAttribute('d')) continue;
             inferTypeFromPath(element);
             element.setAttribute('vector-effect', 'non-scaling-stroke');
         } else if (markType === Polyline || markType === Polygon || markType === Line) {
@@ -117,15 +91,13 @@ function analyzeDomTree(element, state, transform) {
         if (element.className && element.className.baseVal === TickDomain) {
             state.hasDomain = true;
         } else {
-            element.setAttribute('__mark__', 'true');
+            element.setAttribute(MarkRole, 'true');
             state.svgMarks.push(element);
         }
     }
 
-    // if (!skip) {
     for (const child of element.childNodes) {
         analyzeDomTree(child, state, new Transform(transform));
-    // }
     }
 }
 
