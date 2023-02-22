@@ -1,5 +1,6 @@
 import { Right, Left, Top } from '../state/constants';
 import { sum } from 'd3-array';
+import { getFormatVal } from '../parsers/attribute-parsers';
 
 export function copyElement(element) {
     const newElement = element.cloneNode(true);
@@ -11,34 +12,9 @@ export function copyElement(element) {
   }
 
 export function computeCenterPos(element, orient) {
-  const clientRect = element.getBoundingClientRect();
+  const clientRect = element._getBBox();
   const offset = orient === Right || orient === Left ? clientRect.width / 2 : clientRect.height / 2;
   return clientRect[orient] + (orient === Left || orient === Top ? offset : -offset);
-}
-
-export function computeBounds(element, orient) {
-  const clientRect = element.getBoundingClientRect();
-  return orient === Right || orient === Left 
-  ? [clientRect.left, clientRect.right] 
-  : [clientRect.top, clientRect.bottom];
-}
-
-export function compareTickStyles(element1, element2) {
-  // if (element1.clientRect.height !== element2.clientRect.height && 
-  //     element1.clientRect.width !== element2.clientRect.width &&
-  //     !matchAll) {
-  //   return false;
-  // }
-
-  const style1 = window.getComputedStyle(element1);
-  const style2 = window.getComputedStyle(element2);
-
-  for (const key of style1) {
-    // if (key === 'stroke-width') continue;
-    if (style1[key] !== style2[key]) return false;
-  }
-
-  return true;
 }
 
 export function flattenRGB(rgb) {
@@ -46,6 +22,23 @@ export function flattenRGB(rgb) {
 }
 
 export function convertPtToPx(pt) {
-  if (!pt.includes('pt')) return pt;
+  if (!pt || !pt.includes('pt')) return pt;
   return +pt.split('pt')[0] * 4/3;
+}
+
+export function SVGToScreen(svg, element, svgX, svgY) {
+    const p = svg.createSVGPoint();
+    p.x = svgX;
+    p.y = svgY;
+    return p.matrixTransform(element.getScreenCTM());
+}
+
+export function sortByViewPos(field, objects, useField=false) {
+    const comparator = (dim, invert) => (a, b) => field == null
+        ? (a._getBBox()[dim] - b._getBBox()[dim]) * (invert ? -1 : 1)
+        : useField 
+        ? getFormatVal(a[field]) - getFormatVal(b[field]) 
+        : ((a[field] ? a[field] : a.marks[0])._getBBox()[dim] - (b[field] ? b[field] : b.marks[0])._getBBox()[dim]) * (invert ? -1 : 1)
+    objects.sort(comparator('centerX', false));
+    objects.sort(comparator('centerY', true));
 }

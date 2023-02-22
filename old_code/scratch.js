@@ -275,3 +275,818 @@
                     //         </g>
                     //       </svg>
                     // </div>
+
+
+    
+
+                    // function collectOrphanTicks(orphanTicks) {
+                    //     for (const {alignment, tick: orphanTick} of orphanTicks) {
+                    //         const isX = alignment === Top || alignment === Bottom;
+                    //         const axis = isX ? state.xAxis : state.yAxis;
+                    //         const orphanBB = orphanTick.getBoundingClientRect();
+                    //         let matched = false;
+                    //         orphanTick._role = 'orphan-tick';
+                            
+                    //         for (let i = 0; i < axis.ticks.length; ++i) {
+                    //             for (const tick of axis.ticks[i].marks) {
+                    //                 const tickBB = tick.getBoundingClientRect();
+                    //                 const sizeMatch = isX ? orphanBB.height === tickBB.height : orphanBB.width === tickBB.width;
+                    //                 const offset = isX ? Math.abs(orphanBB.left + orphanBB.width / 2 - tickBB.left - tickBB.width / 2)
+                    //                 : Math.abs(orphanBB.top + orphanBB.height / 2 - tickBB.top - tickBB.height / 2);
+                                    
+                    //                 if (offset < epsilon && sizeMatch) {
+                    //                     matched = true;
+                    //                     // const orphanStyle = window.getComputedStyle(orphanTick);
+                    //                     // const tickStyle = window.getComputedStyle(tick);
+                
+                    //                     // if (parseInt(orphanStyle.strokeWidth, 10) < parseInt(tickStyle.strokeWidth, 10) || 
+                    //                     //     flattenRGB(orphanStyle.stroke) > flattenRGB(tickStyle.stroke)) {
+                    //                     //     axis.ticks[i].marks = axis.ticks[i].marks.filter(d => d !== tick);
+                    //                     //     axis.ticks[i].marks.push(orphanTick);
+                    //                     // }
+                    //                 }
+                    //             }
+                    //         }
+                
+                    //         if (!matched) {
+                    //             axis.ticks.push({label: null, marks: [orphanTick]});
+                    //         }
+                    //     }
+                    // }
+
+
+            // function analyzeAxis(element, state, transform) {
+//     if (!element) return;
+//     if (element.className && (element.className.baseVal === Background || 
+//         element.className.baseVal === Foreground)) return;
+
+//     if (element.nodeName === SvgGroup) {
+//         parseTransform(element, true, transform);
+//     } else if (element.nodeName === Text) {
+//         extractElementInformation(element, transform);
+//         state.axisTextMarks.push(element);
+//         element.style['pointer-events'] = 'none';
+//         element.style['user-select'] = 'none';
+//     } else if (markTypes.includes(element.nodeName)) {
+//         extractElementInformation(element, transform);
+//         let isX = element.hasAttribute('x2') ? +element.getAttribute('x2') : 0;
+//         isX = !isX ? Math.abs(element.clientRect.bottom - element.clientRect.top) < 1 : isX;
+        
+//         let isY = element.hasAttribute('y2') ? +element.getAttribute('y2') : 0;
+//         isY = !isY ? Math.abs(element.clientRect.left - element.clientRect.right) < 1 : isY;
+
+//         if (isX) state.yAxis.ticks.push(element);
+//         if (isY) state.xAxis.ticks.push(element);
+//     }
+
+//     for (const child of element.childNodes) {
+//         analyzeAxis(child, state, new Transform(transform));
+//     }
+// }
+
+// export function inferMarkAttributes(state) { 
+//     for (const mark of state.svgMarks) {
+//         if (mark.nodeName !== Path || (!state.xAxis.ticks.length && !state.yAxis.ticks.length) || 
+//            (mark.nodeName === Path && mark.type === Ellipse)) {
+//             if (false && mark.__data__) {
+//                 if (typeof mark.__data__ === 'string' || typeof mark.__data__ === 'number') {
+//                     var iterable = mark.__data__;
+//                     break;
+//                 }
+
+//                 let hasDatum = 'datum' in mark.__data__;
+//                 let hasProperties = 'properties' in mark.__data__;
+//                 let hasData = 'data' in mark.__data__;
+            
+//                 var iterable = hasDatum ? mark.__data__.datum 
+//                 : hasProperties ? mark.__data__.properties 
+//                 : hasData ? mark.__data__.data : mark.__data__;
+//             } else {
+//                 const svgRect = state.svg.getBoundingClientRect();
+//                 let markX = (mark.getBoundingClientRect().left + mark.getBoundingClientRect().right) / 2
+//                     // - state.xAxis.ticks[0]['ticks'][0].parentNode._global_transform[0]
+//                     - svgRect.left;
+//                 let markY = (mark.getBoundingClientRect().top + mark.getBoundingClientRect().bottom) / 2
+//                     // - state.yAxis.ticks[0]['ticks'][0].parentNode._global_transform[1]
+//                     - svgRect.top;
+
+//                 if (state.legends[0]) {
+//                     var legend1 = state.legends[0].marks[0];
+//                     var legend2 = state.legends[0].marks[state.legends[0].marks.length - 1];
+//                     var label1 = legend1.label.__data__ ? legend1.label.__data__ : +legend1.label.innerHTML;
+//                     var label2 = legend2.label.__data__ ? legend2.label.__data__ : +legend2.label.innerHTML;
+//                     // console.log([legend1, legend2])
+//                     var legendScale = scaleLinear().domain(state.xAxis.title ? [label1, label2] : [label2, label1])
+//                         .range(state.xAxis.title ? [legend1.mark.getBoundingClientRect().height, legend2.mark.getBoundingClientRect().height]
+//                         : [legend2.mark.getBoundingClientRect().height, legend1.mark.getBoundingClientRect().height]);
+//                     if (!state.legends[0].scale) state.legends[0].scale = legendScale;
+//                 }
+
+//                 if (state.xAxis.title && state.yAxis.title) {
+//                     var iterable = {
+//                         [state.xAxis.title.innerHTML]: state.xAxis.ordinal.length ? markX : state.xAxis.scale.invert(markX),
+//                         [state.yAxis.title.innerHTML]: markY
+//                     }
+//                 } else {
+//                     var iterable = {};
+//                 }
+                
+//                 if (state.legends[0]) {
+//                     if (!state.legends[0].title) {
+//                         var title = 'legend';
+//                     } else {
+//                         var title = state.legends[0].title.innerHTML;
+//                     }
+//                     iterable[title] = legendScale.invert(mark.getBoundingClientRect().height).toFixed(2)
+//                 }
+//             }
+
+//             mark.style['pointer-events'] = 'fill';
+//             mark.__inferred__data__ = iterable;
+//         }
+//     }
+// }
+
+// var legend1 = state.legends[0].marks[0];
+// var legend2 = state.legends[0].marks[state.legends[0].marks.length - 1];
+// var label1 = legend1.label.__data__ ? legend1.label.__data__ : +legend1.label.innerHTML;
+// var label2 = legend2.label.__data__ ? legend2.label.__data__ : +legend2.label.innerHTML;
+// // console.log([legend1, legend2])
+// var legendScale = scaleLinear().domain(state.xAxis.title ? [label1, label2] : [label2, label1])
+//     .range(state.xAxis.title ? [legend1.mark.getBoundingClientRect().height, legend2.mark.getBoundingClientRect().height]
+//     : [legend2.mark.getBoundingClientRect().height, legend1.mark.getBoundingClientRect().height]);
+// if (!state.legends[0].scale) state.legends[0].scale = legendScale;
+
+
+// function filter(state, x, y, width, height, append=false) {
+//     // document.getElementById("filterMode").style['opacity'] = 1;
+//     // document.getElementById("filterMode").style['display'] = 'block';
+
+//     for (const mark of state.svgMarks) {
+//         if (mark.style["visibility"] === "hidden" || mark.hasAttribute("__legend__")) continue;
+
+//         if ((mark.type === "line" || mark.type === "polygon" || mark.type === "polyline") && state.xAxis.ticks.length && state.yAxis.ticks.length) {
+//             break;
+//             state.interactions.brush.active = true;
+//             select.applyBrush(state, x, y, width, height);
+//             return;
+//         }
+        
+//         if (state.xAxis.ordinal.length || (!state.xAxis.ticks.length && !state.yAxis.ticks.length)) {
+//             var brush_x_start = x;
+//             var brush_x_end = x + +width;
+//             var brush_y_end = y + +height;
+//             var brush_y_start = y;
+
+//             let bb = mark.getBoundingClientRect();
+//             var data_x = (+bb.left + +bb.right) / 2;
+//             var data_y = (+bb.top + +bb.bottom) / 2;
+//         } else {
+//             // var brush_x_start = state.xAxis.scale.invert(x);
+//             // var brush_x_end = state.xAxis.scale.invert(x + +width);
+//             // var brush_y_end = state.yAxis.scale.invert(y);
+//             // var brush_y_start = state.yAxis.scale.invert(y + +height);
+//             var brush_x_start = x;
+//             var brush_x_end = x + +width;
+//             var brush_y_end = y + +height;
+//             var brush_y_start = y;
+//             // console.log(brush_x_start, brush_x_end, brush_y_start, brush_y_end)
+//             // console.log(brush_x_end, brush_y_start, brush_y_end)
+//             let bb = mark.getBoundingClientRect();
+//             let sbb = state.svg.getBoundingClientRect();
+//             var data_x = (state.xAxis.scale.invert(+bb.left - +sbb.left) + state.xAxis.scale.invert(+bb.right - +sbb.left)) / 2;
+//             var data_y = (state.yAxis.scale.invert(+bb.top - +sbb.top) + state.yAxis.scale.invert(+bb.bottom - +sbb.top)) / 2;
+//             // console.log(data_x, data_y)
+//         }
+
+//         if (data_x < brush_x_start || data_x > brush_x_end || data_y < brush_y_start || data_y > brush_y_end) {
+//             if (!append) {
+//                 mark.setAttribute("opacity", 0.25);
+//             }
+//         } else {
+//             mark.setAttribute("opacity", 1);
+//         }
+//     }
+// }
+
+
+// //     // Tooltip
+// //     let mousedown = false;
+// //     state.svg.addEventListener('mousedown', function(event) {
+// //         mousedown = true;
+// //     });
+// //     state.svg.addEventListener('mouseup', function(event) {
+// //         mousedown = false;
+// //     });
+//     // state.svg.addEventListener('mousemove', function(event) {
+//     //     if (!mousedown) document.getElementById("modebar").style['visibility'] = 'visible';
+
+//     //     if (state.interactions.pan.flag) {
+//     //         let left_bound = state.svg_marks[0]._global_transform[0] + SVG.state().svg.getBoundingClientRect().left;
+//     //         let top_bound = state.svg_marks[0]._global_transform[1] + SVG.state().svg.getBoundingClientRect().top;
+
+//     //         let x_axis = event.clientX - left_bound > state.x_axis.range[0], 
+//     //             y_axis = event.clientY - top_bound < state.y_axis.range[0];
+
+//     //         state.svg.style['cursor'] = x_axis && !y_axis ? 'ew-resize' :
+//     //             !x_axis && y_axis ? 'ns-resize' : 'move';
+//     //     }
+//     // });
+//     // state.svg.addEventListener('mouseleave', function(event) {
+//     //     if (event.clientX <= +state.svg.getBoundingClientRect().left || event.clientX >= +state.svg.getBoundingClientRect().right) {
+//     //         document.getElementById("modebar").style['visibility'] = 'hidden';
+//     //     }
+//     // });
+
+// function handleMenu(state) {
+//             let mousedown = false;
+//     state.svg.addEventListener('mousedown', function(event) {
+//         mousedown = true;
+//     });
+//     state.svg.addEventListener('mouseup', function(event) {
+//         mousedown = false;
+//     });
+//     state.svg.addEventListener('mousemove', function(event) {
+//         if (!mousedown) document.getElementById("modebar").style['visibility'] = 'visible';
+
+//         if (state.interactions.pan.flag) {
+//             let left_bound = state.svg.getBoundingClientRect().left;
+//             let top_bound = state.svg.getBoundingClientRect().top;
+
+//             let x_axis = event.clientX - left_bound > state.xAxis.range[0], 
+//                 y_axis = event.clientY - top_bound < state.yAxis.range[0];
+
+//             state.svg.style['cursor'] = x_axis && !y_axis ? 'ew-resize' :
+//                 !x_axis && y_axis ? 'ns-resize' : 'move';
+//         }
+//     });
+//     state.svg.addEventListener('mouseleave', function(event) {
+//         if (event.clientX <= +state.svg.getBoundingClientRect().left || event.clientX >= +state.svg.getBoundingClientRect().right) {
+//             document.getElementById("modebar").style['visibility'] = 'hidden';
+//         }
+//     });
+
+//     let pan_elem = document.getElementById("panMode");
+//     let brush_elem = document.getElementById("brushMode");
+//     let filter_elem = document.getElementById("filterMode");
+//     let annotate_elem = document.getElementById("annotateMode");
+
+//     pan_elem.addEventListener("click", function(event) {
+//         if (state.svg.parentNode.style['visibility'] === 'hidden') return;
+
+//         pan_elem.style['opacity'] = +pan_elem.style['opacity'] === 0.4 ? 1 : 0.4;
+//         brush_elem.style['opacity'] = 0.4;
+//         annotate_elem.style['opacity'] = 0.4;
+
+//         state.interactions.pan.flag = !state.interactions.pan.flag;
+//         state.interactions.brush.flag = false;
+//         state.interactions.annotate.flag = false;
+//         state.svg.style['cursor'] = 'move';
+
+//         // document.getElementById("logfile").innerHTML += "Click " + state.svg.id + " " +
+//             // (+pan_elem.style['opacity'] === 0.4 ? "disable" : "enable") + " pan <br/>";
+//     });
+//     brush_elem.addEventListener("click", function(event) {
+//         if (state.svg.parentNode.style['visibility'] === 'hidden') return;
+
+//         brush_elem.style['opacity'] = +brush_elem.style['opacity'] === 0.4 ? 1 : 0.4;
+//         pan_elem.style['opacity'] = 0.4;
+//         annotate_elem.style['opacity'] = 0.4;
+
+//         state.interactions.annotate.flag = false;
+//         state.interactions.pan.flag = false;
+//         state.interactions.brush.flag = !state.interactions.brush.flag;
+//         state.svg.style['cursor'] = 'crosshair';
+
+//         // document.getElementById("logfile").innerHTML += "Click " + state.svg.id + " " +
+//             // (+brush_elem.style['opacity'] === 0.4 ? "disable" : "enable") + " brush <br/>";
+//     });
+
+//     filter_elem.addEventListener("click", function(event) {
+//         if (state.svg.parentNode.style['visibility'] === 'hidden') return;
+        
+//         // let append = false;
+//         // for (const mark of state.svg_marks) {
+//         //     if (mark.style['visibility'])
+//         // }
+//         // if (!state.interactions.filter.active || !document.querySelectorAll('[visibility="hidden"]')) {
+//             state.interactions.brush.flag = false;
+//         state.interactions.annotate.flag = false;
+//         // } 
+//         let el;
+//         let needsFilter = false;
+//         for (const mark of state.svgMarks) {
+//             if (mark.style['visibility'] === 'visible' && +mark.getAttribute('opacity') !== 1) {
+//                 needsFilter = true;
+//                 break;
+//             }
+//         }
+
+//         if (needsFilter) state.interactions.filter.active = true; 
+//         else state.interactions.filter.active = !state.interactions.filter.active; 
+
+//         for (const mark of state.svgMarks) {
+//             if (mark.hasAttribute("__legend__")) continue;
+//             if (state.interactions.filter.active) {
+//                 mark.style['visibility'] = +mark.getAttribute("opacity") === 1 && (!mark.style['visibility'] || mark.style['visibility'] === 'visible') ? 'visible' : 'hidden';
+//                 mark.style['pointer-events'] = +mark.getAttribute("opacity") === 1 ? 'fill' : 'none';
+//             } else {
+//                 mark.style['visibility'] = 'visible';
+//                 mark.style['pointer-events'] = 'fill';
+//             }
+//             // mark.style['visibility'] = state.interactions.filter.active ? 
+//             //     +mark.getAttribute("opacity") === 1 ? 'visible' : 'hidden'
+//             //     : 'visible'
+//             // if (mark.style['visibility'] === 'visible') el = mark;
+
+//             // for (const tick of state.x_axis.ticks) {
+//             //     let offset = (+mark.getBoundingClientRect().left + +mark.getBoundingClientRect().right) / 2;
+//             //     let t_offset = (+tick['ticks'][0].getBoundingClientRect().left + +tick['ticks'][0].getBoundingClientRect().right) / 2;
+//             //     let l_offset = (+tick['label'].getBoundingClientRect().left + +tick['label'].getBoundingClientRect().right) / 2;
+//             //     if (Math.abs(offset - t_offset) < 1 && mark.style['visibility'] !== 'visible') {
+//             //         // tick['label'].style['visibility'] = 'hidden';
+//             //         tick['ticks'][0].style['visibility'] = 'hidden';
+//             //     }
+//             //     if (Math.abs(offset - l_offset) < 20 && mark.style['visibility'] !== 'visible') {
+//             //         tick['label'].style['visibility'] = 'hidden';
+//             //     }
+//             // }
+//         }
+
+//         // for (const l of state.legend) {
+//         //     console.log(l)
+//         //     if (window.getComputedStyle(l['glyph']).fill !== window.getComputedStyle(el).stroke) {
+//         //         l['label'].setAttribute("opacity", 0);
+//         //         l['glyph'].setAttribute("opacity", 0);
+//         //     } else {
+//         //         l['label'].setAttribute("opacity", 1);
+//         //         l['glyph'].setAttribute("opacity", 1);
+//         //         l['label'].style['visibility'] = 'visible';
+//         //         l['glyph'].style['visibility'] = 'visible';
+//         //     }
+//         // }
+
+//         // document.getElementById("logfile").innerHTML += "Click " + state.svg.id + " " +
+//             // (state.interactions.filter.active ? "enable" : "disable") + " filter <br/>";
+//     });
+//     annotate_elem.addEventListener("click", function(event) {
+//         if (state.svg.parentNode.style['visibility'] === 'hidden') return;
+
+//         annotate_elem.style['opacity'] = +annotate_elem.style['opacity'] === 0.4 ? 1 : 0.4;
+//         pan_elem.style['opacity'] = 0.4;
+//         brush_elem.style['opacity'] = 0.4;
+
+//         state.interactions.brush.flag = false;
+//         state.interactions.pan.flag = false;
+//         state.interactions.annotate.flag = !state.interactions.annotate.flag;
+//         state.svg.style['cursor'] = 'pointer';
+
+//         // +annotate_elem.style['opacity'] === 0.4 ? annotate.unbind() : annotate.bind(SVG);
+//         // document.getElementById("logfile").innerHTML += "Click " + state.svg.id + " " +
+//             // (+annotate_elem.style['opacity'] === 0.4 ? "disable" : "enable") + " annotate <br/>";
+//     });
+
+// }
+
+// function unfilter(state) {
+//     state.interactions.brush.active = false;
+//     let append = false;
+
+//     for (const mark of state.svgMarks) {
+//         mark.style["visibility"] === "hidden" ? append = true : mark.setAttribute("opacity", 1);
+//     }
+//     // if (!append) document.getElementById("filter_mode").style['display'] = 'none';
+// }
+
+
+// function dragElement(elmnt, state, constrains) {
+//     var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+//     elmnt.onmousedown = dragMouseDown;
+
+//     function dragMouseDown(e) {
+//         e = e || window.event;
+//         // e.preventDefault();
+//         // get the mouse cursor position at startup:
+//         pos3 = e.clientX;
+//         pos4 = e.clientY;
+//         elmnt.onmouseup = closeDragElement;
+//         // call a function whenever the cursor moves:
+//         elmnt.onmousemove = elementDrag;
+//     }
+
+//     function elementDrag(e) {
+//         e = e || window.event;
+//         e.preventDefault();
+//         // calculate the new cursor position:
+//         pos1 = pos3 - e.clientX;
+//         pos2 = pos4 - e.clientY;
+//         pos3 = e.clientX;
+//         pos4 = e.clientY;
+//         // set the element's new position:
+//         if (!constrains[1]) elmnt.setAttribute("y", elmnt.getAttribute("y") - pos2);
+//         if (!constrains[0]) elmnt.setAttribute("x", elmnt.getAttribute("x") - pos1);
+
+//         filter(
+//             state,
+//             +elmnt.getAttribute("x") + +state.svg.getBoundingClientRect().left,
+//             +elmnt.getAttribute("y") + +state.svg.getBoundingClientRect().top,
+//             elmnt.getAttribute("width"),
+//             elmnt.getAttribute("height")
+//         );
+//     }
+
+//     function closeDragElement() {
+//         // stop moving when mouse button is released:
+//         elmnt.onmouseup = null;
+//         elmnt.onmousemove = null;
+//     }
+// }    
+
+// export function brush(state, filter, unfilter) {
+//     // if (SVG.state().svg_marks[0].nodeName === "path") {
+//     //     return;
+//     // }
+
+//     let rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+//     rect.style["fill"] = "gray";
+//     rect.setAttribute("opacity", 0.35)
+//     rect.setAttribute("x", 0);
+//     rect.setAttribute("y", 0);
+//     rect.setAttribute("width", 0);
+//     rect.setAttribute("height", 0);
+//     rect.setAttribute("id", "brush-rect")
+//     // rect.style['cursor'] = 'move';
+//     // rect.style['strokeWidth'] = '2px';
+//     rect.style['stroke'] = '#fff';
+//     console.log(rect);
+
+//     let svg = state.svg;
+//     svg.appendChild(rect);
+
+//     let mousedown = false,
+//         constrains = [false, false];
+
+//     function update_rect() {
+//         if (+rect.getAttribute("width") === 0 || +rect.getAttribute("height") === 0) return;
+//         if (constrains[0]) {
+//             rect.setAttribute("x", state.xAxis.range[0]);
+//             rect.setAttribute("width", state.xAxis.range[1] - state.xAxis.range[0]);
+//         } else if (constrains[1]) {
+//             rect.setAttribute("y", state.yAxis.range[1]);
+//             rect.setAttribute("height", state.yAxis.range[0] - state.yAxis.range[1]);
+//         }
+
+//         filter(
+//             state,
+//             +rect.getAttribute("x") + +svg.getBoundingClientRect().left,
+//             +rect.getAttribute("y") + +svg.getBoundingClientRect().top,
+//             rect.getAttribute("width"),
+//             rect.getAttribute("height")
+//         );
+//     }
+    
+//     function mousedown_callback(e) {
+//         if (!state.interactions.brush.flag || state.interactions.brush.on_elem) return;
+//         // let intersects = false;
+//         //     for (const mark of SVG.state().svg_marks) {
+//         //         if (mark.type === "line" || mark.type === "polygon") continue;
+//         //         let bb = mark.getBoundingClientRect();
+//         //         if (e.clientX >= +bb.left && e.clientX <= +bb.right && e.clientY >= +bb.top && e.clientY <= +bb.bottom) {
+//         //             intersects = true;
+//         //             break;
+//         //         }
+//         //     }
+
+//         // if (intersects) return;
+
+//         // SVG.disambiguate("brush");
+//         // document.getElementById('pan_disam').style['display'] = 'block';
+
+//         if (e.clientX - svg.getBoundingClientRect().left >= +rect.getAttribute("x") && 
+//             e.clientX - svg.getBoundingClientRect().left <= +rect.getAttribute("x") + +rect.getAttribute("width") &&
+//             e.clientY - svg.getBoundingClientRect().top >= +rect.getAttribute("y") &&
+//             e.clientY - svg.getBoundingClientRect().top <= +rect.getAttribute("y") + +rect.getAttribute("height")) {
+//             return;
+//         }
+
+//         state.interactions.brush.active = true;
+
+//         var left_bound = state.svg.getBoundingClientRect().left;
+//         var top_bound = state.svg.getBoundingClientRect().top;
+
+//         let x_flag = e.clientX - left_bound > state.xAxis.range[0], 
+//             y_flag = e.clientY - top_bound < state.yAxis.range[0];
+        
+//         let brush_Y = !x_flag && y_flag;
+//         let brush_X = (x_flag && !y_flag) || 
+//             ((state.svgMarks[0].type === "line" || state.svgMarks[0].type === "polyline" || state.svgMarks[0].type === "polygon") && !brush_Y && 
+//             state.xAxis.ticks.length);
+
+//         // let std = SVG.std();
+//         // if (std < 0.5 && !brush_X && !brush_Y) {
+//         //     brush_X = false;
+//         //     brush_Y = true;
+//         // } else if (std > 2 && !brush_X && !brush_Y) {
+//         //     brush_X = true;
+//         //     brush_Y = false;
+//         // }
+
+//         constrains[0] || brush_Y ? 
+//             rect.setAttribute("width", state.xAxis.range[1] - state.xAxis.range[0]) : 
+//             rect.setAttribute("width", 0);
+//         constrains[1] || brush_X ? 
+//             rect.setAttribute("height", state.yAxis.range[0] - state.yAxis.range[1]) :
+//             rect.setAttribute("height", 0);
+
+//         e.preventDefault();
+//         mousedown = true;
+//         constrains[0] || brush_Y ? 
+//             rect.setAttribute("x", state.xAxis.range[0]) :
+//             rect.setAttribute("x", e.clientX - svg.getBoundingClientRect().left);
+//         constrains[1] || brush_X ? 
+//             rect.setAttribute("y", state.yAxis.range[1]) :
+//             rect.setAttribute("y", e.clientY - svg.getBoundingClientRect().top);
+
+//         var keys = (e.ctrlKey ? " ctrl " : "") + (e.shiftKey ? " shift " : "") + (e.altKey ? " alt " : "");
+//         // document.getElementById("logfile").innerHTML += e.type + " [" + keys + "] " + SVG.state().svg.id + " to brush [" +
+//             // (!brush_X && !brush_Y ? "2D" : (brush_X ? "X-AXIS" : "Y-AXIS")) + "] <br/>";
+//     }
+
+//     function mousemove_callback(e) {
+        
+//         // var brush_shift = document.getElementById("brush-shift").className.split(" ").indexOf("bg-primary") > -1 &&
+//         //     document.getElementById("brush-drag").className.split(" ").indexOf("bg-primary") <= -1;
+//         // var brush_shift = false;
+//         // if ((brush_shift && !e.shiftKey) || (!brush_shift && e.shiftKey)) return;
+//         var left_bound = /*state.svgMarks[0].globalPosition.translate.x + */state.svg.getBoundingClientRect().left;
+//         var top_bound = /*state.svgMarks[0].globalPosition.translate.y +*/ state.svg.getBoundingClientRect().top;
+
+//         let x_flag = e.clientX - left_bound > state.xAxis.range[0], 
+//             y_flag = e.clientY - top_bound < state.yAxis.range[0];
+//         let brush_Y = !x_flag && y_flag;
+//         let brush_X = (x_flag && !y_flag) ||
+//             ((state.svgMarks[0].type === "line" || state.svgMarks[0].type === "polyline" || state.svgMarks[0].type === "polygon") && !brush_Y &&
+//             state.xAxis.ticks.length);
+
+//         if (mousedown) {
+//             let tooltips = document.querySelectorAll(".tooltip");
+//             if (tooltips.length) tooltips.forEach(d => d.style['visibility'] = 'hidden');
+//             e.preventDefault();
+//             let width = e.clientX - rect.getAttribute("x") - svg.getBoundingClientRect().left;
+//             let height = e.clientY - rect.getAttribute("y") - svg.getBoundingClientRect().top;
+//             constrains[0] || brush_Y ? 
+//                 rect.setAttribute("width", state.xAxis.range[1] - state.xAxis.range[0]) :
+//                 rect.setAttribute("width", Math.abs(width));
+//             constrains[1] || brush_X ?
+//                 rect.setAttribute("height", state.yAxis.range[0] - state.yAxis.range[1]) :
+//                 rect.setAttribute("height", Math.abs(height));
+            
+
+//             let x_translate = !brush_Y && width < 0 ? width : 0;
+//             let y_translate = !brush_X && height < 0 ? height : 0;
+//             rect.setAttribute("transform", "translate(" + x_translate + "," + y_translate + ")");
+//             // if (SVG.state().svg_marks[0].type !== "line" && SVG.state().svg_marks[0].type !== "polygon") {
+//                 filter(
+//                     state,
+//                     +rect.getAttribute("x") + +svg.getBoundingClientRect().left + x_translate,
+//                     +rect.getAttribute("y") + +svg.getBoundingClientRect().top + y_translate,
+//                     Math.abs(+rect.getAttribute("width")),
+//                     Math.abs(+rect.getAttribute("height")),
+//                     e.ctrlKey || e.metaKey || e.altKey || e.shiftKey
+//                 );
+//             // }
+//         }
+//     };
+
+//     function mouseup_callback(e) {
+//         if (!state.interactions.brush.active) return;
+//         state.interactions.brush.active = false;
+//         mousedown = false;
+//         if (+rect.getAttribute("width") === 0 || +rect.getAttribute("height") === 0) { 
+//             unfilter(state);
+//             // document.getElementById('pan_disam').style['display'] = 'none';
+//             // SVG.disambiguate("brush", true);
+//             // d3.selectAll(".brush_tooltip").remove();
+//             // document.getElementById("logfile").innerHTML += "reset brush <br/>"
+//         } else {
+//             rect.setAttribute("width", 0);
+//             rect.setAttribute("height", 0);
+//         }
+//     };
+
+//     svg.addEventListener("mousedown", mousedown_callback);
+//     svg.addEventListener("mousemove", mousemove_callback);
+//     svg.addEventListener("mouseup", mouseup_callback);
+
+//     // control.addEventListener('change', function() {
+//     //     if (!this.checked) { 
+//     //         unfilter(state);
+//     //         rect.setAttribute("width", 0);
+//     //         rect.setAttribute("height", 0);
+//     //     }
+
+//     //     this.checked ? svg.addEventListener("mousedown", mousedown_callback) : svg.removeEventListener("mousedown", mousedown_callback);
+//     //     this.checked ? svg.addEventListener("mousemove", mousemove_callback) : svg.removeEventListener("mousemove", mousemove_callback);
+//     //     this.checked ? svg.addEventListener("mouseup", mouseup_callback) : svg.removeEventListener("mouseup", mouseup_callback);
+//     // });
+
+//     document.querySelectorAll('ul.brush a.axis').forEach(d => d.addEventListener('click', function(event) {
+//         switch(event.target.innerHTML) {
+//             case "2D":
+//                 constrains[0] = constrains[1] = false;
+//                 break;
+//             case "X axis":
+//                 constrains[0] = false;
+//                 constrains[1] = true;
+//                 break;
+//             case "Y axis":
+//                 constrains[0] = true;
+//                 constrains[1] = false;
+//                 break;
+//         }
+//         update_rect();
+//     }));
+
+//     dragElement(rect, state, constrains);
+// }
+
+// <div id='modebar' style='margin-left:10px;margin-bottom:5px;float:center;'>
+//     <div style='display:flex;'>
+//         <div id='brushMode' style="margin-left:10px;opacity:1;display:block;cursor:pointer;" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Brush area">
+//             <!-- <svg xmlns="http://www.w3.org/2000/svg" stroke-width="15" width="16" height="16" fill="currentColor" class="bi bi-dash-square-dotted" viewBox="0 0 16 16">
+//                 <path d="M2.5 0c-.166 0-.33.016-.487.048l.194.98A1.51 1.51 0 0 1 2.5 1h.458V0H2.5zm2.292 0h-.917v1h.917V0zm1.833 0h-.917v1h.917V0zm1.833 0h-.916v1h.916V0zm1.834 0h-.917v1h.917V0zm1.833 0h-.917v1h.917V0zM13.5 0h-.458v1h.458c.1 0 .199.01.293.029l.194-.981A2.51 2.51 0 0 0 13.5 0zm2.079 1.11a2.511 2.511 0 0 0-.69-.689l-.556.831c.164.11.305.251.415.415l.83-.556zM1.11.421a2.511 2.511 0 0 0-.689.69l.831.556c.11-.164.251-.305.415-.415L1.11.422zM16 2.5c0-.166-.016-.33-.048-.487l-.98.194c.018.094.028.192.028.293v.458h1V2.5zM.048 2.013A2.51 2.51 0 0 0 0 2.5v.458h1V2.5c0-.1.01-.199.029-.293l-.981-.194zM0 3.875v.917h1v-.917H0zm16 .917v-.917h-1v.917h1zM0 5.708v.917h1v-.917H0zm16 .917v-.917h-1v.917h1zM0 7.542v.916h1v-.916H0zm15 .916h1v-.916h-1v.916zM0 9.375v.917h1v-.917H0zm16 .917v-.917h-1v.917h1zm-16 .916v.917h1v-.917H0zm16 .917v-.917h-1v.917h1zm-16 .917v.458c0 .166.016.33.048.487l.98-.194A1.51 1.51 0 0 1 1 13.5v-.458H0zm16 .458v-.458h-1v.458c0 .1-.01.199-.029.293l.981.194c.032-.158.048-.32.048-.487zM.421 14.89c.183.272.417.506.69.689l.556-.831a1.51 1.51 0 0 1-.415-.415l-.83.556zm14.469.689c.272-.183.506-.417.689-.69l-.831-.556c-.11.164-.251.305-.415.415l.556.83zm-12.877.373c.158.032.32.048.487.048h.458v-1H2.5c-.1 0-.199-.01-.293-.029l-.194.981zM13.5 16c.166 0 .33-.016.487-.048l-.194-.98A1.51 1.51 0 0 1 13.5 15h-.458v1h.458zm-9.625 0h.917v-1h-.917v1zm1.833 0h.917v-1h-.917v1zm1.834 0h.916v-1h-.916v1zm1.833 0h.917v-1h-.917v1zm1.833 0h.917v-1h-.917v1zM4.5 7.5a.5.5 0 0 0 0 1"/>
+//               </svg> -->
+//               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-bounding-box" viewBox="0 0 16 16">
+//                 <path d="M5 2V0H0v5h2v6H0v5h5v-2h6v2h5v-5h-2V5h2V0h-5v2H5zm6 1v2h2v6h-2v2H5v-2H3V5h2V3h6zm1-2h3v3h-3V1zm3 11v3h-3v-3h3zM4 15H1v-3h3v3zM1 4V1h3v3H1z"/>
+//               </svg>
+//         </div>
+//         <div id='panMode' style="margin-left:10px;display:block;opacity:0.4;cursor:pointer;" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Pan">
+//             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrows-move" viewBox="0 0 16 16">
+//             <path fill-rule="evenodd" d="M7.646.146a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 1.707V5.5a.5.5 0 0 1-1 0V1.707L6.354 2.854a.5.5 0 1 1-.708-.708l2-2zM8 10a.5.5 0 0 1 .5.5v3.793l1.146-1.147a.5.5 0 0 1 .708.708l-2 2a.5.5 0 0 1-.708 0l-2-2a.5.5 0 0 1 .708-.708L7.5 14.293V10.5A.5.5 0 0 1 8 10zM.146 8.354a.5.5 0 0 1 0-.708l2-2a.5.5 0 1 1 .708.708L1.707 7.5H5.5a.5.5 0 0 1 0 1H1.707l1.147 1.146a.5.5 0 0 1-.708.708l-2-2zM10 8a.5.5 0 0 1 .5-.5h3.793l-1.147-1.146a.5.5 0 0 1 .708-.708l2 2a.5.5 0 0 1 0 .708l-2 2a.5.5 0 0 1-.708-.708L14.293 8.5H10.5A.5.5 0 0 1 10 8z"/>
+//         </svg></div>
+
+//         <div id='annotateMode' style="margin-left:10px;cursor:pointer;opacity:0.4;" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Annotate">
+//             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chat-text" viewBox="0 0 16 16">
+//                 <path d="M2.678 11.894a1 1 0 0 1 .287.801 10.97 10.97 0 0 1-.398 2c1.395-.323 2.247-.697 2.634-.893a1 1 0 0 1 .71-.074A8.06 8.06 0 0 0 8 14c3.996 0 7-2.807 7-6 0-3.192-3.004-6-7-6S1 4.808 1 8c0 1.468.617 2.83 1.678 3.894zm-.493 3.905a21.682 21.682 0 0 1-.713.129c-.2.032-.352-.176-.273-.362a9.68 9.68 0 0 0 .244-.637l.003-.01c.248-.72.45-1.548.524-2.319C.743 11.37 0 9.76 0 8c0-3.866 3.582-7 8-7s8 3.134 8 7-3.582 7-8 7a9.06 9.06 0 0 1-2.347-.306c-.52.263-1.639.742-3.468 1.105z"/>
+//                 <path d="M4 5.5a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zM4 8a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7A.5.5 0 0 1 4 8zm0 2.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 1-.5-.5z"/>
+//               </svg>
+//         </div>
+
+//         <!-- <div id='zoomMode' style="margin-left:10px;display:none;cursor:block;" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Zoom">
+//             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
+//             <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+//           </svg></div> -->
+//           <div id='filterMode' style="margin-left:10px;display:none;opacity:0.4;cursor:pointer;" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Filter">
+//             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-filter" viewBox="0 0 16 16">
+//                 <path d="M6 10.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5z"/>
+//                 </svg>
+//         </div>
+//         <!-- <div style="margin-left:10px;" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Undo">
+//             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-reply-fill" viewBox="0 0 16 16">
+//                 <path d="M5.921 11.9 1.353 8.62a.719.719 0 0 1 0-1.238L5.921 4.1A.716.716 0 0 1 7 4.719V6c1.5 0 6 0 7 8-2.5-4.5-7-4-7-4v1.281c0 .56-.606.898-1.079.62z"/>
+//               </svg>
+//         </div> -->
+//         <!-- <div id="menu_mode" style="margin-left:10px;cursor:pointer;display:block;" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Menu">
+//             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-gear" viewBox="0 0 16 16">
+//                 <path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/>
+//                 <path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z"/>
+//               </svg>
+//         </div> -->
+//     </div>
+// </div>
+
+
+// function iterateAggregates(state1, state2, aggregateFields, encoding1, encoding2) {
+//     const fields = encoding1.type === CategoricalColorLegend ? aggregateFields.map(d => d.title.innerHTML) : [encoding1.title.innerHTML];
+//     const marks = state1.svgMarks.map(d => d.__inferred__data__);
+//     const totals = state2.svgMarks.map(d => d.__inferred__data__[encoding2.title.innerHTML]);
+    
+//     if (encoding1.type === CategoricalColorLegend) {
+//         var groups = Array.from(group(marks, d => d[encoding1.title.innerHTML]).values());
+//     } else {
+//         var groups = [marks];
+//     }
+
+//     const epsilon = encoding2.domain ? Math.abs(encoding2.domain[1] - encoding2.domain[0]) * 1e-2 : 1e-2;
+//     for (const [aggregateName, aggregateFn] of Object.entries(AGGREGATIONS)) {
+//         for (const field of fields) {
+//             // if (aggregateFn === AGGREGATIONS.SUM) {
+//             //     var epsilon = marks.length;
+//             // } else if (aggregateFn === AGGREGATIONS.MEAN) {
+//             //     var epsilon = 1;
+//             // } else {
+//             //     var epsilon = encoding2.domain ? Math.abs(encoding2.domain[1] - encoding2.domain[0]) * 0.01 : 0.01;
+//             // }
+
+//             const vals = groups.map(g => aggregateFn(g.map(d => d[field])));
+//             const candidates = [];
+//             // console.log(encoding1.title.innerHTML, encoding2.title.innerHTML, aggregateName, groups, field, totals, vals, epsilon)
+//             if (vals.filter(function(d) {
+//                     let matched = false;
+//                     const _totals = totals.filter(function(e, i) {
+//                         if (!matched && !candidates.includes(i) && Math.abs(e - d) <= epsilon) {
+//                             matched = true;
+//                             candidates.push(i);
+//                             return true;
+//                         }
+//                         return false;
+//                     });
+//                     return _totals.length;
+//                 }).length === totals.length) {
+//                     return [MATCH_TYPES.AGGREGATE, encoding1.title.innerHTML, field, aggregateName, aggregateFields];
+//             }
+//         }
+//     }
+
+//     return [MATCH_TYPES.NONE, null, null, null, null];
+// }
+
+// function inferMapping(state1, state2, state1AggregateFields, state2AggregateFields, encoding1, encoding2) {
+//     const title1 = encoding1.title.innerHTML.toLowerCase();
+//     const title2 = encoding2.title.innerHTML.toLowerCase();
+
+//     if (title1 === title2) {
+//         return {
+//             encoding1: encoding1,
+//             encoding2: encoding2,
+//             state1: state1,
+//             state2: state2,
+//             match: MATCH_TYPES.ATTRIBUTE
+//         };
+//     }
+
+//     const [forwardAggregates, fGroup, fMatch, fFn, fFields] = iterateAggregates(state1, state2, state1AggregateFields, encoding1, encoding2);
+//     const [backwardsAggregates, bGroup, bMatch, bFn, bFields] = iterateAggregates(state2, state1, state2AggregateFields, encoding2, encoding1);
+//     return {
+//         encoding1: forwardAggregates ? encoding1 : encoding2,
+//         encoding2: forwardAggregates ? encoding2 : encoding1,
+//         state1: forwardAggregates ? state1 : state2,
+//         state2: forwardAggregates ? state2 : state1,
+//         match: forwardAggregates || backwardsAggregates,
+//         fn: fFn || bFn,
+//         groupBy: fGroup || bGroup,
+//         matchBy: fMatch || bMatch,
+//         fields: fFields || bFields
+//     }; 
+// }
+
+// function iterateEncodings(states, encodings) {
+//     const matches = [];
+
+//     for (let i = 0; i < encodings.length; ++i) {
+//         for (let j = i + 1; j < encodings.length; ++j) {
+//             for (const encoding1 of encodings[i]) {
+//                 for (const encoding2 of encodings[j]) {
+//                     const obj = inferMapping(
+//                         states[i], states[j], 
+//                         encodings[i].filter(d => d !== encoding1), 
+//                         encodings[j].filter(d => d !== encoding2), 
+//                         encoding1, encoding2
+//                     );
+//                     if (obj.match !== MATCH_TYPES.NONE) matches.push(obj);
+//                 }
+//             }
+//         }
+//     }
+
+//     return matches;
+// }
+
+// function constructMappings(linkings) {
+//     const linkMap = new WeakMap();
+//     for (const link of linkings) {
+//         const {encoding1, encoding2, state1, state2, fields} = link;
+
+//         if (link.match === MATCH_TYPES.ATTRIBUTE) { // Direct link
+//             const e1Marks = encoding1.type ? encoding1.marks : state1.svgMarks;
+//             const e2Marks = encoding2.type ? encoding2.marks : state2.svgMarks;
+            
+//             for (const e1Mark of e1Marks) {
+//                 const m1 = encoding1.type ? e1Mark.mark : e1Mark;
+//                 const e1Match = encoding1.type ? e1Mark.label.innerHTML : e1Mark.__inferred__data__[encoding1.title.innerHTML];
+
+//                 const e2Matches = e2Marks.filter(d => (encoding2.type ? d.label.innerHTML : d.__inferred__data__[encoding2.title.innerHTML]) === e1Match);
+//                 const m2 = encoding2.type ? e2Matches.map(d => d.mark) : e2Matches;
+
+//                 linkMap.set(m1, (linkMap.has(m1) ? [...linkMap.get(m1), ...m2] : m2));
+//                 for (const e2Mark of m2) {
+//                     linkMap.has(e2Mark) ? linkMap.get(e2Mark).push(m1) : linkMap.set(e2Mark, [m1]);
+//                 }
+//             }
+//         } else { // Aggregate link
+//             for (const field of fields) {
+//                 const val = {encoding: encoding2, state: state2, fn: link.fn, groupBy: link.groupBy, matchBy: link.matchBy};
+//                 if (field.type) {
+//                     for (const {mark} of field.marks) {
+//                         linkMap.set(mark, linkMap.has(mark) ? [...linkMap.get(mark), val] : [val]);
+//                     }
+//                 } else {
+//                     linkMap.set(field, linkMap.has(field) ? [...linkMap.get(field), val] : [val]);
+//                 }
+//             }
+//         }
+//     }
+//     console.log(linkMap)
+//     return linkMap;
+// }
+

@@ -1,10 +1,12 @@
+import { DataState } from "./data-state";
+
 export class ViewState {
     constructor() {
         this.hasDomain = false;
         this.svg = null;
         this.svgMarks = [];
         this.textMarks = [];
-        this.axisTextMarks = [];
+        this.data = null;
 
         this.xAxis = {
             domain: [null, null],

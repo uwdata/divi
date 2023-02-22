@@ -1,9 +1,10 @@
-import { orchestrate } from './orchestration/orchestrate';
+import { orchestrate } from './orchestration/orchestrate.js';
+import { parseDataset } from './parsers/dataset-parser.js';
 
-export function hydrate(svg) {
+export async function hydrate(svg, options={}) {
     if (!svg) return;
     if (!Array.isArray(svg)) svg = [svg];
-    
+
     svg = svg.map(d => typeof d === 'string' ? document.querySelector(d) : d);
-    if (svg) orchestrate(svg);
+    if (svg) return orchestrate(svg, await parseDataset(options));
 }
