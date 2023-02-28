@@ -67,5 +67,5 @@ export const OrphanTickRole = 'orphan-tick';
 export const ViewportRole = 'viewport';
 export const MarkRole = 'mark';
 
-export const tableMarkField = '_mark';
-export const tableIndexField = '_I';
+export const tableMarkField = '_mark_';
+export const tableIndexField = '_I_';

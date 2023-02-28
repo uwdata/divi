@@ -18,7 +18,7 @@ export function parseDataFromMarks(marks) {
     const keys = Object.keys(dataList[0]);
 
     marks.forEach((d, i) => d.__i = i);
-    keys.forEach(k => dataset[k.toLocaleLowerCase()] = map(dataList, d => d[k.toLowerCase()]));
+    keys.forEach(k => dataset[k.toLowerCase()] = map(dataList, d => d[k.toLowerCase()]));
     dataset[tableMarkField] = marks;
     dataset[tableIndexField] = range(marks.length);
 
