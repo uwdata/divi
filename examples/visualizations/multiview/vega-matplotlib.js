@@ -40,7 +40,7 @@ async function createVegaMatplotlib() {
     }
   
     var view1 = new vega.View(vega.parse(vegaLite.compile(spec1).spec), { renderer: 'svg' });
-    var svg2 = await fetch('../matplotlib/bars.svg');
+    var svg2 = await fetch('/examples/visualizations/matplotlib/bars.svg');
     svg2 = await svg2.text();
 
     view1.toSVG().then(function(svg1) {
