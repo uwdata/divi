@@ -18,14 +18,14 @@ function createVegaMultiView() {
             "size": {
             "title": "Precipitation",
             "field": "precipitation",
-            "scale": {"domain": [-1, 50]},
+            "scale": {"type": "linear", "domain": [-1, 50]},
             "type": "quantitative"
             },
             "x": {
             "field": "date",
-            "timeUnit": "monthdate",
+            "timeUnit": "utcyearmonthdate",
             "title": "Date",
-            "axis": {"format": "%m"}
+            "axis": {"format": "%b %Y"}
             },
             "y": {
             "title": "Maximum Daily Temperature (C)",
@@ -37,7 +37,7 @@ function createVegaMultiView() {
         "width": 700,
         "height": 400,
         "mark": "point"
-        }
+    }
 
     const spec2 = {
         "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
@@ -53,7 +53,7 @@ function createVegaMultiView() {
                 "range": ["#e7ba52", "#a7a7a7", "#aec7e8", "#1f77b4", "#9467bd"]
                 }
                 },
-            "x": {"aggregate": "count"},
+            "x": {"aggregate": "sum", "field": "temp_max"},
             "y": {"title": "Weather", "field": "weather"}
         },
         "width": 700,
@@ -62,13 +62,14 @@ function createVegaMultiView() {
   
     var view1 = new vega.View(vega.parse(vegaLite.compile(spec1).spec), { renderer: 'svg' });
     var view2 = new vega.View(vega.parse(vegaLite.compile(spec2).spec), { renderer: 'svg' });
+
     view1.toSVG().then(function(svg1) {
         view2.toSVG().then(function(svg2) {
             document.querySelector("#chart1").innerHTML = svg1;
             document.querySelector("#chart1 svg").id = "chart1";
             document.querySelector("#chart2").innerHTML = svg2;
             document.querySelector("#chart2 svg").id = "chart2";
-            AutomaticInteraction.hydrate(["#chart1 svg", "#chart2 svg"]);
+            AutomaticInteraction.hydrate(["#chart1 svg", "#chart2 svg"], { url: "https://vega.github.io/vega-datasets/data/seattle-weather.csv" });
         })
     });
   }
