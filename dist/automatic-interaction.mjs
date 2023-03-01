@@ -26872,6 +26872,7 @@ const Polyline = 'polyline';
 const Rect = 'rect';
 const Path = 'path';
 const Text = 'text';
+const Use = 'use';
 
 // View fields
 const Left = 'left';
@@ -27416,7 +27417,7 @@ function selectLegends(legends, data) {
     }
 }
 
-function drawAggregates(id, selected, xAxis) {
+function drawAggregates(id, svg, selected, xAxis) {
     const marks = selected.array(tableMarkField);
     selectAll('.' + id + '.AGGREGATE_LAYER').remove();
     const newMarks = [];
@@ -27428,7 +27429,12 @@ function drawAggregates(id, selected, xAxis) {
             .attr('fill', window.getComputedStyle(marks[i]).fill);
 
         if (marks[i].tagName === Path) {
-            const x = marks[i].contour[0].x, y = marks[i].contour[0].y;
+            const x = marks[i].contour[0].x; //, y = marks[i].contour[0].y;
+            if (marks[i].globalPosition.translate.y) {
+                var y = markRect.top - svg._getBBox().top - marks[i].globalPosition.translate.y;
+            } else {
+                var y = marks[i].contour[2].y;
+            }
             const h = markRect.height;
             const w = xAxis.scale(selected.array(xAxis.title.innerHTML.toLowerCase())[i]) - xAxis.range[0];
 
@@ -27438,7 +27444,7 @@ function drawAggregates(id, selected, xAxis) {
             newMarks.push(newMark);
         }
     }
-    
+
     selectAll([...marks, ...newMarks]).raise();
 }
 
@@ -27450,7 +27456,7 @@ function applySelections(states) {
 
         let selectedMarks = selected.array(tableMarkField);
         if (type === LINK_TYPES.AGGREGATE) {
-            selectedMarks = drawAggregates(state.svg.id, selected, xAxis);
+            selectedMarks = drawAggregates(state.svg.id, state.svg, selected, xAxis);
         } else {
             selectAll('.AGGREGATE_LAYER').remove();
         }
@@ -30301,11 +30307,12 @@ function parseTransform(element, isGlobal, transforms = new Transform()) {
 }
 
 function inferMarkAttributes(state) { 
+    state.svgMarks = state.svgMarks.filter(d => d.type !== Line);
     // console.log(state.xAxis.scale.domain(), state.yAxis.scale.domain())
     for (let i = 0; i < state.svgMarks.length; ++i) {
         const mark = state.svgMarks[i];
         if (mark.type === Line) continue; 
-            
+
         const svgRect = state.svg._getBBox();
         const markRect = mark._getBBox();
         const markX = state.xAxis.ordinal.length 
@@ -30744,16 +30751,21 @@ function cleanMarks(state) {
                 mark[RoleProperty] = ViewportRole;
                 continue;
             }
-        
-        const xLeft = state.xAxis.ticks[0].marks[0]._getBBox().left;
-        const xRight = state.xAxis.ticks[state.xAxis.ticks.length - 1].marks[0]._getBBox().right;
-        const yTop = state.yAxis.ticks[state.yAxis.ticks.length - 1].marks[0]._getBBox().top;
-        const yBottom = state.yAxis.ticks[0].marks[0]._getBBox().bottom;
-
-        if ((clientRect.left <= xLeft && clientRect.right >= xRight && clientRect.top >= yBottom) || 
-            (clientRect.top <= yTop && clientRect.bottom >= yBottom && clientRect.right <= xLeft)) {
+        const svgR = state.svg._getBBox();
+        const [xLeft, xRight] = state.xAxis.range;
+        const [yBottom, yTop] = state.yAxis.range.map(d => d + svgR.top);
+        if ((clientRect.left <= xLeft && clientRect.right >= xRight && clientRect.bottom <= yTop) || 
+            (clientRect.left <= xLeft && clientRect.right >= xRight && clientRect.top >= yBottom) ||
+            (clientRect.top <= yTop && clientRect.bottom >= yBottom && clientRect.left <= xLeft) ||
+            (clientRect.top <= yTop && clientRect.bottom >= yBottom && clientRect.right >= xRight) ||
+            !(clientRect.right >= xLeft && clientRect.left <= xRight && clientRect.bottom >= yTop && clientRect.top <= yBottom)) {
                 mark[RoleProperty] = AxisDomainRole;
             }
+        for (const legend of state.legends) {
+            for (const {mark} of legend.marks) {
+                mark[RoleProperty] = LegendRole;
+            }
+        }
     }
 
     state.svgMarks = state.svgMarks.filter(d => !d[RoleProperty]);
@@ -30833,8 +30845,10 @@ function deconstructChart(state) {
     computeDomain(state.xAxis);
     computeDomain(state.yAxis);
 
-    const width = +convertPtToPx(state.svg.getAttribute('width'));
-    const height = +convertPtToPx(state.svg.getAttribute('height'));
+    let width = +convertPtToPx(state.svg.getAttribute('width'));
+    let height = +convertPtToPx(state.svg.getAttribute('height'));
+    if (!width) width = state.svg._getBBox().width;
+    if (!height) height = state.svg._getBBox().height;
     const svgBBox = state.svg._getBBox();
 
     if (!state.xAxis.ticks.length && !state.yAxis.ticks.length) {
@@ -33217,7 +33231,7 @@ function makeSVGPathCommandsAbsolute(commands) {
 	return commands;
 }
 
-const markTypes = [Circle, Ellipse, Line, Polygon, Polyline, Rect, Path];
+const markTypes = [Circle, Ellipse, Line, Polygon, Polyline, Rect, Path, Use];
 var id = 1;
 
 function extractElementInformation(svg, element, transform) {
