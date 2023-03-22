@@ -1,58 +1,76 @@
 import { min, max, mean } from 'd3-array';
 import { scaleTime, scaleBand, scaleLinear } from 'd3-scale';
-import { AxisDomainRole, AxisTitleRole, Bottom, Left, LegendTitleRole, 
+import { AxisDomainRole, TitleRole, Bottom, CenterX, CenterY, Left, LegendRole, 
     MarkRole, OrphanTickRole, Right, RoleProperty, Tick, Top, ViewportRole } from '../state/constants';
 import { axisBottom, axisLeft } from '../_d3/axis';
 import { getFormatVal } from './attribute-parsers';
 import { computeCenterPos, convertPtToPx, sortByViewPos } from '../util/util';
-import { parseLegends } from './legend-parsers';
+import { bindLegendData, parseLegends } from './legend-parsers';
 
-const epsilon = 2;
+const epsilon = 3;
+const viewEpsilon = 25;
 
 export function parseChart(state) {
-    const candidateGroups = collectCandidateTextGroups();
-    const [axes, legends, titles] = pruneGroups(candidateGroups);
-    groupAxes(axes);
-    parseLegends(state, legends);
-    assignTitles(titles.filter(d => !d[RoleProperty]));
+    let [candidateTextGroups, candidateTickGroups, candidateLegendGroups] = collectCandidateGroups(state.textMarks, state.svgMarks);
+    let axes = pruneGroups(candidateTextGroups, candidateTickGroups);
+
+    if (axes.length >= 2) {
+        axes = [axes[0], axes[1]];
+        groupAxes(axes);
+        candidateTextGroups = candidateTextGroups.filter(d => !axes.map(a => a.text).includes(d.marks));
+    }
+
+    const legends = pruneGroups(candidateTextGroups, candidateLegendGroups, false).filter(d => d.dist < epsilon * 10);
+    if (legends.length) {
+        parseLegends(state, legends);
+        candidateTextGroups = candidateTextGroups.filter(d => !legends.map(l => l.text).includes(d.marks));
+    }
+    assignTitles(candidateTextGroups.map(d => d.marks).flat());
 
     function assignTitles(titles) {
+        const titleAssignment = new Map();
+
         function calculatePos(el) {
             const elBBox = el._getBBox();
             return [elBBox.centerX, elBBox.centerY];
         }
 
         function getClosestTitle(x, y) {
-            const closestTitle = {title: null, distance: Number.MAX_VALUE};
+            let closestTitle = { title: null, dist: Number.MAX_SAFE_INTEGER };
             for (const title of titles) {
                 const [titleX, titleY] = calculatePos(title);
                 const posDiff = Math.abs(titleX - x) + Math.abs(titleY - y);
 
-                if (posDiff < closestTitle.distance) {
-                    closestTitle.title = title;
-                    closestTitle.distance = posDiff;
+                if (posDiff < closestTitle.dist) {
+                    closestTitle = { title: title, dist: posDiff };
                 }
             }
 
-            return closestTitle.title;
+            return closestTitle;
         }
 
-        [state.xAxis, state.yAxis].forEach(function(axis) {
-            const axisPos = axis.ticks.filter(d => d.label).map(tickGroup => calculatePos(tickGroup.label));
-            axis.title = getClosestTitle(mean(axisPos.map(d => d[0])), mean(axisPos.map(d => d[1])));
-            if (axis.title) axis.title[RoleProperty] = AxisTitleRole;
-        });
-        state.legends.map(function(legend) {
-            const legendPos = legend.marks.filter(d => d.label).map(mark => calculatePos(mark.label));
-            legend.title = getClosestTitle(mean(legendPos.map(d => d[0])), mean(legendPos.map(d => d[1])));
-            if (legend.title) legend.title[RoleProperty] = LegendTitleRole;
-        });
+        const groups = [state.xAxis, state.yAxis, ...state.legends];
+        for (const group of groups) {
+            const _g = 'ticks' in group ? group.ticks : group.marks;
+            const pos = _g.filter(d => d.label).map(mark => calculatePos(mark.label));
+            const x = mean(pos.map(d => d[0])), y = mean(pos.map(d => d[1]));
+
+            const titleGroup = getClosestTitle(x, y);
+            const { title, dist } = titleGroup;
+            if (!title) continue;
+
+            if (!titleAssignment.has(title) || dist < titleAssignment.get(title).dist) {
+                group.title = title;
+                title[RoleProperty] = TitleRole;
+                titleAssignment.set(title, titleGroup);
+            }
+        }
 
         state.title = titles.filter(d => !d[RoleProperty])[0];
     }
 
     function groupAxes(axes) {
-        console.log(axes)
+        axes = [axes[0], axes[1]]; 
         const axisMap = new Map();
         const orphanTicks = [];
 
@@ -65,264 +83,263 @@ export function parseChart(state) {
             ticks.forEach(tick => text ? tick[RoleProperty] = Tick : tick[RoleProperty] = OrphanTickRole)
         }
 
-        for (const [alignment, axis] of axes) {
-            for (const {text, tick} of axis) {
-                if (!text) {
-                    orphanTicks.push({alignment: alignment, tick: tick});
-                    continue;
+        for (const { alignment, group} of axes) {
+            for (const g of group) {
+                const [axis, allTicks] = g;
+                const seen = new Map();
+
+                for (const [text, tick] of axis) {
+                    seen.set(tick, true);
+                    axisMap.has(text) ? axisMap.get(text).ticks.push(tick) 
+                        : axisMap.set(text, { alignment: alignment, ticks: [tick] });
                 }
 
-                axisMap.has(text) ? axisMap.get(text).ticks.push(tick) 
-                    : axisMap.set(text, {alignment: alignment, ticks: [tick]});
+                allTicks.filter(d => !seen.has(d)).forEach(d => {
+                    orphanTicks.push({ alignment: alignment, tick: d });
+                });
             }
         }
 
-        for (const [text, {alignment, ticks}] of axisMap.entries()) {
+        for (const [text, { alignment, ticks }] of axisMap) {
             addTicks(text, alignment, ticks);
         }
         
-        if (orphanTicks.length >= axisMap.size - 1) {
-            for (const {alignment, tick} of orphanTicks) {
-                addTicks(null, alignment, [tick]);
-            }
+        for (const { alignment, tick } of orphanTicks) {
+            addTicks(null, alignment, [tick]);
         }
 
-        [state.xAxis, state.yAxis].forEach(axis => sortByViewPos('label', axis.ticks, typeof getFormatVal(axis.ticks[0].label) !== 'string'));
+        [state.xAxis, state.yAxis].forEach(axis => sortByViewPos('label', axis.ticks));
     }
 
-    function collectCandidateTicks() {
-        const positionMap = {};
-        for (const svgMark of state.svgMarks) {
-            const bbox = svgMark._getBBox();
-            const xOffset = 'x,' + [bbox.centerX, bbox.width, bbox.height].join(',');
-            const yOffset = 'y,' + [bbox.centerY, bbox.width, bbox.height].join(',');
+    function mergeArray(array) { // Assumes [key, mark] structure
+        array.sort((a, b) => a[0] - b[0]);
+        const groups = [ [array[0][0], [array[0][1]]] ];
 
-            let foundX = false, foundY = false;
-            for (const _key of Object.keys(positionMap)) { // Handle minor misalignments / offsets
-                const [axis, offset, width, height] = _key.split(',');
+        for (let i = 1; i < array.length; ++i) {
+            const index = groups[groups.length - 1][0];
 
-                if (axis === 'x' && +width === bbox.width && +height === bbox.height && Math.abs(bbox.centerX - offset) < epsilon) {
-                    foundX = true;
-                    positionMap[_key].push(svgMark);
-                }
-                if (axis === 'y' && +width === bbox.width && +height === bbox.height && Math.abs(bbox.centerY - offset) < epsilon) {
-                    foundY = true;
-                    positionMap[_key].push(svgMark);
-                }
-            }
-
-            if (!foundX) positionMap[xOffset] = [svgMark];
-            if (!foundY) positionMap[yOffset] = [svgMark];
-        }
-    
-        return positionMap;
-    }
-
-    function collectTextKeys() {
-        const groups = new WeakMap();
-
-        for (const textMark of state.textMarks) {
-            const textBBox = textMark._getBBox();
-            const group = { closestMark: null, distance: Number.MAX_VALUE };
-    
-            for (const svgMark of state.svgMarks) {
-                const markBBox = svgMark._getBBox();
-                const posDiff = (markBBox.width <= 1 && markBBox.height > 10) || (markBBox.height <= 1 && markBBox.width > 10) 
-                    ? min([
-                        Math.abs(textBBox.centerX - markBBox.right) + Math.abs(textBBox.centerY - markBBox.top),
-                        Math.abs(textBBox.centerX - markBBox.right) + Math.abs(textBBox.centerY - markBBox.bottom),
-                        Math.abs(textBBox.centerX - markBBox.left) + Math.abs(textBBox.centerY - markBBox.top),
-                        Math.abs(textBBox.centerX - markBBox.left) + Math.abs(textBBox.centerY - markBBox.bottom)
-                    ])
-                    : Math.abs(textBBox.centerX - markBBox.centerX) + Math.abs(textBBox.centerY - markBBox.centerY);
-    
-                if (posDiff < group.distance) {
-                    group.closestMark = svgMark;
-                    group.distance = posDiff;
-                }
-            }
-
-            groups.set(textMark, group);
-        }
-
-        return groups;
-    }
-
-    function separateOthers(others, textKeys) {
-        const legends = [], titles = [];
-
-        for (const [alignment, group] of others) {
-            if (group.length === 1) {
-                titles.push(...group);
+            if (Math.abs(index - array[i][0]) < epsilon) {
+                groups[groups.length - 1][1].push(array[i][1]);
             } else {
-                let isLegend = true;
-                for (const text of group) {
-                    const textBBox = text._getBBox();
-                    const markBBox = textKeys.get(text).closestMark._getBBox();
-
-                    if (alignment === Left || alignment === Right) {
-                        if (textBBox.left - markBBox.right < 0 && markBBox.left - textBBox.right < 0) {
-                            isLegend = false;
-                        }
-                    } else if (textBBox.top - markBBox.bottom < 0 && markBBox.top - textBBox.bottom < 0) {
-                        isLegend = false;
-                    }
-                }
-
-                if (isLegend) {
-                    legends.push({title: '', marks: group.map(text => {
-                        return {label: text, mark: textKeys.get(text).closestMark};
-                     })});
-                } else {
-                    titles.push(...group);
-                }
+                groups.push([array[i][0], [array[i][1]]]);
             }
         }
 
-        return [legends, titles];
+        return groups.map(d => d[1]);
     }
 
-    function pruneGroups(candidateGroups) {
-        const axes = [], others = [];
-        const tickCandidates = collectCandidateTicks(); // Get SVG candidate tick groups
-        const textKeys = collectTextKeys(); // Get closest mark to each text element
+    function pruneGroups(candidateTextGroups, candidateMarkGroups, append=true) {
+        function _sort(alignment, group) {
+            group.sort((a, b) => {
+                const aBox = a._getBBox(), bBox = b._getBBox();
+                return hs.includes(alignment) ? aBox[CenterX] - bBox[CenterX] : aBox[CenterY] - bBox[CenterY];
+            });
+        }
 
-        for (const {alignment, marks: textGroup} of candidateGroups) {
+        function getGroupDistance(groupA, groupB, alignment) {
+            let distsA = [0, 0, 0], distsB = [0, 0, 0];
+
+            function addVal(obj, mark, length) {
+                const bbox = mark._getBBox();
+                const keys = vs.includes(alignment) ? vs : hs;
+                for (let i = 0; i < keys.length; ++i) {
+                    obj[i] = obj[i] + (bbox[keys[i]] / length);
+                }
+            }
+
+            groupA.forEach(d => addVal(distsA, d, groupA.length));
+            groupB.forEach(d => addVal(distsB, d, groupB.length));
+
+            return min([
+                min(distsA) - min(distsB),
+                min(distsA) - max(distsB),
+                max(distsA) - min(distsB),
+                max(distsA) - max(distsB)
+            ].map(d => Math.abs(d)));
+        }
+
+        function matchGroup(alignment, textGroup, tickGroup) {
+            let i = 0, distance = 0, textMap = new Map();
+
+            for (const text of textGroup) {
+                const textBB = text._getBBox();
+                let prevDist = Number.MAX_SAFE_INTEGER;
+
+                if (i === tickGroup.length) return [Number.MAX_SAFE_INTEGER, null];
+
+                while (i <= tickGroup.length) {
+                    const tickBB = tickGroup[min([i, tickGroup.length - 1])]._getBBox();
+                    const key = hs.includes(alignment) ? CenterX : CenterY;
+                    const dist = Math.abs(tickBB[key] - textBB[key]);
+
+                    if (dist >= prevDist) {
+                        textMap.set(text, tickGroup[i - 1]);
+                        distance += prevDist;
+                        break;
+                    }
+
+                    prevDist = dist;
+                    ++i;
+                }
+            }
+
+            return [distance / textGroup.length, textMap];
+        }
+
+        const groups = [], others = [], vs = [Left, Right, CenterX], hs = [Top, Bottom, CenterY];;
+        for (const { alignment, marks: textGroup } of candidateTextGroups) {
             if (textGroup.length === 1) {
                 others.push([alignment, textGroup]);
                 continue;
             }
-            let anyMatched = false;
+
+            let minGroup = { dist: Number.MAX_SAFE_INTEGER, group: null };
+            _sort(alignment, textGroup);
             
-            for (const [P, tickGroup] of Object.entries(tickCandidates)) {
-                if (tickGroup.length < textGroup.length) continue;
-                // if (tickGroup.length > 12) console.log(P, textGroup, tickGroup)
-                let textMatched = true;
-                const tickStyles = { };
-                const matchedTicks = new WeakMap();  
+            for (const { alignment: markAlignment, marks: markGroup } of candidateMarkGroups) {
+                if (markGroup.length < textGroup.length) continue;
+                if ((vs.includes(alignment) && !vs.includes(markAlignment)) || 
+                    (hs.includes(alignment) && !hs.includes(markAlignment))) continue;
+                if (getGroupDistance(textGroup, markGroup, alignment) > viewEpsilon) continue;
 
-                for (const text of textGroup) {
-                    const textBBox = textKeys.get(text).closestMark._getBBox();
-                    // console.log(text, textKeys.get(text).closestMark)
-                    let tickMatch = false; 
+                _sort(alignment, markGroup);
+                const [_dist, textMap] = matchGroup(alignment, textGroup, markGroup);
+                if (_dist === Number.MAX_SAFE_INTEGER) continue;
 
-                    for (const tick of tickGroup) {
-                        const tickBBox = tick._getBBox();
-                        const xOffset = Math.abs(tickBBox.centerX - textBBox.centerX);
-                        const yOffset = Math.abs(tickBBox.centerY - textBBox.centerY);
-
-                        if (((xOffset < epsilon && tickBBox.width < epsilon) || (yOffset < epsilon && tickBBox.height < epsilon)) 
-                            && !matchedTicks.get(tick)) {
-                                matchedTicks.set(tick, text);
-                                tickMatch = true;
-
-                                const style = window.getComputedStyle(tick);
-                                const tickStyle = [style.stroke, style.color, style.fill, tickBBox.width, tickBBox.height].join(',');
-                                tickStyles[tickStyle] = tickStyle in tickStyles ? tickStyles[tickStyle] + 1 : 1;
-                                break;
-                        }
-                    }
-
-                    if (!tickMatch) {
-                        textMatched = false;
-                        break;
-                    } 
-                }
-
-                const styleKey = Object.keys(tickStyles)[0];
-                if (textMatched && tickStyles[styleKey] === textGroup.length) {
-                    axes.push([alignment, tickGroup.map(d => {
-                        return {tick: d, text: matchedTicks.get(d)};
-                    })]);
-                    anyMatched = true;
+                const withinEp = Math.abs(_dist - minGroup.dist) < epsilon;
+                if (append && withinEp) {
+                    minGroup.group.push([textMap, markGroup]);
+                } else if ((!append && withinEp && markGroup.length < minGroup.group[0][1].length) || _dist < minGroup.dist) {
+                    minGroup = { alignment: alignment, dist: _dist, group: [[textMap, markGroup]], text: textGroup };
                 }
             }
 
-            if (!anyMatched) {
-                others.push([alignment, textGroup]);
-            }
+            if (minGroup.group) groups.push(minGroup);
         }
 
-        return [axes, ...separateOthers(others, textKeys)];
+        groups.sort((a, b) => a.dist - b.dist);
+        return groups;
     }
 
-    function collectCandidateTextGroups() {
-        const positions = {[Right]: {}, [Left]: {}, [Top]: {}, [Bottom]: {}};
-
-        // Detect text groups
-        for (const textMark of state.textMarks) {
-            const textBBox = textMark._getBBox();
-            for (const [position, _map] of Object.entries(positions)) {
-                const offset = textBBox[position];
-                let found = false;
-                
-                for (const _key of Object.keys(_map)) { // Handle minor misalignments / offsets
-                    if (Math.abs(offset - _key) < epsilon) {
-                        found = true;
-                        _map[_key].push(textMark);
-                    }
-                }
-
-                if (!found) _map[offset] = [textMark];
+    function collectCandidateGroups(textMarks, svgMarks) {
+        function getPositions(allMarks, useCenters=true) {
+            const positions = { [Left]: [], [Right]: [], [Top]: [], [Bottom]: [] };
+            if (useCenters) {
+                positions[CenterX] = [];
+                positions[CenterY] = [];
             }
-        }
-
-        // Assign each text element to its largest found group
-        const markAssignment = new WeakMap();
-        const alignmentMap = new WeakMap();
-        for (const [alignment, candidateGroup] of Object.entries(positions)) {
-            for (const [_, marks] of Object.entries(candidateGroup)) {
-                for (const mark of marks) {
-                    const assignment = markAssignment.get(mark);
-
-                    // Remove mark from smaller candidate groups to avoid duplicates
-                    if (assignment && marks.length > assignment.length) {
-                        assignment.splice(assignment.indexOf(mark), 1);
-                    }
-
-                    if (!assignment || marks.length > assignment.length) {
-                        markAssignment.set(mark, marks);
-                        alignmentMap.set(marks, alignment);
-                    }
-                }
-            }
-        }
-
-        // Compute all candidate groups
-        let candidateGroups = [];
-        for (let i = 0; i < state.textMarks.length; ++i) {
-            const textMark = state.textMarks[i];
-            const marks = markAssignment.get(textMark);
             
-            if (!candidateGroups.includes(marks)) {
-                candidateGroups.push(marks);
+            // Detect text groups
+            for (const mark of allMarks) {
+                const bbox = mark._getBBox();
+                for (const [position, array] of Object.entries(positions)) {
+                    const offset = bbox[position];
+                    array.push([offset, mark]);
+                }
             }
+
+            return positions;
         }
 
-        return candidateGroups.map(d => {
-            return {alignment: alignmentMap.get(d), marks: d};
-        });
+        function mergePositions(positions, useStyle=false) {
+            const _positions = [];
+            if (useStyle) {
+                const keys = [CenterX, CenterY];
+                for (const key of keys) {
+                    const array = positions[key];
+                    const styles = { };
+                    array.forEach(([key, d]) => {
+                        const bbox = d._getBBox();
+                        const style = window.getComputedStyle(d);
+                        const styleKey = [bbox.width, bbox.height, style.fill, style.color, style.stroke].join(',');
+                        styleKey in styles ? styles[styleKey].push([key, d]) : styles[styleKey] = [[key, d]];
+                    });
+
+                    Object.values(styles).forEach(d => _positions.push([key, mergeArray(d)]));
+                }
+            } else {
+                for (const [key, array] of Object.entries(positions)) {
+                    _positions.push([key, mergeArray(array)]);
+                }
+            }
+
+            return _positions;
+        }
+
+        function assignGroups(allMarks, positions) {
+            // Assign each text element to its largest found group
+            const markAssignment = new Map();
+            const alignmentMap = new Map();
+            for (const [alignment, candidateGroups] of positions) {
+                for (const group of candidateGroups) {
+                    for (const mark of group) {
+                        const assignment = markAssignment.get(mark);
+
+                        if (!assignment || group.length > assignment.length) {
+                            markAssignment.set(mark, group);
+                            alignmentMap.set(group, alignment);
+                        }
+                    }
+                }
+            }
+
+            // Compute all candidate groups
+            const candidateGroups = [];
+            for (let i = 0; i < allMarks.length; ++i) {
+                const mark = allMarks[i];
+                const marks = markAssignment.get(mark);
+                
+                if (!candidateGroups.includes(marks)) {
+                    candidateGroups.push(marks);
+                }
+            }
+
+            // Remove duplicates
+            for (let i = 0; i < candidateGroups.length; ++i) {
+                for (const mark of [...candidateGroups[i]]) {
+                    if (markAssignment.get(mark) !== candidateGroups[i]) {
+                        candidateGroups[i].splice(candidateGroups[i].indexOf(mark), 1);
+                    }
+                }
+            }
+
+            return candidateGroups.map(d => {
+                return { alignment: alignmentMap.get(d), marks: d };
+            });
+        }
+
+        const textGroups = assignGroups(textMarks, mergePositions(getPositions(textMarks, false)));
+        const markPositions = getPositions(svgMarks);
+        const tickGroups = assignGroups(svgMarks, mergePositions(markPositions, true)), 
+            legendGroups = mergePositions(markPositions).map(([k, v]) => v.map(d => { return { alignment: k, marks: d }; })).flat();
+
+        return [textGroups, tickGroups, legendGroups];
     }
 }
 
 export function cleanMarks(state) {
     for (const mark of state.svgMarks) {
-        const clientRect = mark._getBBox()
+        const clientRect = mark._getBBox();
         if (clientRect.width >= state.xAxis.range[1] - state.xAxis.range[0] &&
             clientRect.height >= state.yAxis.range[0] - state.yAxis.range[1]) {
                 mark[RoleProperty] = ViewportRole;
                 continue;
             }
-        
-        const xLeft = state.xAxis.ticks[0].marks[0]._getBBox().left;
-        const xRight = state.xAxis.ticks[state.xAxis.ticks.length - 1].marks[0]._getBBox().right;
-        const yTop = state.yAxis.ticks[state.yAxis.ticks.length - 1].marks[0]._getBBox().top;
-        const yBottom = state.yAxis.ticks[0].marks[0]._getBBox().bottom;
-
-        if ((clientRect.left <= xLeft && clientRect.right >= xRight && clientRect.top >= yBottom) || 
-            (clientRect.top <= yTop && clientRect.bottom >= yBottom && clientRect.right <= xLeft)) {
+        const svgR = state.svg._getBBox();
+        const [xLeft, xRight] = state.xAxis.range;
+        const [yBottom, yTop] = state.yAxis.range.map(d => d + svgR.top);
+        if ((clientRect.left <= xLeft && clientRect.right >= xRight && clientRect.bottom <= yTop) || 
+            (clientRect.left <= xLeft && clientRect.right >= xRight && clientRect.top >= yBottom) ||
+            (clientRect.top <= yTop && clientRect.bottom >= yBottom && clientRect.left <= xLeft) ||
+            (clientRect.top <= yTop && clientRect.bottom >= yBottom && clientRect.right >= xRight) ||
+            !(clientRect.right >= xLeft && clientRect.left <= xRight && clientRect.bottom >= yTop && clientRect.top <= yBottom)) {
                 mark[RoleProperty] = AxisDomainRole;
             }
+        for (const legend of state.legends) {
+            for (const {mark} of legend.marks) {
+                mark[RoleProperty] = LegendRole;
+            }
+        }
     }
 
     state.svgMarks = state.svgMarks.filter(d => !d[RoleProperty]);
@@ -331,9 +348,24 @@ export function cleanMarks(state) {
 }
 
 export function computeDomain(axis) {
+    let isDate = true;
+    for (const [_, value] of Object.entries(axis.ticks)) {
+        if (value.label == null) continue;
+        if (Object.prototype.toString.call(getFormatVal(value.label, true).value) !== '[object Date]') {
+            isDate = false;
+            break;
+        }
+    }
+
     for (const [_, value] of Object.entries(axis.ticks)) {
         if (!value.label) continue;
-        const formatVal = getFormatVal(value.label);
+
+        let formatVal = getFormatVal(value.label, isDate);
+        if (formatVal.value) {
+            axis.formatter = { format: formatVal.format };
+            formatVal = formatVal.value;
+        }
+        value.value = formatVal;
 
         if (typeof formatVal === 'string') {
             axis.ordinal.push(formatVal);
@@ -351,27 +383,27 @@ export function configureAxes(state) {
         // Infer original X-axis domains
         
         const tickLeft = computeCenterPos(
-            state.xAxis.ticks.filter(d => String(getFormatVal(d.label)) === String(state.xAxis.domain[0]))[0].marks[0], Left
+            state.xAxis.ticks.filter(d => d.value == state.xAxis.domain[0])[0].marks[0], Left
         );
         const tickRight = computeCenterPos(
-            state.xAxis.ticks.filter(d => String(getFormatVal(d.label)) === String(state.xAxis.domain[1]))[0].marks[0], Left
+            state.xAxis.ticks.filter(d => d.value == state.xAxis.domain[1])[0].marks[0], Left
         );
 
         const ticks = [tickLeft, tickRight].map(d => d - svgClientRect.left);
         const newDomainX = state.xAxis.range.map(
             state.xAxis.scale.copy().range(ticks).invert, state.xAxis.scale
         );
-        
+
         state.xAxis.scale.domain(newDomainX);
     }
 
     if (state.yAxis.scale && !state.yAxis.ordinal.length) {
         // Infer original Y-axis domain
         const tickTop = computeCenterPos(
-            state.yAxis.ticks.filter(d => getFormatVal(d.label) === state.yAxis.domain[0])[0].marks[0], Top
+            state.yAxis.ticks.filter(d => d.value == state.yAxis.domain[0])[0].marks[0], Top
         );
         const tickBottom = computeCenterPos(
-            state.yAxis.ticks.filter(d => getFormatVal(d.label) === state.yAxis.domain[1])[0].marks[0], Top
+            state.yAxis.ticks.filter(d => d.value == state.yAxis.domain[1])[0].marks[0], Top
         );
 
         const ticks = [tickTop, tickBottom].map(d => d - svgClientRect.top);
@@ -381,7 +413,6 @@ export function configureAxes(state) {
 
         state.yAxis.scale.domain(newDomainY);
     }
-    console.log(state.yAxis.scale.domain(), state.yAxis.scale.range())
 }
 
 export function deconstructChart(state) {
@@ -389,8 +420,10 @@ export function deconstructChart(state) {
     computeDomain(state.xAxis);
     computeDomain(state.yAxis);
 
-    const width = +convertPtToPx(state.svg.getAttribute('width'));
-    const height = +convertPtToPx(state.svg.getAttribute('height'));
+    let width = +convertPtToPx(state.svg.getAttribute('width'));
+    let height = +convertPtToPx(state.svg.getAttribute('height'));
+    if (!width) width = state.svg._getBBox().width;
+    if (!height) height = state.svg._getBBox().height;
     const svgBBox = state.svg._getBBox();
 
     if (!state.xAxis.ticks.length && !state.yAxis.ticks.length) {

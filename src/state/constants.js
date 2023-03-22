@@ -14,16 +14,6 @@ export const UnselectOpacity = 0.2;
 export const OpacityField = '__opacity__';
 export const SelectField = '__selected__';
 
-// Events
-export const Scroll = 'scroll';
-export const DoubleClick = 'dblclick';
-export const MouseDown = 'mousedown';
-export const MouseUp = 'mouseup';
-export const Shift = 'shift';
-export const Meta = 'meta';
-export const MouseOver = 'mouseover';
-export const MouseLeave = 'mouseleave';
-
 // Chart components
 export const Axis = 'axis';
 export const Tick = 'tick';
@@ -43,12 +33,19 @@ export const Polyline = 'polyline';
 export const Rect = 'rect';
 export const Path = 'path';
 export const Text = 'text';
+export const TextRef = '#text';
+export const Style = 'style';
+export const Use = 'use';
 
 // View fields
 export const Left = 'left';
 export const Right = 'right';
 export const Top = 'top';
 export const Bottom = 'bottom';
+export const CenterX = 'centerX';
+export const CenterY = 'centerY';
+export const Width = 'width';
+export const Height = 'height';
 
 // Legend and title constants
 export const SizeLegend = 'size';
@@ -57,15 +54,16 @@ export const CategoricalColorLegend = 'colorCat';
 export const FillAttr = 'fill';
 export const ColorAttr = 'color';
 export const StrokeAttr = 'stroke';
+export const DataAttr = '__inferred__data__';
 
 export const RoleProperty = '__role__';
 export const LegendRole = 'legend';
 export const AxisDomainRole = 'axis-domain';
-export const AxisTitleRole = 'axis-title';
-export const LegendTitleRole = 'legend-title';
+export const TitleRole = 'title';
 export const OrphanTickRole = 'orphan-tick';
 export const ViewportRole = 'viewport';
 export const MarkRole = 'mark';
 
 export const tableMarkField = '_mark_';
 export const tableIndexField = '_I_';
+export const tableGroupIndexField = '_gI_';

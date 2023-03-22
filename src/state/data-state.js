@@ -4,8 +4,8 @@ export class DataState {
     constructor(table) {
         this.table = table;
         this.active = {
-            table: null,
-            selected: null,
+            table: table,
+            selected: table,
             filtered: null,
             type: LINK_TYPES.NONE
         };

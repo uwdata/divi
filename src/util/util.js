@@ -1,6 +1,9 @@
-import { Right, Left, Top } from '../state/constants';
+import { Right, Left, Top, CenterX, CenterY } from '../state/constants';
 import { sum } from 'd3-array';
-import { getFormatVal } from '../parsers/attribute-parsers';
+
+export function isMetaKey(event) {
+  return event.metaKey || event.ctrlKey || event.altKey || event.shiftKey;
+}
 
 export function copyElement(element) {
     const newElement = element.cloneNode(true);
@@ -37,8 +40,8 @@ export function sortByViewPos(field, objects, useField=false) {
     const comparator = (dim, invert) => (a, b) => field == null
         ? (a._getBBox()[dim] - b._getBBox()[dim]) * (invert ? -1 : 1)
         : useField 
-        ? getFormatVal(a[field]) - getFormatVal(b[field]) 
+        ? a[field] - b[field]
         : ((a[field] ? a[field] : a.marks[0])._getBBox()[dim] - (b[field] ? b[field] : b.marks[0])._getBBox()[dim]) * (invert ? -1 : 1)
-    objects.sort(comparator('centerX', false));
-    objects.sort(comparator('centerY', true));
+    objects.sort(comparator(CenterX, false));
+    objects.sort(comparator(CenterY, true));
 }

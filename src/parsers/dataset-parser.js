@@ -1,6 +1,6 @@
 import { loadCSV, loadJSON, table } from "arquero";
 import { map, range } from "d3-array";
-import { tableIndexField, tableMarkField } from "../state/constants";
+import { DataAttr, tableIndexField, tableMarkField } from "../state/constants";
 import { DataState } from "../state/data-state";
 
 export async function parseDataset(options) {
@@ -14,10 +14,10 @@ export async function parseDataset(options) {
 
 export function parseDataFromMarks(marks) {
     const dataset = { };
-    const dataList = marks.map(d => d.__inferred__data__);
+    const dataList = marks.map(d => d[DataAttr]);
     const keys = Object.keys(dataList[0]);
 
-    marks.forEach((d, i) => d.__i = i);
+    marks.forEach((d, i) => d[tableIndexField] = i);
     keys.forEach(k => dataset[k.toLowerCase()] = map(dataList, d => d[k.toLowerCase()]));
     dataset[tableMarkField] = marks;
     dataset[tableIndexField] = range(marks.length);
