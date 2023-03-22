@@ -33,8 +33,8 @@ function createVegaCrossfilter() {
         "x": {"aggregate": "mean", "field": "distance"}
       },
       "mark": "bar",
-      width: 600,
-      height: 600
+      width: 400,
+      height: 400
   };
 
 //   const spec3 = {
@@ -83,12 +83,12 @@ const spec5 = {
     "format": {"parse": {"date": "date"}}
   },
   "encoding": {
-    "y": { "title": "Org.", "field": "origin" },
+    "y": { "title": "Origin", "field": "origin" },
     "x": {"aggregate": "max", "field": "distance"}
   },
   "mark": "bar",
-  width: 600,
-  height: 600
+  width: 400,
+  height: 400
 };
 
     var view1 = new vega.View(vega.parse(vegaLite.compile(spec1).spec), { renderer: 'svg' });
@@ -106,7 +106,7 @@ const spec5 = {
           document.querySelector("#chart3").innerHTML = svg3;
           document.querySelector("#chart3 svg").id = "chart3";
 
-          AutomaticInteraction.hydrate(["#chart1 svg", "#chart2 svg", "#chart3 svg"], { url: "https://vega.github.io/vega-datasets/data/flights-2k.json" });
+          AutomaticInteraction.hydrate(["#chart3 svg"], { url: "https://vega.github.io/vega-datasets/data/flights-2k.json" });
         })
       })
     });

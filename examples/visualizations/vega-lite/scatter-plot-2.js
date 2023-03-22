@@ -25,7 +25,7 @@ function createScatterPlot() {
             "field": "date",
             "timeUnit": "monthdate",
             "title": "Date",
-            "axis": {"format": "%b"}
+            "axis": {"format": "%m"}
             },
             "y": {
             "title": "Maximum Daily Temperature (C)",

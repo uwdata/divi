@@ -103,8 +103,8 @@ function createScatterPlot() {
 
   var view = new vega.View(vega.parse(spec), { renderer: 'svg' });
   view.toSVG().then(function(svg) {
-    document.querySelector("#container2").innerHTML = svg;
-    document.querySelector("#container2 svg").id = "scatter";
-    // AutomaticInteraction.hydrate("#chart");
+    document.querySelector("#container").innerHTML = svg;
+    document.querySelector("#container svg").id = "chart";
+    AutomaticInteraction.hydrate("#chart");
   });
 }
