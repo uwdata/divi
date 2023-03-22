@@ -1,6 +1,7 @@
 import { escape, op, query, table } from "arquero";
 import { range } from "d3-array";
-import { SizeLegend, tableIndexField, tableMarkField } from "../state/constants";
+import { COMMAND_TYPE, generateQuery } from "../handlers/query";
+import { SizeLegend, tableGroupIndexField, tableIndexField, tableMarkField } from "../state/constants";
 
 const epsilon = 2;
 export const AGGREGATIONS = {
@@ -42,9 +43,9 @@ function getSubset(source, target, ep=epsilon) {
     return [sourceIndices, targetIndices];
 }
 
-function getFields(table) {
-    const metaFields = [tableMarkField, tableIndexField];
-    return table.columnNames(d => !metaFields.includes(d));
+function getFields(table, useMeta=false) {
+    const metaFields = [tableMarkField, tableIndexField, tableGroupIndexField];
+    return useMeta ? table.columnNames() : table.columnNames(d => !metaFields.includes(d));
 }
 
 function LinkIterator(sourceTable, targetTable, candidateBins, epsilons) {
@@ -60,11 +61,13 @@ function LinkIterator(sourceTable, targetTable, candidateBins, epsilons) {
     }
 
     linker.subset = function() {
+        return { type: LINK_TYPES.NONE }
         const link = getSubsetLinks(sourceTable, targetTable, [], [], [], [], []);
         return { link: link, type: linker.exists(link) ? LINK_TYPES.SUBSET : LINK_TYPES.NONE };
     }
 
     linker.aggregate = function() {
+        return { type: LINK_TYPES.NONE }
         const link = getAggregateLinks(sourceTable, targetTable, [], []);
         return { link: link, type: linker.exists(link) ? LINK_TYPES.AGGREGATE : LINK_TYPES.NONE };
     }
@@ -84,7 +87,7 @@ function LinkIterator(sourceTable, targetTable, candidateBins, epsilons) {
 
     function getIndexMap(tableA, tableB, sortA, sortB, subsetIndices=null) {
         let A = tableA.orderby(sortA).array(tableIndexField);
-        if (subsetIndices) A = A.filter((_, i) => sIndices.includes(i));
+        if (subsetIndices) A = A.filter((_, i) => subsetIndices.includes(i));
         const B = tableB.orderby(sortB).array(tableIndexField); // All rows must already be present
 
         const _fromToMap = Object.fromEntries(A.map((a, i) => [a, B[i]]));
@@ -93,7 +96,7 @@ function LinkIterator(sourceTable, targetTable, candidateBins, epsilons) {
         if (subsetIndices) {
             const newCols = getFields(tableA).filter(d => !sortA.includes(d));
             const _table = tableA.orderby(sortA).filter(escape(d => A.includes(d[tableIndexField]))).select(newCols);
-            var mergedTable = tableB.orderBy(sortB).assign(_table).orderBy(tableIndexField).reify()
+            var mergedTable = tableB.orderby(sortB).assign(_table).orderby(tableIndexField).reify();
         }
 
         return { 
@@ -110,35 +113,36 @@ function LinkIterator(sourceTable, targetTable, candidateBins, epsilons) {
         const fromToQ = query().groupby([...groupBy, tableIndexField]).rollup(rollupObj);
         const toFromQ = query().groupby(groupBy).derive(rollupObj);
         
-        return { fromToQuery: fromToQ, toFromQuery: toFromQ, assignTable: table({ [tableIndexField]: groupKeys }) };
+        return { fromToQuery: fromToQ, toFromQuery: toFromQ, assignTable: table({ [tableGroupIndexField]: groupKeys }) };
     }
 
     function getDirectLinks(tableA, tableB) {
         const fieldsA = getFields(tableA);
         const fieldsB = getFields(tableB);
 
-        if (!fieldsA.length || !fieldsB.length || fieldsA.length !== fieldsB.length) return null;
-
+        if (!fieldsA.length || !fieldsB.length /*|| fieldsA.length !== fieldsB.length*/) return null;
+        
         const directLinks = { };
         const foundIndices = [];
         const sortA = [], sortB = [];
-        for (let i = 0; i < fieldsA.length && Object.keys(directLinks).length < fieldsA.length 
-            && Object.keys(directLinks).length < fieldsB.length; ++i) {
-                tableA = tableA.orderby(sortA.length ? sortA : fieldsA[i]);
+        for (let j = 0; j < fieldsB.length && Object.keys(directLinks).length < fieldsA.length 
+            && Object.keys(directLinks).length < fieldsB.length; ++j) {
+                tableB = tableB.orderby(sortB.length ? sortB : fieldsB[j]);
                 let found = false;
 
-                for (let j = 0; j < fieldsB.length && Object.keys(directLinks).length < fieldsA.length 
-                    && Object.keys(directLinks).length < fieldsB.length; ++j) {
-                        if (foundIndices.includes(j)) continue;
+                for (let i = 0; i < fieldsA.length && Object.keys(directLinks).length < fieldsA.length 
+                    && Object.keys(directLinks).length < fieldsB.length; ++i) {
+                        // console.log(fieldsB[j], fieldsA[i])
+                        if (foundIndices.includes(i)) continue;
 
-                        tableB = tableB.orderby(sortB.length ? sortB : fieldsB[j]);
+                        tableA = tableA.orderby(sortA.length ? sortA : fieldsA[i]);
                         const dataA = tableA.array(fieldsA[i]);
                         const dataB = tableB.array(fieldsB[j]);
 
                         if (isDirectLink(dataA, dataB, epsilons[fieldsB[j]] ? epsilons[fieldsB[j]] : epsilon)) {
                             directLinks[fieldsA[i]] = fieldsB[j];
                             found = true;
-                            foundIndices.push(j);
+                            foundIndices.push(i);
                             sortA.push(fieldsA[i]);
                             sortB.push(fieldsB[j]);
                             break;
@@ -147,7 +151,7 @@ function LinkIterator(sourceTable, targetTable, candidateBins, epsilons) {
 
                 if (!found) return null;
         }
-
+        console.log(directLinks)
         return { fields: directLinks, ...getIndexMap(tableA, tableB, sortA, sortB) };
     }
 
@@ -190,11 +194,13 @@ function LinkIterator(sourceTable, targetTable, candidateBins, epsilons) {
     function getAggregateLinks(tableA, tableB, groupBy, processedFields) {
         const fieldsA = getFields(tableA);
         const fieldsB = getFields(tableB);
+        // G, A, P, D <-> G, A, P, D subject to domain / statistic constraints (min, max, mean -> range for numeric & date / unique for string, count -> number of rows, sum -> sum of int columns)
 
         if (fieldsA.length < fieldsB.length || tableA.numRows() <= tableB.numRows() || groupBy.length > 2) return null;
         
         for (let i = 0; i < fieldsA.length; ++i) {
             if (processedFields.includes(fieldsA[i])) continue;
+            console.log(groupBy, fieldsA[i], groupBy, processedFields)
             const q = query().groupby(groupBy);
 
             for (const [aggName, aggFn] of Object.entries(AGGREGATIONS)) {
@@ -209,11 +215,12 @@ function LinkIterator(sourceTable, targetTable, candidateBins, epsilons) {
                 } 
             }
 
-            const newGroups = typeof tableA.column(fieldsA[i]).get(0) === 'string' 
-                ? [fieldsA[i]] 
-                : candidateBins.map(function(b) { 
-                    return { [fieldsA[i]]: escape(d => (op.bin(d[fieldsA[i]], ...b) + b[2] / 2)) }; 
-                });
+            const newGroups = [fieldsA[i]]
+            // const newGroups = typeof tableA.column(fieldsA[i]).get(0) === 'string' 
+                // ? [fieldsA[i]] 
+                // : candidateBins.map(function(b) { 
+                    // return { [fieldsA[i]]: escape(d => (op.bin(d[fieldsA[i]], ...b) + b[2] / 2)) }; 
+                // });
 
             for (const newGroup of newGroups) {
                 const link = getAggregateLinks(tableA, tableB, [...groupBy, newGroup], [...processedFields, fieldsA[i]]);
@@ -240,7 +247,7 @@ function getBins(state) {
     const xBins = xOrdinal.length ? [] : bin(xScale, xTicks);
     const yBins = yOrdinal.length ? [] : bin(yScale, yTicks);
 
-    return [xBins, yBins];
+    return [yBins];
 }
 
 function getEpsilons(state) {
@@ -307,7 +314,7 @@ function linkExternalDatasets(states, extState) {
         const {type: sType, link} = linker.subset();
         const candidates = [];
         if (sType === LINK_TYPES.SUBSET) {
-            data.table = link.tableFrom;
+            data.table = link.map.mergedTable;
             if (extTable.numRows() === data.table.numRows()) return; // Relegate newly formed direct linkings to views
             candidates.push([sType, link, data]);
         }
@@ -361,6 +368,10 @@ function invertFields(fields) {
     return Object.fromEntries(Object.keys(fields).map(k => [fields[k], k]));
 }
 
+function applyMap(_map, values) {
+    return values.map(v => _map[v]);
+}
+
 function propagateFields(fieldMap, newFields) {
     return Object.fromEntries(
         Object.keys(fieldMap).filter(k => k in newFields).map(k => [newFields[k], fieldMap[k]])
@@ -368,18 +379,24 @@ function propagateFields(fieldMap, newFields) {
 }
 
 function propagateFieldValues(fieldMap, fields) {
-    return Object.fromEntries(Object.keys(fieldMap).map(k => [k, fields[k]]));
+    return Object.fromEntries(Object.keys(fieldMap).map(k => k in fields ? [k, fields[k]] : [k, fieldMap[k]]));
 }
 
 function propagateAggregation(node, aggregations) {
     let { table: _table } = node;
-    for (const aggregation of aggregations) {
+    for (const [aggregation, map] of aggregations) {
         const { query } = aggregation;
         _table = query.evaluate(_table);
-        _table = _table.assign(table({ '_TEMP_I_': Array.from(_table._group.keys) }));
+
+        const groupKeys = applyMap(invertFields(map), Array.from(_table._group.keys)).map(d => Number(d));
+        _table = _table.assign(table({ [tableGroupIndexField]: groupKeys }));
     }
 
     return _table.ungroup();
+}
+
+function removeDuplicateRows(_table) {
+    return _table;
 }
 
 function propagateMapSelection(source, target, _map) {
@@ -387,47 +404,65 @@ function propagateMapSelection(source, target, _map) {
     return [source.assign({ [tableIndexField]: indices }), target.filter(escape(d => indices.includes(d[tableIndexField]))).reify()];
 }
 
-function generateQuery(predicates) {
-    return query().filter(d => d['destination'] === 'LAX').reify();
-}
-
-export function walkQueryPath(roots, rootPredicates) {
-    function walkDownPath(node, data, rootQuery=null) {
+export function walkQueryPath(roots, rootPredicates, append=false) {
+    function walkDownPath(node, data) {
         const { active, table: TABLE } = node;
-        active.table = rootQuery ? rootQuery.evaluate(data) : data;
-        
+        active.selected = data;
+
         const { children } = node;
         for (const child of children) {
-            const { next, map, aggregation, fields } = child;
+            const { next, map, aggregation, fields, type } = child;
             let NEXT_TABLE = next.table, _data;
+            next.active.type = type;
 
             if (aggregation) {
                 const { query, assignTable } = aggregation;
-                if (rootQuery) {
-                    _data = query.evaluate(rootQuery.evaluate(data.assign(assignTable)));
-                } else {
-                    const idMap = Object.fromEntries(range(_data.numRows()).map(d => [d, d]));
-                    [_, _data] = propagateMapSelection(data, TABLE.assign(assignTable), idMap);
-                    _data = query.evaluate(_data);
-                }
+                const idMap = Object.fromEntries(TABLE.array(tableIndexField).map(d => [d, d]));
+
+                [, _data] = propagateMapSelection(data, TABLE.assign(assignTable), idMap);
+                _data = query.evaluate(_data.rename({ [tableGroupIndexField]: tableIndexField }));
 
                 [_data, NEXT_TABLE] = propagateMapSelection(_data, NEXT_TABLE, map);
                 NEXT_TABLE = NEXT_TABLE.orderby(tableIndexField).assign(
                     _data.rename(fields).orderby(tableIndexField)
-                );
+                ).unorder();
             } else {
                 if (rootQuery) data = rootQuery.evaluate(data);
                 NEXT_TABLE = propagateMapSelection(data, NEXT_TABLE, map);
             }
 
-            walkDownPath(next, NEXT_TABLE, null);
+            walkDownPath(next, NEXT_TABLE);
+        }
+    }
+
+    function clearPath(node) {
+        const { active, children } = node;
+        active.selected = active.table;
+
+        for (const child of children) {
+            const { next } = child;
+            next.active.type = LINK_TYPES.NONE;
+            clearPath(next);
         }
     }
 
     for (const root of roots) {
         const [node, startTable, fieldMap] = root;
-        rootPredicates = propagateFields(rootPredicates, fieldMap);
-        walkDownPath(node, startTable, generateQuery());
+        if (rootPredicates) {
+            rootPredicates = propagateFields(rootPredicates, fieldMap);
+        
+            if (getFields(startTable, true).includes(tableGroupIndexField) && tableIndexField in rootPredicates) {
+                rootPredicates[tableGroupIndexField] = rootPredicates[tableIndexField];
+                delete rootPredicates[tableIndexField];
+            }
+    
+            const _query = generateQuery(rootPredicates);
+            let _table = _query.evaluate(startTable);
+            if (append) _table = removeDuplicateRows(node.active.selected.concat(_table));
+            walkDownPath(node, _table);
+        } else {
+            clearPath(node);
+        }
     }
 }
 
@@ -438,21 +473,19 @@ export function getRootNodes(startNode) {
 
         const { parents } = node;
         if (!parents.length) {
-            return [node, aggregations, fieldMap];
+            return [[node, aggregations, fieldMap]];
         }
 
         let paths = [];
         for (const parent of parents) {
-            const { next, aggregation, fields } = parent;
-            paths = [...paths, walkUpPath(next, [...aggregations, aggregation], propagateFieldValues(fieldMap, fields))];
+            const { next, aggregation, map, fields } = parent;
+            paths = [...paths, ...walkUpPath(next, [...aggregations, [aggregation, map]], propagateFieldValues(fieldMap, fields))];
         }
 
         return paths;
     } 
 
-    const visited = new WeakMap(), startFields = Object.fromEntries(getFields(startNode.table).map(c => [c, c]));
+    const visited = new WeakMap(), startFields = Object.fromEntries(getFields(startNode.table, true).map(c => [c, c]));
     const roots = walkUpPath(startNode, [], startFields);
-    let t= roots.map(([root, aggregations, fieldMap]) => [root, propagateAggregation(root, aggregations), fieldMap]);
-    walkQueryPath(t, {})
-    return t;
+    return roots.map(([root, aggregations, fieldMap]) => [root, propagateAggregation(root, aggregations), fieldMap]);
 }
