@@ -1,6 +1,7 @@
 import {
-    SvgContainer, SvgGroup, TickDomain, Background, Foreground, Circle, Ellipse, Line, Polygon, 
-    Polyline, Rect, Path, Text, DefaultSvgId, MarkRole
+    SvgContainer, SvgGroup, Background, Foreground, Circle, Ellipse, Line, Polygon, 
+    Polyline, Rect, Path, Text, DefaultSvgId, MarkRole, Use, Width, Height, Left, Right, 
+    Top, Bottom, CenterX, CenterY, TextRef, Style
 } from '../state/constants.js';
 
 import { Transform } from '../util/transform.js';
@@ -8,35 +9,40 @@ import { ViewState } from '../state/view-state.js';
 import { parseTransform } from '../parsers/attribute-parsers';
 import * as parser from 'svg-path-parser';
 import { SVGToScreen } from '../util/util.js';
+import { select } from 'd3-selection';
 
-const markTypes = [Circle, Ellipse, Line, Polygon, Polyline, Rect, Path];
+const markTypes = [Circle, Ellipse, Line, Polygon, Polyline, Rect, Path, Use];
 var id = 1;
 
-function extractElementInformation(svg, element, transform) {
-    element._getBBox = element.nodeName === SvgContainer 
-        ? function() { return this.getBoundingClientRect(); } 
+function extractElementInformation(svg, element, transform, parent=false) {
+    element._getBBox = parent ? function() { return this.getBoundingClientRect(); } 
         : function() {
-            const clientRect = this.getBoundingClientRect(), svgRect = this.getBBox();
-            const p1 = SVGToScreen(svg, this, svgRect.x, svgRect.y)
-            const p2 = SVGToScreen(svg, this, svgRect.x + svgRect.width, svgRect.y + svgRect.height);
+            const clientRect = this.getBoundingClientRect(), svgRect = this.getBBox ? this.getBBox() : clientRect;
+
+            const p1 = this.getBBox ? SVGToScreen(svg, this, svgRect.x, svgRect.y) 
+                : { x: svgRect.x, y: svgRect.y };
+            const p2 = this.getBBox ? SVGToScreen(svg, this, svgRect.x + svgRect.width, svgRect.y + svgRect.height) 
+                : { x: svgRect.x + svgRect.width, y: svgRect.y + svgRect.height };
             const width = Math.abs(p1.x - p2.x), height = Math.abs(p1.y - p2.y);
             const left = clientRect.left + clientRect.width / 2 - width / 2, 
                 top = clientRect.top + clientRect.height / 2 - height / 2;
 
             return {
-                width: width,
-                height: height,
-                left: left,
-                right: left + width,
-                top: top,
-                bottom: top + height,
-                centerX: left + width / 2,
-                centerY: top + height / 2
+                [Width]: width,
+                [Height]: height,
+                [Left]: left,
+                [Right]: left + width,
+                [Top]: top,
+                [Bottom]: top + height,
+                [CenterX]: left + width / 2,
+                [CenterY]: top + height / 2
             }
-      }
-
-    element.localTransform = parseTransform(element, false);
-    element.globalPosition = parseTransform(element, true, new Transform(transform));
+    };
+    
+    if (element.transform) {
+        element.localTransform = parseTransform(element, false);
+        element.globalPosition = parseTransform(element, true, new Transform(transform));
+    }
 }
 
 function inferTypeFromPath(element) { 
@@ -59,23 +65,31 @@ function inferTypeFromPath(element) {
     }
 }
 
-function analyzeDomTree(element, state, transform) {
+function analyzeDomTree(element, state, transform, parent=false) {
     if (!element) return;
+    if (element.nodeName.toLowerCase() === Style) return;
     if (element.className && (element.className.baseVal === Background || 
         element.className.baseVal === Foreground)) return;
 
-    if (element.nodeName === SvgContainer) {
+    if (parent || element.nodeName === SvgContainer) {
         state.svg = element;
-        extractElementInformation(state.svg, element, transform);
+        extractElementInformation(state.svg, element, transform, parent);
         if (!element.id) element.id = DefaultSvgId + '-' + id++;
     } else if (element.nodeName === SvgGroup) {
         parseTransform(element, true, transform);
-    } else if (element.nodeName === Text) {
-        extractElementInformation(state.svg, element, transform);
-        element.removeAttribute('textLength');
-        state.textMarks.push(element);
-        element.style['pointer-events'] = 'none';
-        element.style['user-select'] = 'none';
+    } else if (element.nodeName === TextRef && element.textContent.trim() !== '') {
+        let el = element.parentElement;
+        if (el.nodeName !== Text) {
+            el = select(el).append('text').html(element.textContent).node();
+            select(element).remove();
+        }
+        // } else if (window.getComputedStyle(el).opacity === 0 || +el.getAttribute('opacity') === 0) return;
+
+        extractElementInformation(state.svg, el, transform);
+        el.removeAttribute('textLength');
+        state.textMarks.push(el);
+        el.style['pointer-events'] = 'none';
+        el.style['user-select'] = 'none';
     } else if (markTypes.includes(element.nodeName)) {
         extractElementInformation(state.svg, element, transform);
         const markType = element.nodeName;
@@ -88,12 +102,8 @@ function analyzeDomTree(element, state, transform) {
             element.setAttribute('vector-effect', 'non-scaling-stroke');
         }
 
-        if (element.className && element.className.baseVal === TickDomain) {
-            state.hasDomain = true;
-        } else {
-            element.setAttribute(MarkRole, 'true');
-            state.svgMarks.push(element);
-        }
+        element.setAttribute(MarkRole, 'true');
+        state.svgMarks.push(element);
     }
 
     for (const child of element.childNodes) {
@@ -103,7 +113,8 @@ function analyzeDomTree(element, state, transform) {
 
 export function inspect(svg) {
     let state = new ViewState();
-    analyzeDomTree(svg, state, new Transform());
+    analyzeDomTree(svg, state, new Transform(), true);
+    state.svg = svg;
     console.log(state);
     return state;
 }
