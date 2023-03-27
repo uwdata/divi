@@ -16,7 +16,7 @@ async function createVegaBarScatter() {
         "mark": "bar",
         "encoding": {
         "y": {"field": "Miles_per_Gallon", "bin": true},
-        "x": {"aggregate": "mean", "field": "Displacement"},
+        "x": {"aggregate": "max", "field": "Displacement"},
         // "color": {"field": "Origin", "legend": null}
         },
         width: 200,
@@ -86,7 +86,7 @@ const spec5 = {
     document.querySelector("#chart5").innerHTML = svg5;
     document.querySelector("#chart5 svg").id = "chart5";
         
-    AutomaticInteraction.hydrate(["#chart1 svg", "#chart5 svg"], 
+    AutomaticInteraction.hydrate(["#chart1 svg", "#chart2 svg", "#chart3 svg", "#chart4 svg", "#chart5 svg"], 
     { url: "https://vega.github.io/vega-datasets/data/cars.json" });
 }
   
