@@ -13,7 +13,8 @@ async function getPlot(id) {
         height: 400,
         color: {
             legend: false,
-            style: { marginLeft: 300 }
+            style: { marginLeft: 300 },
+            scheme: "category10"
         },
         x: {
             grid: true
