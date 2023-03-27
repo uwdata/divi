@@ -11,6 +11,10 @@ async function getPlot(id) {
     const p = Plot.plot({
         width: 400,
         height: 400,
+        color: {
+            legend: false,
+            style: { marginLeft: 300 }
+        },
         x: {
             grid: true
         },
@@ -18,7 +22,7 @@ async function getPlot(id) {
             grid: true
         },
         marks: [
-          Plot.dot(data, {x: "Weight_in_lbs", y: "Acceleration"})
+          Plot.dot(data, {x: "Weight_in_lbs", y: "Acceleration", stroke: "Origin"})
         ]
     });
     
@@ -54,7 +58,7 @@ async function createVegaDualLinking() {
         "encoding": {
         "x": {"field": "Horsepower", "type": "quantitative"},
         "y": {"field": "Displacement", "type": "quantitative"},
-        // "size": {"field": "Horsepower", "type": "quantitative"},
+        "color": {"field": "Origin"},
         },
         width: 400,
         height: 400
@@ -75,11 +79,11 @@ async function createVegaDualLinking() {
     document.querySelector("#chart2").innerHTML = svg2;
     document.querySelector("#chart2 svg").id = "chart2";
 
-    document.querySelector("#chart3").innerHTML = svg3;
-    document.querySelector("#chart3 svg").id = "chart3";
+    document.querySelector("#chart4").innerHTML = svg3;
+    document.querySelector("#chart4 svg").id = "chart3";
 
-    d3.select("#chart4").node().append(svg4);
-    d3.select("#chart4 svg").node().id = "chart4";
+    d3.select("#chart3").node().append(svg4);
+    d3.select("#chart3 svg").node().id = "chart4";
         
     AutomaticInteraction.hydrate([ "#chart1 svg", "#chart2 svg", "#chart3 svg", "#chart4 svg"], 
     { url: "https://vega.github.io/vega-datasets/data/cars.json" });
