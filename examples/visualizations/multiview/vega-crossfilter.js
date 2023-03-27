@@ -24,7 +24,8 @@ function createVegaCrossfilter() {
         "url": "https://vega.github.io/vega-datasets/data/flights-2k.json",
         "format": {"parse": {"date": "date"}}
       },
-      "transform": [{"calculate": "hours(datum.date)", "as": "time"}],
+      "transform": [{"calculate": "hours(datum.date)", "as": "time", "filter": {"field": "destination", 
+        "oneOf": ["TUL", "TUS", "LAX", "ABQ", "OKC", "SAN", "LAS"]}}],
       "encoding": {
         "y": {
           "field": "destination", 
@@ -82,9 +83,11 @@ const spec5 = {
     "url": "https://vega.github.io/vega-datasets/data/flights-2k.json",
     "format": {"parse": {"date": "date"}}
   },
+  "transform": [{"calculate": "hours(datum.date)", "as": "time", "filter": {"field": "origin", 
+        "oneOf": ["TUL", "TUS", "LAX", "ABQ", "OKC", "SAN", "LAS"]}}],
   "encoding": {
     "y": { "title": "Origin", "field": "origin" },
-    "x": {"aggregate": "max", "field": "distance"}
+    "x": {"aggregate": "mean", "field": "distance"}
   },
   "mark": "bar",
   width: 400,
@@ -106,7 +109,7 @@ const spec5 = {
           document.querySelector("#chart3").innerHTML = svg3;
           document.querySelector("#chart3 svg").id = "chart3";
 
-          AutomaticInteraction.hydrate(["#chart3 svg"], { url: "https://vega.github.io/vega-datasets/data/flights-2k.json" });
+          AutomaticInteraction.hydrate(["#chart1 svg", "#chart2 svg", "#chart3 svg"], { url: "https://vega.github.io/vega-datasets/data/flights-2k.json" });
         })
       })
     });

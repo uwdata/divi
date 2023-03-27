@@ -1,4 +1,4 @@
-function createVegaMultiView() {
+async function createVegaMultiView() {
     const spec1 = {
         "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
         "title": "Seattle Weather, 2012-2015",
@@ -59,9 +59,26 @@ function createVegaMultiView() {
         "width": 700,
         "mark": "bar"
       }
+
+      const spec3 = {
+        "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+        "title": "Seattle Weather, 2012-2015",
+        "data": {
+          "url": "https://vega.github.io/vega-datasets/data/seattle-weather.csv"
+        },
+        "encoding": {
+            "x": {"aggregate": "mean", "field": "temp_max"},
+            "y": {"field": "precipitation", "bin": true}
+        },
+        "width": 700,
+        "mark": "bar"
+      }
   
     var view1 = new vega.View(vega.parse(vegaLite.compile(spec1).spec), { renderer: 'svg' });
     var view2 = new vega.View(vega.parse(vegaLite.compile(spec2).spec), { renderer: 'svg' });
+    var view3 = new vega.View(vega.parse(vegaLite.compile(spec3).spec), { renderer: 'svg' });
+
+    var svg3 = await view3.toSVG();
 
     view1.toSVG().then(function(svg1) {
         view2.toSVG().then(function(svg2) {
@@ -69,7 +86,9 @@ function createVegaMultiView() {
             document.querySelector("#chart1 svg").id = "chart1";
             document.querySelector("#chart2").innerHTML = svg2;
             document.querySelector("#chart2 svg").id = "chart2";
-            AutomaticInteraction.hydrate(["#chart1 svg", "#chart2 svg"], { url: "https://vega.github.io/vega-datasets/data/seattle-weather.csv" });
+            document.querySelector("#chart3").innerHTML = svg3;
+            document.querySelector("#chart3 svg").id = "chart3";
+            AutomaticInteraction.hydrate(["#chart1 svg", "#chart2 svg", "#chart3 svg"], { url: "https://vega.github.io/vega-datasets/data/seattle-weather.csv" });
         })
     });
   }

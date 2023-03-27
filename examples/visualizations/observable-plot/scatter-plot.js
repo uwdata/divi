@@ -1,11 +1,12 @@
 async function createScatterPlot() {
     let data = await d3.csv('/examples/data/penguins.csv', d3.autoType);
-    
+    data = data.filter(d => d.sex != null);
+
     const p = Plot.plot({
         inset: 8,
         grid: true,
         color: {
-          legend: true,
+          legend: false,
           style: { marginLeft: 500 }
         },
         marks: [
