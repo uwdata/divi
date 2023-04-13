@@ -1776,3 +1776,87 @@
 
     //     return [legends, titles];
     // }
+
+
+// function handle(state, extentX, extentY) {
+
+//     // if (state.xAxis.scale && !state.xAxis.ordinal.length) state.xAxis.axis.scale(state.xAxis.scale)();
+//     // if (state.yAxis.scale && !state.yAxis.ordinal.length) state.yAxis.axis.scale(state.yAxis.scale)();
+
+//     const svg = select('#' + state.svg.id);
+//     const marks = svg.selectAll('[__mark__="true"]');
+    
+//     const gXAxis = svg.append('g').attr('id', 'x-axis-zoom-accessor');
+//     const gYAxis = svg.append('g').attr('id', 'y-axis-zoom-accessor');
+//     const tx = () => zoomTransform(gXAxis.node());
+//     const ty = () => zoomTransform(gYAxis.node());
+
+//     svg.append('defs')
+//     .append('clipPath')
+//     .attr('id', 'clip-' + state.svg.id)
+//     .append('rect')
+//     .attr('x', 0)
+//     .attr('y', 0)
+//     .attr('width', Math.abs(state.xAxis.range[1] - state.xAxis.range[0]))
+//     .attr('height', Math.abs(state.yAxis.range[0] - state.yAxis.range[1]));
+
+// if (state.xAxis.scale && state.yAxis.scale) {
+//     for (const node of marks.nodes()) {
+//         if (node.parentElement.hasAttribute('clip-path')) continue;
+//         let container = node.parentElement;
+//         if (container.id !== '_g_clip') {
+//             container = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+//             container.id = '_g_clip';
+//             container.setAttribute('clip-path', 'url(#clip-' + state.svg.id + ')'); 
+
+//             node.parentElement.appendChild(container);
+//         }  
+//         container.appendChild(node);
+//     }
+// }
+    
+//     // state.yAxis.axis.scale(ty().rescaleY(state.yAxis.scale))();
+//     // state.xAxis.axis.scale(tx().rescaleX(state.xAxis.scale))();
+
+//     const width = state.xAxis.range[1] - state.xAxis.range[0];
+//     const height = state.yAxis.range[0] - state.yAxis.range[1];
+//     const [x0, x1] = extentX.map(d => state.xAxis.scale(d));
+//     const [y1, y0] = extentY.map(d => state.yAxis.scale(d));
+//     // console.log(state.xAxis.scale.range())
+//     // console.log((x1 - x0) / width)
+//     // console.log((y1 - y0) / height)
+//     const zi = zoomIdentity
+//         .translate(width / 2, height / 2)
+//         .scale(1 / Math.min((x1 - x0) / width, (y1 - y0) / height))
+//         .translate(-(x0 + x1) / 2, -(y0 + y1) / 2)
+    
+//     // const zx = zoomIdentity
+//     //     .translate(width / 2, 0)
+//     //     .scale(1 / ((x1 - x0) / width))
+//     //     .translate(-(x0 + x1) / 2);
+//     // console.log(zx)
+//     // console.log(zi)
+//     let y = zi.rescaleY(state.yAxis.scale);
+//     y = y.copy().domain(y.domain().reverse());
+//     state.yAxis.axis.scale(y)();
+//     state.xAxis.axis.scale(zi.rescaleX(state.xAxis.scale))();
+//     marks.attr('transform', function() {
+//         const lineChart = this.type && (this.type === Line || this.type === Polygon || this.type === Polyline);
+
+//         // if (this.type === Polygon || this.type === Polyline) {
+//         //     this.globalPosition.translate.x = this.clientRect.left; + this.clientRect.width / 2;
+//         //     this.globalPosition.translate.y = this.clientRect.top + this.clientRect.height / 2;
+//         // }
+        
+//         const translateX = zi.applyX(this.globalPosition.translate.x) - (this.globalPosition.translate.x);
+//         // const translateY = this.type && lineChart ? 0
+//         const translateY = zi.applyY(this.globalPosition.translate.y) - (this.globalPosition.translate.y);
+//         const scaleX = 1;
+//         const scaleY = 1;
+//         // console.log(scaleX, scaleY)
+//         // const scaleX = this.type && lineChart ? zi.k : 1;
+//         // const scaleY = this.type && lineChart ? zi.k : 1;
+
+//         return this.localTransform.getTransform(new Transform(translateX, translateY, scaleX, scaleY));
+//     });
+// }
