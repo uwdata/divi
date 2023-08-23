@@ -1,6 +1,6 @@
-# AutoIxN
+# DIVI
 
-Automatic Interaction: Dynamic orchestration of static visualizations
+DIVI: Dynamically Interactive Visualization
 
 ## Instructions
 
