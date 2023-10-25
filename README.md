@@ -1,6 +1,8 @@
 # DIVI
 
 DIVI: Dynamically Interactive Visualization
+This repository is in the process of being updated.
+Please email snyderl AT cs DOT washington DOT edu to be notified when the update is complete.
 
 ## Instructions
 
