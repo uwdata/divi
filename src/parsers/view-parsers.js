@@ -1,31 +1,40 @@
 import { min, max, mean } from 'd3-array';
 import { scaleTime, scaleBand, scaleLinear } from 'd3-scale';
-import { AxisDomainRole, TitleRole, Bottom, CenterX, CenterY, Left, LegendRole, 
-    MarkRole, OrphanTickRole, Right, RoleProperty, Tick, Top, ViewportRole } from '../state/constants';
-import { axisBottom, axisLeft } from '../_d3/axis';
-import { getFormatVal } from './attribute-parsers';
-import { computeCenterPos, convertPtToPx, sortByViewPos } from '../util/util';
-import { bindLegendData, parseLegends } from './legend-parsers';
+import {
+    AxisDomainRole, TitleRole, Bottom, CenterX, CenterY, Left, LegendRole,
+    MarkRole, OrphanTickRole, Right, RoleProperty, Tick, Top, ViewportRole
+} from '../state/constants.js';
+import { axisBottom, axisLeft } from '../_d3/axis.js';
+import { getFormatVal } from './attribute-parsers.js';
+import { computeCenterPos, convertPtToPx, sortByViewPos } from '../util/util.js';
+import { bindLegendData, parseLegends } from './legend-parsers.js';
+// import { selectAll } from 'd3-selection';
 
 const epsilon = 3;
-const viewEpsilon = 25;
+let viewEpsilon = 25;
 
 export function parseChart(state) {
     let [candidateTextGroups, candidateTickGroups, candidateLegendGroups] = collectCandidateGroups(state.textMarks, state.svgMarks);
     let axes = pruneGroups(candidateTextGroups, candidateTickGroups);
+    axes = axes.sort((a, b) => {
+        const t1 = a.text[0]._getBBox()[CenterX];
+        const t2 = b.text[0]._getBBox()[CenterY];
+        return t1 - t2;
+    });
 
     if (axes.length >= 2) {
         axes = [axes[0], axes[1]];
         groupAxes(axes);
         candidateTextGroups = candidateTextGroups.filter(d => !axes.map(a => a.text).includes(d.marks));
     }
-
-    const legends = pruneGroups(candidateTextGroups, candidateLegendGroups, false).filter(d => d.dist < epsilon * 10);
+    // console.log(candidateLegendGroups)
+    const legends = pruneGroups(candidateTextGroups, candidateLegendGroups, false).filter(d => d.dist < viewEpsilon * 5);
     if (legends.length) {
         parseLegends(state, legends);
         candidateTextGroups = candidateTextGroups.filter(d => !legends.map(l => l.text).includes(d.marks));
     }
     assignTitles(candidateTextGroups.map(d => d.marks).flat());
+    state.legends.forEach(d => bindLegendData(d));
 
     function assignTitles(titles) {
         const titleAssignment = new Map();
@@ -42,7 +51,7 @@ export function parseChart(state) {
                 const posDiff = Math.abs(titleX - x) + Math.abs(titleY - y);
 
                 if (posDiff < closestTitle.dist) {
-                    closestTitle = { title: title, dist: posDiff };
+                    closestTitle = { title, dist: posDiff };
                 }
             }
 
@@ -53,7 +62,7 @@ export function parseChart(state) {
         for (const group of groups) {
             const _g = 'ticks' in group ? group.ticks : group.marks;
             const pos = _g.filter(d => d.label).map(mark => calculatePos(mark.label));
-            const x = mean(pos.map(d => d[0])), y = mean(pos.map(d => d[1]));
+            const x = mean(pos.map(d => d[0])); const y = mean(pos.map(d => d[1]));
 
             const titleGroup = getClosestTitle(x, y);
             const { title, dist } = titleGroup;
@@ -70,32 +79,32 @@ export function parseChart(state) {
     }
 
     function groupAxes(axes) {
-        axes = [axes[0], axes[1]]; 
         const axisMap = new Map();
         const orphanTicks = [];
 
         function addTicks(text, alignment, ticks) {
             if (alignment === Top || alignment === Bottom) {
-                state.xAxis.ticks.push({label: text, marks: ticks});
+                state.xAxis.ticks.push({ label: text, marks: ticks });
             } else {
-                state.yAxis.ticks.push({label: text, marks: ticks});
+                state.yAxis.ticks.push({ label: text, marks: ticks });
             }
-            ticks.forEach(tick => text ? tick[RoleProperty] = Tick : tick[RoleProperty] = OrphanTickRole)
+            ticks.forEach(tick => { text ? tick[RoleProperty] = Tick : tick[RoleProperty] = OrphanTickRole; });
         }
 
-        for (const { alignment, group} of axes) {
+        for (const { alignment, group } of axes) {
             for (const g of group) {
                 const [axis, allTicks] = g;
                 const seen = new Map();
 
                 for (const [text, tick] of axis) {
                     seen.set(tick, true);
-                    axisMap.has(text) ? axisMap.get(text).ticks.push(tick) 
-                        : axisMap.set(text, { alignment: alignment, ticks: [tick] });
+                    axisMap.has(text)
+                        ? axisMap.get(text).ticks.push(tick)
+                        : axisMap.set(text, { alignment, ticks: [tick] });
                 }
 
                 allTicks.filter(d => !seen.has(d)).forEach(d => {
-                    orphanTicks.push({ alignment: alignment, tick: d });
+                    orphanTicks.push({ alignment, tick: d });
                 });
             }
         }
@@ -103,7 +112,7 @@ export function parseChart(state) {
         for (const [text, { alignment, ticks }] of axisMap) {
             addTicks(text, alignment, ticks);
         }
-        
+
         for (const { alignment, tick } of orphanTicks) {
             addTicks(null, alignment, [tick]);
         }
@@ -113,7 +122,7 @@ export function parseChart(state) {
 
     function mergeArray(array) { // Assumes [key, mark] structure
         array.sort((a, b) => a[0] - b[0]);
-        const groups = [ [array[0][0], [array[0][1]]] ];
+        const groups = [[array[0][0], [array[0][1]]]];
 
         for (let i = 1; i < array.length; ++i) {
             const index = groups[groups.length - 1][0];
@@ -128,16 +137,25 @@ export function parseChart(state) {
         return groups.map(d => d[1]);
     }
 
-    function pruneGroups(candidateTextGroups, candidateMarkGroups, append=true) {
+    function pruneGroups(candidateTextGroups, candidateMarkGroups, append = true) {
+        // const t = selectAll('#test').nodes();
+        // console.log(t)
+        // for (const g of candidateMarkGroups) {
+        //     for (const _t of t) {
+        //         if (g.marks.includes(_t)) {
+        //             console.log(g)
+        //         }
+        //     }
+        // }
         function _sort(alignment, group) {
             group.sort((a, b) => {
-                const aBox = a._getBBox(), bBox = b._getBBox();
+                const aBox = a._getBBox(); const bBox = b._getBBox();
                 return hs.includes(alignment) ? aBox[CenterX] - bBox[CenterX] : aBox[CenterY] - bBox[CenterY];
             });
         }
 
         function getGroupDistance(groupA, groupB, alignment) {
-            let distsA = [0, 0, 0], distsB = [0, 0, 0];
+            const distsA = [0, 0, 0]; const distsB = [0, 0, 0];
 
             function addVal(obj, mark, length) {
                 const bbox = mark._getBBox();
@@ -159,7 +177,7 @@ export function parseChart(state) {
         }
 
         function matchGroup(alignment, textGroup, tickGroup) {
-            let i = 0, distance = 0, textMap = new Map();
+            let i = 0; let distance = 0; const textMap = new Map();
 
             for (const text of textGroup) {
                 const textBB = text._getBBox();
@@ -186,7 +204,7 @@ export function parseChart(state) {
             return [distance / textGroup.length, textMap];
         }
 
-        const groups = [], others = [], vs = [Left, Right, CenterX], hs = [Top, Bottom, CenterY];;
+        const groups = []; const others = []; const vs = [Left, Right, CenterX]; const hs = [Top, Bottom, CenterY];
         for (const { alignment, marks: textGroup } of candidateTextGroups) {
             if (textGroup.length === 1) {
                 others.push([alignment, textGroup]);
@@ -195,10 +213,10 @@ export function parseChart(state) {
 
             let minGroup = { dist: Number.MAX_SAFE_INTEGER, group: null };
             _sort(alignment, textGroup);
-            
+
             for (const { alignment: markAlignment, marks: markGroup } of candidateMarkGroups) {
                 if (markGroup.length < textGroup.length) continue;
-                if ((vs.includes(alignment) && !vs.includes(markAlignment)) || 
+                if ((vs.includes(alignment) && !vs.includes(markAlignment)) ||
                     (hs.includes(alignment) && !hs.includes(markAlignment))) continue;
                 if (getGroupDistance(textGroup, markGroup, alignment) > viewEpsilon) continue;
 
@@ -210,7 +228,7 @@ export function parseChart(state) {
                 if (append && withinEp) {
                     minGroup.group.push([textMap, markGroup]);
                 } else if ((!append && withinEp && markGroup.length < minGroup.group[0][1].length) || _dist < minGroup.dist) {
-                    minGroup = { alignment: alignment, dist: _dist, group: [[textMap, markGroup]], text: textGroup };
+                    minGroup = { alignment, dist: _dist, group: [[textMap, markGroup]], text: textGroup };
                 }
             }
 
@@ -222,13 +240,13 @@ export function parseChart(state) {
     }
 
     function collectCandidateGroups(textMarks, svgMarks) {
-        function getPositions(allMarks, useCenters=true) {
+        function getPositions(allMarks, useCenters = true) {
             const positions = { [Left]: [], [Right]: [], [Top]: [], [Bottom]: [] };
             if (useCenters) {
                 positions[CenterX] = [];
                 positions[CenterY] = [];
             }
-            
+
             // Detect text groups
             for (const mark of allMarks) {
                 const bbox = mark._getBBox();
@@ -241,7 +259,7 @@ export function parseChart(state) {
             return positions;
         }
 
-        function mergePositions(positions, useStyle=false) {
+        function mergePositions(positions, useStyle = false) {
             const _positions = [];
             if (useStyle) {
                 const keys = [CenterX, CenterY];
@@ -288,7 +306,7 @@ export function parseChart(state) {
             for (let i = 0; i < allMarks.length; ++i) {
                 const mark = allMarks[i];
                 const marks = markAssignment.get(mark);
-                
+
                 if (!candidateGroups.includes(marks)) {
                     candidateGroups.push(marks);
                 }
@@ -298,6 +316,7 @@ export function parseChart(state) {
             for (let i = 0; i < candidateGroups.length; ++i) {
                 for (const mark of [...candidateGroups[i]]) {
                     if (markAssignment.get(mark) !== candidateGroups[i]) {
+                        // Array.filter(...)
                         candidateGroups[i].splice(candidateGroups[i].indexOf(mark), 1);
                     }
                 }
@@ -310,8 +329,8 @@ export function parseChart(state) {
 
         const textGroups = assignGroups(textMarks, mergePositions(getPositions(textMarks, false)));
         const markPositions = getPositions(svgMarks);
-        const tickGroups = assignGroups(svgMarks, mergePositions(markPositions, true)), 
-            legendGroups = mergePositions(markPositions).map(([k, v]) => v.map(d => { return { alignment: k, marks: d }; })).flat();
+        const tickGroups = assignGroups(svgMarks, mergePositions(markPositions, true));
+        const legendGroups = mergePositions(markPositions).map(([k, v]) => v.map(d => { return { alignment: k, marks: d }; })).flat();
 
         return [textGroups, tickGroups, legendGroups];
     }
@@ -322,34 +341,34 @@ export function cleanMarks(state) {
         const clientRect = mark._getBBox();
         if (clientRect.width >= state.xAxis.range[1] - state.xAxis.range[0] &&
             clientRect.height >= state.yAxis.range[0] - state.yAxis.range[1]) {
-                mark[RoleProperty] = ViewportRole;
-                continue;
-            }
+            mark[RoleProperty] = ViewportRole;
+            continue;
+        }
         const svgR = state.svg._getBBox();
         const [xLeft, xRight] = state.xAxis.range;
         const [yBottom, yTop] = state.yAxis.range.map(d => d + svgR.top);
-        if ((clientRect.left <= xLeft && clientRect.right >= xRight && clientRect.bottom <= yTop) || 
-            (clientRect.left <= xLeft && clientRect.right >= xRight && clientRect.top >= yBottom) ||
-            (clientRect.top <= yTop && clientRect.bottom >= yBottom && clientRect.left <= xLeft) ||
+        // if ((clientRect.left <= xLeft && clientRect.right >= xRight && clientRect.bottom <= yTop) ||
+        //     (clientRect.left <= xLeft && clientRect.right >= xRight && clientRect.top >= yBottom) )
+        if ((clientRect.top <= yTop && clientRect.bottom >= yBottom && clientRect.left <= xLeft) ||
             (clientRect.top <= yTop && clientRect.bottom >= yBottom && clientRect.right >= xRight) ||
             !(clientRect.right >= xLeft && clientRect.left <= xRight && clientRect.bottom >= yTop && clientRect.top <= yBottom)) {
-                mark[RoleProperty] = AxisDomainRole;
-            }
+            mark[RoleProperty] = AxisDomainRole;
+        }
         for (const legend of state.legends) {
-            for (const {mark} of legend.marks) {
+            for (const { mark } of legend.marks) {
                 mark[RoleProperty] = LegendRole;
             }
         }
     }
 
     state.svgMarks = state.svgMarks.filter(d => !d[RoleProperty]);
-    state.svgMarks.forEach(d => d[RoleProperty] = MarkRole);
+    state.svgMarks.forEach(d => { d[RoleProperty] = MarkRole; });
     sortByViewPos(null, state.svgMarks, false);
 }
 
 export function computeDomain(axis) {
     let isDate = true;
-    for (const [_, value] of Object.entries(axis.ticks)) {
+    for (const [, value] of Object.entries(axis.ticks)) {
         if (value.label == null) continue;
         if (Object.prototype.toString.call(getFormatVal(value.label, true).value) !== '[object Date]') {
             isDate = false;
@@ -357,7 +376,7 @@ export function computeDomain(axis) {
         }
     }
 
-    for (const [_, value] of Object.entries(axis.ticks)) {
+    for (const [, value] of Object.entries(axis.ticks)) {
         if (!value.label) continue;
 
         let formatVal = getFormatVal(value.label, isDate);
@@ -381,12 +400,12 @@ export function configureAxes(state) {
 
     if (state.xAxis.scale && !state.xAxis.ordinal.length) {
         // Infer original X-axis domains
-        
+
         const tickLeft = computeCenterPos(
-            state.xAxis.ticks.filter(d => d.value == state.xAxis.domain[0])[0].marks[0], Left
+            state.xAxis.ticks.filter(d => d.value === state.xAxis.domain[0])[0].marks[0], Left
         );
         const tickRight = computeCenterPos(
-            state.xAxis.ticks.filter(d => d.value == state.xAxis.domain[1])[0].marks[0], Left
+            state.xAxis.ticks.filter(d => d.value === state.xAxis.domain[1])[0].marks[0], Left
         );
 
         const ticks = [tickLeft, tickRight].map(d => d - svgClientRect.left);
@@ -400,10 +419,10 @@ export function configureAxes(state) {
     if (state.yAxis.scale && !state.yAxis.ordinal.length) {
         // Infer original Y-axis domain
         const tickTop = computeCenterPos(
-            state.yAxis.ticks.filter(d => d.value == state.yAxis.domain[0])[0].marks[0], Top
+            state.yAxis.ticks.filter(d => d.value === state.yAxis.domain[0])[0].marks[0], Top
         );
         const tickBottom = computeCenterPos(
-            state.yAxis.ticks.filter(d => d.value == state.yAxis.domain[1])[0].marks[0], Top
+            state.yAxis.ticks.filter(d => d.value === state.yAxis.domain[1])[0].marks[0], Top
         );
 
         const ticks = [tickTop, tickBottom].map(d => d - svgClientRect.top);
@@ -416,6 +435,7 @@ export function configureAxes(state) {
 }
 
 export function deconstructChart(state) {
+    viewEpsilon = 1e-1 * max([state.svg._getBBox().width, state.svg._getBBox().height]);
     parseChart(state);
     computeDomain(state.xAxis);
     computeDomain(state.yAxis);
@@ -432,43 +452,44 @@ export function deconstructChart(state) {
         cleanMarks(state);
         return;
     }
-    
+
     /* TODO: More robust axis ranges */
     const yTick = state.yAxis.ticks[0].marks[0];
     const yTickBB = yTick._getBBox();
     const xTick = state.xAxis.ticks[0].marks[0];
-    const xTickBB = xTick._getBBox(); 
+    const xTickBB = xTick._getBBox();
 
     const yTickRange = [yTickBB.left, yTickBB.left + yTickBB.width];
     const xTickRange = [xTickBB.top + xTickBB.height, xTickBB.top];
-    
+
     const xMin = max([(yTickBB.width < 10 ? yTickRange[1] : yTickRange[0]) - svgBBox.left, 0]);
     const xMax = max([min([yTickRange[1] - svgBBox.left, width]), state.xAxis.ticks[state.xAxis.ticks.length - 1].marks[0]._getBBox().right - svgBBox.left]);
     const yMin = max([(xTickBB.height < 10 ? state.yAxis.ticks[state.yAxis.ticks.length - 1].marks[0]._getBBox().top : xTickRange[1]) - svgBBox.top, 0]);
     const yMax = min([xTickRange[0] - svgBBox.top, height]);
-    
+
     state.xAxis.range = [xMin, xMax];
     state.yAxis.range = [yMax, yMin];
 
     state.xAxis.scale = (state.xAxis.domain[0] instanceof Date ? scaleTime() : (state.xAxis.ordinal.length ? scaleBand() : scaleLinear()))
         .domain(state.xAxis.ordinal.length ? state.xAxis.ordinal : state.xAxis.domain)
-        .range(state.xAxis.range)
+        .range(state.xAxis.range);
     state.xAxis.axis = axisBottom(state.xAxis.scale, state)
         .ticks(state.xAxis.ticks.length);
+    if (state.xAxis.domain[0] instanceof Date) state.xAxis.axis = state.xAxis.axis.tickFormat(state.xAxis.formatter.format);
 
     state.yAxis.scale = (state.yAxis.domain[0] instanceof Date ? scaleTime() : (state.yAxis.ordinal.length ? scaleBand() : scaleLinear()))
         .domain(state.yAxis.ordinal.length ? state.yAxis.ordinal : state.yAxis.domain)
         .range(state.yAxis.range);
     state.yAxis.axis = axisLeft(state.yAxis.scale, state)
         .ticks(state.yAxis.ticks.length);
-        // .tickFormat(d => {
+    // .tickFormat(d => {
     // let s = state.y_axis.ticks[0]['label'].innerHTML;
     //     return s.includes("M") || s.includes("k") ? d3.format(".2s")(d) : d3.format(",")(d);
     // });
-    
+
     configureAxes(state);
     cleanMarks(state);
-    
+
     // TO-DO: Domain path 0.5 difference.
     // if (state.hasDomain) {
     //     let axes = [].slice.call(state.svg.querySelectorAll(".domain")).map((d) => { return d.getBoundingClientRect() });
@@ -500,8 +521,8 @@ export function deconstructChart(state) {
     // }
 
     // state.xAxis.scale = (state.xAxis.domain[0] instanceof Date ? d3.scaleTime() : (state.xAxis.ordinal.length ? d3.scaleBand() : d3.scaleLinear()))
-        // .domain(state.xAxis.ordinal.length ? state.xAxis.ordinal : state.xAxis.domain)
-        // .range(state.xAxis.range)
+    // .domain(state.xAxis.ordinal.length ? state.xAxis.ordinal : state.xAxis.domain)
+    // .range(state.xAxis.range)
     // state.x_axis.scale = (state.x_axis.domain[0] instanceof Date ? d3.scaleTime() : d3.scaleLinear())
     //     .domain(state.x_axis.ordinal.length ? state.x_axis.range : state.x_axis.domain)
     //     .range(state.x_axis.range);
@@ -522,25 +543,25 @@ export function deconstructChart(state) {
     //     var diff_2_x = +state.x_axis.ticks[2]['label'].innerHTML - +state.x_axis.ticks[1]['label'].innerHTML;
     // }
 
-    // let diff_tick_a = state.x_axis.ticks[1]['ticks'][0].getBoundingClientRect().left - 
+    // let diff_tick_a = state.x_axis.ticks[1]['ticks'][0].getBoundingClientRect().left -
     //     state.x_axis.ticks[0]['ticks'][0].getBoundingClientRect().left;
 
     // if (state.x_axis.ticks.length < 3) {
     //     var diff_tick_b = 0;
     // } else {
-    //     var diff_tick_b = state.x_axis.ticks[2]['ticks'][0].getBoundingClientRect().left - 
+    //     var diff_tick_b = state.x_axis.ticks[2]['ticks'][0].getBoundingClientRect().left -
     //         state.x_axis.ticks[1]['ticks'][0].getBoundingClientRect().left;
     // }
 
     // if (Math.abs(diff_1_x - diff_2_x) > 5e-1 || Math.abs(diff_tick_a - diff_tick_b) > 5e-1) {
-    //     // let tick_diff_1 = state.x_axis.ticks['ticks'][1].getBoundingClientRect().left - 
+    //     // let tick_diff_1 = state.x_axis.ticks['ticks'][1].getBoundingClientRect().left -
     //     //     state.x_axis.ticks['ticks'][0].getBoundingClientRect().left;
-    //     // let tick_diff_2 = state.x_axis.ticks['ticks'][2].getBoundingClientRect().left - 
+    //     // let tick_diff_2 = state.x_axis.ticks['ticks'][2].getBoundingClientRect().left -
     //     //     state.x_axis.ticks['ticks'][1].getBoundingClientRect().left;
 
     //     if (Math.abs(diff_tick_a - diff_tick_b) < 5e-1) {
     //         let format = state.x_axis.ticks['ticks'][0].childNodes[1].innerHTML;
-    //         if (format != state.x_axis.ticks[0].__data__ && typeof format === "string") { 
+    //         if (format != state.x_axis.ticks[0].__data__ && typeof format === "string") {
     //             var exponent = format.match(/^(e|\d+)\^(e|\d+)$/);
     //             var superscript = format.match(/^(e|d+)([\u2070-\u209F\u00B2\u00B3\u00B9])$/);
     //             if (exponent) {
@@ -551,8 +572,8 @@ export function deconstructChart(state) {
     //                 base = (base === 'e' ? Math.E : parseInt(base));
     //             }
     //         }
-    //     } 
-        
+    //     }
+
     //     function format(d) {
     //         function digitToSuperscript(superChar) {
     //             let table = "⁰¹²³⁴⁵⁶⁷⁸⁹";
