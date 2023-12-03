@@ -10,7 +10,7 @@ export const Arrange = 'arrange';
 
 // Interaction defaults
 export const SelectOpacity = 1;
-export const UnselectOpacity = 0.2;
+export const UnselectOpacity = 0.1;
 export const OpacityField = '__opacity__';
 export const SelectField = '__selected__';
 
