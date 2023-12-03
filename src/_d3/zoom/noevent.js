@@ -1,8 +1,8 @@
 export function nopropagation(event) {
-  event.stopImmediatePropagation();
+    event.stopImmediatePropagation();
 }
 
 export default function(event) {
-  event.preventDefault();
-  event.stopImmediatePropagation();
+    event.preventDefault();
+    event.stopImmediatePropagation();
 }
