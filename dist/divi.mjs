@@ -27564,774 +27564,6 @@ function map$1(values, mapper) {
   return Array.from(values, (value, index) => mapper(value, index, values));
 }
 
-const SELECT_TYPE = {
-    POINT: 0,
-    RANGE: 1
-};
-
-function generateQuery(predicates) {
-    const queries = [];
-    for (const predicate of predicates) {
-        const field = Object.keys(predicate)[0];
-        const { value, cond, type } = predicate[field];
-        let q;
-
-        if (type === SELECT_TYPE.POINT) {
-            q = query().filter(escape(d => d[field] === value)).reify();
-        } else if (type === SELECT_TYPE.RANGE) {
-            q = query().filter(escape(d => {
-                return (cond === '>=' ? d[field] >= value : d[field] <= value);
-            })).reify();
-        }
-        queries.push(q);
-    }
-    return queries;
-}
-
-function generatePredicates(field, object, type) {
-    if (type === SELECT_TYPE.POINT) {
-        return [{ [field]: { value: object[field], type } }];
-    } else {
-        console.log('TODO');
-    }
-}
-
-function generateBrushPredicates(field1, field2, xR, yR) {
-    return [
-        { [field1]: { value: xR[0], cond: '>=', type: SELECT_TYPE.RANGE } },
-        { [field1]: { value: xR[1], cond: '<=', type: SELECT_TYPE.RANGE } },
-        { [field2]: { value: yR[0], cond: '<=', type: SELECT_TYPE.RANGE } },
-        { [field2]: { value: yR[1], cond: '>=', type: SELECT_TYPE.RANGE } }
-    ];
-}
-
-// Interactions
-
-// Interaction defaults
-const SelectOpacity = 1;
-const UnselectOpacity = 0.1;
-const OpacityField = '__opacity__';
-const Tick = 'tick';
-const Background = 'background';
-const Foreground = 'foreground';
-
-// Chart marks / defaults
-const DefaultSvgId = 'svgPlot';
-const SvgContainer = 'svg';
-const SvgGroup = 'g';
-const Circle = 'circle';
-const Ellipse = 'ellipse';
-const Line = 'line';
-const Polygon = 'polygon';
-const Polyline = 'polyline';
-const Rect = 'rect';
-const Path = 'path';
-const Text = 'text';
-const TextRef = '#text';
-const Style = 'style';
-const Use = 'use';
-
-// View fields
-const Left = 'left';
-const Right = 'right';
-const Top = 'top';
-const Bottom = 'bottom';
-const CenterX = 'centerX';
-const CenterY = 'centerY';
-const Width = 'width';
-const Height = 'height';
-
-// Legend and title constants
-const SizeLegend = 'size';
-const CategoricalColorLegend = 'colorCat';
-
-const FillAttr = 'fill';
-const ColorAttr = 'color';
-const StrokeAttr = 'stroke';
-const DataAttr = '__inferred__data__';
-
-const RoleProperty = '__role__';
-const LegendRole = 'legend';
-const AxisDomainRole = 'axis-domain';
-const TitleRole = 'title';
-const OrphanTickRole = 'orphan-tick';
-const ViewportRole = 'viewport';
-const MarkRole = 'mark';
-
-const tableMarkField = '_mark_';
-const tableIndexField = '_I_';
-const tableGroupIndexField = '_gI_';
-
-const epsilon$1 = 2;
-const AGGREGATIONS = {
-    COUNT: 'count',
-    MIN: 'min',
-    MAX: 'max',
-    MEAN: 'mean',
-    SUM: 'sum',
-    STDEV: 'stdev',
-    MEDIAN: 'median'
-};
-
-const LINK_TYPES = {
-    NONE: 0,
-    DIRECT: 1,
-    SUBSET: 2,
-    AGGREGATE: 3
-};
-
-function isEqual(val1, val2, ep = epsilon$1) {
-    return typeof val1 === 'string' && typeof val2 === 'string'
-        ? val1.toLowerCase() === val2.toLowerCase()
-        : Math.abs(val1 - val2) <= ep;
-}
-
-// function isDirectLink(source, target, ep = epsilon) {
-//     if (!source.length || !target.length || source.length !== target.length) return false;
-//     return range(source.length).filter(i => isEqual(source[i], target[i], ep)).length === source.length;
-// }
-
-function getSubset(source, sourceMap, target, ep = epsilon$1) {
-    const sourceIndices = []; const targetIndices = [];
-    let i = 0; let j = 0;
-
-    while (i < source.length && j < target.length) {
-        if (isEqual(source[i], target[j], ep)) {
-            while (i < source.length && j < target.length && isEqual(source[i], target[j], ep)) {
-                sourceIndices.push(sourceMap[i++]);
-                targetIndices.push(j++);
-            }
-            while (i < source.length && j < target.length && isEqual(source[i], target[j - 1], ep)) { // Include all candidates from target
-                sourceIndices.push(sourceMap[i++]);
-            }
-        } else {
-            ++i;
-        }
-    }
-
-    if (i < source.length) {
-        while (i < source.length && isEqual(source[i], target[j - 1], ep)) {
-            sourceIndices.push(sourceMap[i++]);
-        }
-    }
-
-    if (j < target.length) {
-        while (j < target.length && isEqual(source[i - 1], target[j], ep)) {
-            targetIndices.push(j++);
-        }
-    }
-
-    return [sourceIndices, targetIndices];
-}
-
-function getFields(table, useMeta = false) {
-    const metaFields = [tableMarkField, tableIndexField, tableGroupIndexField];
-    return useMeta ? table.columnNames() : table.columnNames(d => !metaFields.includes(d));
-}
-
-function LinkIterator(sourceTable, targetTable, candidateBins, epsilons, useAggregate = true) {
-    function linker() { }
-
-    linker.exists = function(link) {
-        return link && Object.keys(link).length;
-    };
-
-    linker.direct = function() {
-        const link = getDirectLinks(sourceTable, targetTable, false);
-        return { link, type: linker.exists(link) ? LINK_TYPES.DIRECT : LINK_TYPES.NONE };
-    };
-
-    linker.subset = function() {
-        const link = getDirectLinks(sourceTable, targetTable, true);
-        return { link, type: linker.exists(link) ? LINK_TYPES.SUBSET : LINK_TYPES.NONE };
-    };
-
-    linker.aggregate = function() {
-        // return { type: LINK_TYPES.NONE }
-        const link = getAggregateLinks(sourceTable, targetTable, [], []);
-        return { link, type: linker.exists(link) ? LINK_TYPES.AGGREGATE : LINK_TYPES.NONE };
-    };
-
-    linker.getLink = function() {
-        const direct = linker.direct();
-        if (direct.type === LINK_TYPES.DIRECT) return direct;
-
-        if (useAggregate) {
-            const aggregate = linker.aggregate();
-            if (aggregate.type === LINK_TYPES.AGGREGATE) return aggregate;
-        }
-
-        const subset = linker.subset();
-        if (subset.type === LINK_TYPES.SUBSET) return subset;
-
-        return { type: LINK_TYPES.NONE };
-    };
-
-    function getIndexMap(tableA, tableB, sortA, sortB) {
-        const A = tableA.orderby(sortA).array(tableIndexField);
-        const B = tableB.orderby(sortB).array(tableIndexField);
-
-        const _fromToMap = Object.fromEntries(A.map((a, i) => [a, B[i]]));
-        const _toFromMap = Object.fromEntries(B.map((b, i) => [b, A[i]]));
-
-        const newCols = getFields(tableA).filter(d => !sortA.includes(d));
-        let mergedTable;
-        if (newCols.length) {
-            const _table = tableA.orderby(sortA).select(newCols);
-            mergedTable = tableB.orderby(sortB).assign(_table).orderby(tableIndexField).reify();
-        }
-
-        return {
-            map: {
-                fromToMap: _fromToMap,
-                toFromMap: _toFromMap,
-                mergedTable
-            }
-        };
-    }
-
-    function getAggregateQueries(groupBy, groupKeys, rollupObj) {
-        const fromToQ = query().groupby([...groupBy, tableIndexField]).rollup(rollupObj);
-        const toFromQ = query().groupby(groupBy).derive(rollupObj);
-
-        return { fromToQuery: fromToQ, toFromQuery: toFromQ, assignTable: table({ [tableGroupIndexField]: groupKeys }) };
-    }
-
-    function getDirectLinks(tableA, tableB, allowProjections = false) {
-        const fieldsA = getFields(tableA);
-        const fieldsB = getFields(tableB);
-
-        if (!fieldsA.length || !fieldsB.length || tableB.numRows() > tableA.numRows()) return null;
-        if (fieldsA.length === 2 && fieldsA.includes('precipitation') && fieldsA.includes('MEAN-maximum daily temperature (c)') &&
-            fieldsB.length === 2 && fieldsB.includes('precipitation (binned)') && fieldsB.includes('mean of temp_max')) ;
-        // var out = false;
-        // if (tableA.numRows() === 1461) var out = true;
-
-        const directLinks = { };
-        const foundIndices = [];
-        const sortA = []; const sortB = [];
-        // console.log(tableA, tableB)
-        // if (fieldsA.includes('COUNT-date') && fieldsB.includes('weather') && fieldsB.includes('count')) var out = true;
-
-        for (let j = 0; j < fieldsB.length && Object.keys(directLinks).length < fieldsA.length &&
-            Object.keys(directLinks).length < fieldsB.length; ++j) {
-            tableB = tableB.orderby(sortB.length ? [...sortB, fieldsB[j]] : fieldsB[j]);
-
-            for (let i = 0; i < fieldsA.length && Object.keys(directLinks).length < fieldsA.length &&
-                    Object.keys(directLinks).length < fieldsB.length; ++i) {
-                if (foundIndices.includes(i)) continue;
-
-                tableA = tableA.orderby(sortA.length ? [...sortA, fieldsA[i]] : fieldsA[i]);
-                const dataA = tableA.array(fieldsA[i]); const A_I = tableA.array(tableIndexField);
-                const dataB = tableB.array(fieldsB[j]);
-
-                const [sourceI, targetI] = getSubset(dataA, A_I, dataB, epsilons[fieldsB[j]] ? epsilons[fieldsB[j]] : epsilon$1);
-                // console.log(tableA, tableB, fieldsA[i], fieldsB[j], dataA, dataB, sourceI, targetI, epsilons[fieldsB[j]])
-
-                if (targetI.length === dataB.length && sourceI.length >= targetI.length) {
-                    // console.log(sourceI, targetI, tableA, tableB)
-                    tableA = tableA.filter(escape(d => sourceI.includes(d[tableIndexField]))).reify();
-                    directLinks[fieldsA[i]] = fieldsB[j];
-
-                    foundIndices.push(i);
-                    sortA.push(fieldsA[i]);
-                    sortB.push(fieldsB[j]);
-                    break;
-                }
-            }
-        }
-
-        const matched = Object.keys(directLinks).length; const projected = Object.keys(directLinks).length !== fieldsB.length;
-        if (matched && tableA.numRows() > tableB.numRows()) {
-            tableA = tableA.slice(0, tableB.numRows());
-        }
-        // if (out) console.log(tableA.array('MEAN-maximum daily temperature (c)'), tableB.array('mean of temp_max'), directLinks, epsilons['mean of temp_max']);
-        // console.log(directLinks)
-        return ((allowProjections && matched) || (!allowProjections && matched && !projected)) // matched && !projected
-            ? { fields: directLinks, ...getIndexMap(tableA, tableB, sortA, sortB) }
-            : { };
-    }
-
-    // function getSubsetLinks(tableA, tableB, usedFieldsA, usedFieldsB, indices, sortA, sortB) {
-    //     const fieldsA = getFields(tableA).filter(d => !usedFieldsA.includes(d));
-    //     const fieldsB = getFields(tableB).filter(d => !usedFieldsB.includes(d));
-
-    //     if (!fieldsA.length || !fieldsB.length || fieldsA.length < fieldsB.length) {
-    //         return !indices.length ? { } : getIndexMap(tableA, tableB, sortA, sortB, indices[0]);
-    //     }
-
-    //     for (let j = 0; j < fieldsB.length; ++j) {
-    //         tableB = tableB.orderby([...sortB, fieldsB[j]]);
-
-    //         for (let i = 0; i < fieldsA.length; ++i) {
-    //             tableA = tableA.orderby([...sortA, fieldsA[i]]);
-
-    //             const dataA = tableA.array(fieldsA[i]);
-    //             const dataB = tableB.array(fieldsB[j]);
-
-    //             const [sourceI, targetI] = getSubset(dataA, dataB, epsilons[fieldsB[j]] ? epsilons[fieldsB[j]] : epsilon);
-    //             const [prevSourceI, prevTargetI] = indices.length ? indices : [sourceI, targetI];
-
-    //             if (targetI.length !== tableB.numRows() || !isDirectLink(prevSourceI, sourceI) ||
-    //                 !isDirectLink(prevTargetI, targetI)) continue;
-
-    //             const subsets = getSubsetLinks(
-    //                 tableA, tableB,
-    //                 [...usedFieldsA, fieldsA[i]], [...usedFieldsB, fieldsB[j]],
-    //                 [prevSourceI, prevTargetI],
-    //                 [...sortA, fieldsA[i]], [...sortB, fieldsB[j]]
-    //             );
-    //             if (subsets) return { ...subsets, fields: { ...subsets.fields, [fieldsA[i]]: fieldsB[j] } };
-    //         }
-    //     }
-
-    //     return null;
-    // }
-
-    function getAggregateLinks(tableA, tableB, groupBy, processedFields) {
-        const fieldsA = getFields(tableA);
-        const fieldsB = getFields(tableB);
-
-        if (fieldsA.length < fieldsB.length || tableA.numRows() <= tableB.numRows() || groupBy.length > 2) return null;
-
-        for (let i = 0; i < fieldsA.length; ++i) {
-            if (processedFields.includes(fieldsA[i])) continue;
-            const q = query().groupby(groupBy);
-
-            for (const [aggName, aggFn] of Object.entries(AGGREGATIONS)) {
-                const rollupObj = { [aggName + '-' + fieldsA[i]]: op[aggFn](fieldsA[i]) };
-                const groupByTable = q.evaluate(tableA);
-                let rollupTable = groupByTable.rollup(rollupObj);
-                rollupTable = rollupTable.assign(table({ [tableIndexField]: range(rollupTable.numRows()) }));
-
-                const directLinks = getDirectLinks(rollupTable, tableB);
-                if (directLinks && Object.keys(directLinks).length) {
-                    const groupKeys = Array.from(groupByTable._group.keys); // .map(d => Object.keys(fromToMap).includes(d) ? d : null);
-                    // console.log(groupKeys, groupByTable, rollupTable)
-                    return { aggregation: getAggregateQueries(groupBy, groupKeys, rollupObj), ...directLinks };
-                }
-            }
-
-            // const newGroups = [fieldsA[i]]
-            const newGroups = typeof tableA.column(fieldsA[i]).get(0) === 'string'
-                ? [fieldsA[i]]
-                : candidateBins.map(function(b) {
-                    return { [fieldsA[i]]: escape(d => String((op.bin(d[fieldsA[i]], ...b) + b[2] / 2))) };
-                });
-
-            for (const newGroup of newGroups) {
-                const link = getAggregateLinks(tableA, tableB, [...groupBy, newGroup], [...processedFields, fieldsA[i]]);
-                if (link) return link;
-            }
-        }
-    }
-
-    return linker;
-}
-
-function getBins(state) {
-    function bin(scale, ticks) {
-        const domain = scale.domain();
-        const stepSize = Math.abs(domain[0] - domain[1]) / (ticks.length - 1);
-
-        return [...domain, stepSize];
-    }
-
-    const { yAxis } = state;
-    // const { scale: xScale, ticks: xTicks, ordinal: xOrdinal } = xAxis;
-    const { scale: yScale, ticks: yTicks, ordinal: yOrdinal } = yAxis;
-
-    // const xBins = xOrdinal.length ? [] : bin(xScale, xTicks);
-    const yBins = yOrdinal.length ? [] : bin(yScale, yTicks);
-    return [yBins];
-}
-
-function getEpsilons(state) {
-    const epsilons = { }; const epsilon = 0.01;
-    const { xAxis, yAxis, legends } = state;
-    const { domain: xDomain } = xAxis;
-    const { domain: yDomain } = yAxis;
-
-    if (!xAxis.ordinal.length) {
-        // let tmp = Math.abs(xDomain[1] - xDomain[0]) * epsilon;
-        // if (xAxis.formatter) tmp = {epsilon: tmp, format: xAxis.formatter.format };
-
-        epsilons[xAxis.title.innerHTML.toLowerCase()] = Math.abs(xDomain[1] - xDomain[0]) * epsilon;
-    }
-    if (!yAxis.ordinal.length) {
-        // let tmp = Math.abs(yDomain[1] - yDomain[0]) * epsilon;
-        // if (yAxis.formatter) tmp = {epsilon: tmp, format: yAxis.formatter.format };
-
-        epsilons[yAxis.title.innerHTML.toLowerCase()] = Math.abs(yDomain[1] - yDomain[0]) * epsilon;
-    }
-
-    for (const legend of legends) {
-        if (legend.type === SizeLegend) {
-            const { scale } = legend;
-            const sDomain = scale.domain();
-            epsilons[legend.title.innerHTML.toLowerCase()] = Math.abs(sDomain[0] - sDomain[sDomain.length - 1]) * epsilon;
-        }
-    }
-
-    return epsilons;
-}
-
-function storeLink(type, link, to, from, storeTable = false) {
-    const { aggregation, fields, map } = link;
-    const { fromToMap, toFromMap, mergedTable } = map;
-    let fromToQuery, toFromQuery, assignTable;
-    if (aggregation) {
-        ({ fromToQuery, toFromQuery, assignTable } = aggregation);
-    }
-
-    const fromToLink = { type, next: to, map: fromToMap, fields };
-    const toFromLink = { type, next: from, map: toFromMap, fields: invertFields(fields) };
-
-    if (type === LINK_TYPES.DIRECT || type === LINK_TYPES.SUBSET) {
-        from.children.push(fromToLink);
-        to.children.push(toFromLink);
-
-        if (storeTable && type === LINK_TYPES.SUBSET) to.table = mergedTable;
-    } else {
-        from.children.push({ ...fromToLink, aggregation: { query: fromToQuery, assignTable } });
-        to.parents.push({ ...toFromLink, aggregation: { query: toFromQuery, assignTable } });
-    }
-}
-
-function linkExternalDatasets(states, extState, aggregated) {
-    const { table: extTable } = extState;
-    if (!extTable) return;
-    const stored = new Map();
-
-    for (const state of states) {
-        const { data } = state;
-        if (!data.table) continue;
-
-        const linker = LinkIterator(extTable, data.table, null, getEpsilons(state));
-        const { type: dType, link } = linker.direct();
-        const candidates = [];
-        if (dType === LINK_TYPES.DIRECT) {
-            if (!link.map.mergedTable) return; // No new fields to match, return
-
-            // data.table = link.map.mergedTable;
-            // if (extTable.numRows() === data.table.numRows()) return; // Relegate newly formed direct linkings to views
-
-            stored.set(state, true);
-            candidates.push([dType, link, data]);
-        }
-
-        candidates.forEach(d => storeLink(...d, extState));
-    }
-
-    for (const state of states) {
-        const { data } = state;
-        if (stored.has(state)) continue;
-        if (!data.table) continue; // Skip subset views
-
-        const { type, link } = LinkIterator(extTable, data.table, getBins(state), getEpsilons(state), true).aggregate();
-        if (type === LINK_TYPES.AGGREGATE) {
-            storeLink(type, link, data, extState);
-            aggregated.set(state, true);
-        }
-    }
-}
-
-function linkCharts(states, aggregated) {
-    for (let i = 0; i < states.length; ++i) {
-        const { data: _d1 } = states[i];
-        if (!_d1.table) continue;
-
-        for (let j = i + 1; j < states.length; ++j) {
-            const { data: _d2 } = states[j];
-            if (!_d2.table) continue;
-
-            const { type: fType, link: fLink } = LinkIterator(
-                _d1.table, _d2.table, getBins(states[j]), getEpsilons(states[j]), !aggregated.has(states[j])
-            ).getLink();
-            if (fType !== LINK_TYPES.NONE) {
-                if (fType === LINK_TYPES.SUBSET) continue;
-                storeLink(fType, fLink, _d2, _d1, true);
-                if (fType === LINK_TYPES.AGGREGATE) aggregated.set(states[j], true);
-            } else {
-                const { type: bType, link: bLink } = LinkIterator(
-                    _d2.table, _d1.table, getBins(states[i]), getEpsilons(states[i]), !aggregated.has(states[i])
-                ).getLink();
-                if (bType !== LINK_TYPES.NONE) {
-                    storeLink(bType, bLink, _d1, _d2, true);
-                    if (bType === LINK_TYPES.AGGREGATE) aggregated.set(states[i], true);
-                }
-            }
-        }
-    }
-}
-
-function link(states, extState) {
-    const aggregated = new Map();
-    linkExternalDatasets(states, extState, aggregated);
-    linkCharts(states, aggregated);
-}
-
-function invertFields(fields) {
-    return Object.fromEntries(Object.keys(fields).map(k => [fields[k], k]));
-}
-
-function applyMap(_map, values) {
-    return values.map(v => _map[v]);
-}
-
-function propagateFields(fieldMap, newFields) {
-    return Object.fromEntries(
-        Object.keys(fieldMap).filter(k => k in newFields).map(k => [newFields[k], fieldMap[k]])
-    );
-}
-
-function propagateFieldValues(fieldMap, fields) {
-    return Object.fromEntries(Object.keys(fieldMap).map(k => k in fields ? [k, fields[k]] : [k, fieldMap[k]]));
-}
-
-function propagateAggregation(node, aggregations) {
-    let { table: _table } = node;
-    for (const [aggregation, map] of aggregations) {
-        const { query } = aggregation;
-        _table = query.evaluate(_table);
-
-        const groupKeys = applyMap(invertFields(map), Array.from(_table._group.keys)).map(d => Number(d));
-        _table = _table.assign(table({ [tableGroupIndexField]: groupKeys }));
-    }
-
-    return _table.ungroup();
-}
-
-function removeDuplicateRows(_table) {
-    return _table;
-}
-
-function propagateMapSelection(source, target, _map) {
-    const indices = source.array(tableIndexField).map(i => _map[i]);
-    return [source.assign({ [tableIndexField]: indices }), target.filter(escape(d => indices.includes(d[tableIndexField]))).reify()]
-        .map(t => t.filter(escape(d => d[tableIndexField] != null)));
-}
-
-function walkQueryPath(roots, rootPredicates, append = false) {
-    const visited = new Map();
-
-    function walkDownPath(node, data) {
-        if (visited.has(node)) return;
-        visited.set(node, true);
-
-        const { active, table: TABLE } = node;
-        active.selected = data;
-
-        const { children } = node;
-        for (const child of children) {
-            const { next, map, aggregation, fields, type } = child;
-            let NEXT_TABLE = next.table; let _data;
-            next.active.type = type;
-
-            if (aggregation) {
-                const { query, assignTable } = aggregation;
-                const idMap = Object.fromEntries(TABLE.array(tableIndexField).map(d => [d, d]));
-
-                [, _data] = propagateMapSelection(data, TABLE.assign(assignTable), idMap);
-                _data = query.evaluate(_data.rename({ [tableGroupIndexField]: tableIndexField }));
-
-                [_data, NEXT_TABLE] = propagateMapSelection(_data, NEXT_TABLE, map);
-                NEXT_TABLE = NEXT_TABLE.orderby(tableIndexField).assign(
-                    _data.rename(fields).orderby(tableIndexField)
-                ).unorder();
-            } else {
-                [, NEXT_TABLE] = propagateMapSelection(data, NEXT_TABLE, map);
-            }
-
-            walkDownPath(next, NEXT_TABLE);
-        }
-    }
-
-    function clearPath(node) {
-        if (visited.has(node)) return;
-        visited.set(node, true);
-
-        const { active, children } = node;
-        active.selected = active.table;
-
-        for (const child of children) {
-            const { next } = child;
-            next.active.type = LINK_TYPES.NONE;
-            clearPath(next);
-        }
-    }
-
-    for (const root of roots) {
-        const [node, startTable, fieldMap] = root;
-        const { active } = node;
-        if (rootPredicates) {
-            rootPredicates = rootPredicates.map(r => {
-                r = propagateFields(r, fieldMap);
-
-                if (getFields(startTable, true).includes(tableGroupIndexField) && tableIndexField in r) {
-                    r[tableGroupIndexField] = r[tableIndexField];
-                    delete r[tableIndexField];
-                }
-
-                return r;
-            });
-
-            let _table = active.selected.numRows() < active.table.numRows() && !append ? active.selected : null;
-            generateQuery(rootPredicates).forEach(q => { _table = q.evaluate(_table || startTable); });
-
-            if (append) _table = removeDuplicateRows(node.active.selected.concat(_table));
-            walkDownPath(node, _table);
-        } else {
-            clearPath(node);
-        }
-    }
-}
-
-function getRootNodes(startNode) {
-    function walkUpPath(node, aggregations, fieldMap) {
-        if (visited.has(node)) return [];
-        visited.set(node, true);
-
-        const { parents } = node;
-        if (!parents.length) {
-            return [[node, aggregations, fieldMap]];
-        }
-
-        let paths = [];
-        for (const parent of parents) {
-            const { next, aggregation, map, fields } = parent;
-            paths = [...paths, ...walkUpPath(next, [...aggregations, [aggregation, map]], propagateFieldValues(fieldMap, fields))];
-        }
-
-        return paths;
-    }
-
-    const visited = new Map(); const startFields = Object.fromEntries(getFields(startNode.table, true).map(c => [c, c]));
-    const roots = walkUpPath(startNode, [], startFields);
-    return roots.map(([root, aggregations, fieldMap]) => [root, propagateAggregation(root, aggregations), fieldMap]);
-}
-
-function setOpacity(marks, opacity) {
-    selectAll(marks).attr('opacity', opacity);
-}
-
-function setSelection(marks, opacity) {
-    setOpacity(marks, opacity);
-}
-
-function selectAllMarks(marks) {
-    setSelection(marks, marks[0][OpacityField] || SelectOpacity);
-}
-
-function unselectAllMarks(marks) {
-    setSelection(marks, UnselectOpacity);
-}
-
-function selectMarks(allMarks, marks) {
-    unselectAllMarks(allMarks);
-    setSelection(marks, SelectOpacity);
-}
-
-function selectLegends(legends, data) {
-    for (const legend of legends) {
-        if (!legend.title) continue;
-        const attr = legend.title.innerHTML.toLowerCase();
-        const attrData = data.array(attr);
-        if (attr === 'precipitation') continue;
-        const _marks = legend.marks
-            .filter(d => attrData.includes(d.mark[DataAttr][attr]))
-            .map(d => d.mark);
-
-        selectMarks(legend.marks.map(d => d.mark), _marks);
-    }
-}
-
-function drawAggregates(id, selected, xAxis) {
-    const marks = selected.array(tableMarkField);
-    selectAll('.' + id + '.AGGREGATE_LAYER').remove();
-    const newMarks = [];
-
-    for (let i = 0; i < marks.length; ++i) {
-        const markRect = marks[i]._getBBox();
-        const newMark = select(marks[i].parentElement).append('path').classed(id, true)
-            .classed('AGGREGATE_LAYER', true)
-            .attr('fill', window.getComputedStyle(marks[i]).fill);
-
-        if (marks[i].tagName === Path) {
-            const x = marks[i].contour[0].x; //, y = marks[i].contour[0].y;
-            // if (marks[i].globalPosition.translate.y) {
-            // var y = marks[i].globalPosition.translate.y - marks[i].globalPosition.translate.y / 2;
-            // console.log(x, y)
-            // } else {
-            const y = marks[i].contour[0].y - marks[i]._getBBox().height;
-            // const lx = marks[i].globalPosition.translate.x - marks[i].globalPosition.translate.x / 2,
-            //     ly = marks[i].globalPosition.translate.y - marks[i].globalPosition.translate.y / 2;
-            // const t = marks[i].localTransform;
-            // const x =
-            // }
-            const h = markRect.height;
-            const w = xAxis.scale(selected.array(xAxis.title.innerHTML.toLowerCase())[i]) - xAxis.range[0];
-
-            const p = path();
-            p.rect(x, y, w, h);
-            newMark.attr('d', p.toString());
-            newMarks.push(newMark);
-        }
-    }
-
-    selectAll([...marks, ...newMarks]).raise();
-}
-
-function applySelections(states) {
-    for (const state of states) {
-        const { data, legends, xAxis } = state;
-        const { table, active } = data;
-        const { selected, type } = active;
-
-        let selectedMarks = selected.array(tableMarkField);
-
-        if (type === LINK_TYPES.AGGREGATE) {
-            selectedMarks = drawAggregates(state.svg.id, selected, xAxis);
-        } else {
-            selectAll('.' + state.svg.id + 'AGGREGATE_LAYER').remove();
-        }
-        selectMarks(table.array(tableMarkField), selectedMarks);
-        selectLegends(legends, selected);
-    }
-}
-
-function selectPoint(state, target) {
-    if (target[RoleProperty] === MarkRole) {
-        return generatePredicates(tableIndexField, target, SELECT_TYPE.POINT);
-    } else if (target[RoleProperty] === LegendRole) {
-        return generatePredicates(Object.keys(target[DataAttr])[0], target[DataAttr], SELECT_TYPE.POINT);
-    } else {
-        selectAllMarks(state.svgMarks);
-        state.legends.forEach(d => selectAllMarks(d.marks.map(e => e.mark)));
-        return null;
-    }
-}
-
-// function getLegendFields(state, mark) {
-//     const legend = mark.legend;
-
-//     if (legend.type === CategoricalColorLegend) {
-//         const val = legend.scale.domain()[legend.scale.range().indexOf(window.getComputedStyle(mark)[legend.matchingAttr])];
-//         var condition = [val];
-//     } else {
-//         const val = legend.scale.invert(mark._getBBox().width);
-//         var condition = [val, val];
-//     }
-
-//     const candidateMarks = state.svgMarks.filter(function(d) {
-//         const data = d.__inferred__data__[legend.title.innerHTML];
-//         return typeof condition[0] === 'string' ? condition.includes(data) : data >= condition[0] && data <= condition[1];
-//     });
-
-//     selectMarks(legend.marks.map(d => d.mark), [mark]);
-//     selectMarks(state.svgMarks, candidateMarks);
-// }
-
 function initRange(domain, range) {
   switch (arguments.length) {
     case 0: break;
@@ -30778,1246 +30010,6 @@ function time() {
   return initRange.apply(calendar(timeTicks, timeTickInterval, timeYear, timeMonth, timeSunday, timeDay, timeHour, timeMinute, second, timeFormat).domain([new Date(2000, 0, 1), new Date(2000, 0, 2)]), arguments);
 }
 
-function identity(x) {
-    return x;
-}
-
-function isMetaKey(event) {
-    return event.metaKey || event.ctrlKey || event.altKey || event.shiftKey;
-}
-
-function copyElement(element) {
-    const newElement = element.cloneNode(true);
-    for (const [key, value] of Object.entries(element)) {
-        newElement[key] = value;
-    }
-
-    return newElement;
-}
-
-function computeCenterPos(element, orient) {
-    const clientRect = element._getBBox();
-    const offset = orient === Right || orient === Left ? clientRect.width / 2 : clientRect.height / 2;
-    return clientRect[orient] + (orient === Left || orient === Top ? offset : -offset);
-}
-
-function convertPtToPx(pt) {
-    if (!pt || !pt.includes('pt')) return pt;
-    return +pt.split('pt')[0] * 4 / 3;
-}
-
-function SVGToScreen(svg, element, svgX, svgY) {
-    const p = svg.createSVGPoint();
-    p.x = svgX;
-    p.y = svgY;
-    return p.matrixTransform(element.getScreenCTM());
-}
-
-function sortByViewPos(field, objects, useField = false) {
-    const comparator = (dim) => (a, b) => field == null
-        ? (a._getBBox()[dim] - b._getBBox()[dim])
-        : useField
-            ? a[field] - b[field]
-            : ((a[field] ? a[field] : a.marks[0])._getBBox()[dim] - (b[field] ? b[field] : b.marks[0])._getBBox()[dim]);
-    objects.sort(comparator(CenterX));
-    objects.sort(comparator(CenterY));
-}
-
-class Transform {
-    constructor(...args) {
-        if (args[0] instanceof Transform) {
-            const [other] = args;
-            this.translate = { ...other.translate };
-            this.scale = { ...other.scale };
-            this.rotate = other.rotate;
-        } else {
-            const [tx, ty, sx, sy, r] = args;
-            this.translate = { x: tx || 0, y: ty || 0 };
-            this.scale = { x: sx || 1, y: sy || 1 };
-            this.rotate = r || 0;
-        }
-    }
-
-    addTransform(appendTransform) {
-        this.translate.x += appendTransform.translate.x;
-        this.translate.y += appendTransform.translate.y;
-        this.scale.x *= appendTransform.scale.x;
-        this.scale.y *= appendTransform.scale.y;
-        this.rotate += appendTransform.rotate;
-
-        return this;
-    }
-
-    getTransform(appendTransform = new Transform()) {
-        return 'translate(' + (this.translate.x + appendTransform.translate.x) + ',' +
-            (this.translate.y + appendTransform.translate.y) + ') scale(' +
-            (this.scale.x * appendTransform.scale.x) + ',' +
-            (this.scale.y * appendTransform.scale.y) + ') rotate(' +
-            (this.rotate + appendTransform.rotate) + ')';
-    }
-}
-
-const top = 1;
-const right = 2;
-const bottom = 3;
-const left = 4;
-
-function number(scale) {
-    return d => +scale(d);
-}
-
-function center(scale, offset) {
-    offset = Math.max(0, scale.bandwidth() - offset * 2) / 2;
-    if (scale.round()) offset = Math.round(offset);
-    return d => +scale(d) + offset;
-}
-
-function axis(orient, scale, state) {
-    let tickArguments = [];
-    let tickValues = null;
-    let tickFormat = null;
-    let tickSizeInner = 6;
-    let tickSizeOuter = 6;
-    let tickPadding = 3;
-    let offset = typeof window !== 'undefined' && window.devicePixelRatio > 1 ? 0 : 0.5;
-    const svgAxis = orient === top || orient === bottom ? state.xAxis : state.yAxis;
-    const ticks = svgAxis.ticks;
-
-    function axis() {
-        let values = tickValues == null ? (scale.ticks ? scale.ticks.apply(scale, tickArguments) : scale.domain()) : tickValues;
-        const format = tickFormat == null ? (scale.tickFormat ? scale.tickFormat.apply(scale, tickArguments) : identity) : tickFormat;
-        const position = (scale.bandwidth ? center : number)(scale.copy(), offset);
-        values = orient === left || orient === right ? values.reverse() : values;
-
-        function updateTick(tick, value) {
-            tick.value = value;
-            const label = tick.label; const tickMarks = tick.marks;
-            label.innerHTML = svgAxis.ordinal.length || label.value === format(value) ? label.value : format(value);
-
-            const lx = label.globalPosition.translate.x; const ly = label.globalPosition.translate.y;
-            const translateX = orient === bottom ? position(value) - lx : 0;
-            const translateY = orient === left ? position(value) - ly : 0;
-            label.setAttribute('transform', label.localTransform.getTransform(new Transform(translateX, translateY)));
-
-            for (const mark of tickMarks) {
-                const tx = mark.globalPosition.translate.x; const ty = mark.globalPosition.translate.y;
-                const translateX = orient === bottom ? position(value) - tx : 0;
-                const translateY = orient === left ? position(value) - ty : 0;
-
-                mark.setAttribute('transform', mark.localTransform.getTransform(new Transform(translateX, translateY)));
-            }
-        }
-
-        let counter;
-        for (counter = 0; counter < values.length && counter < ticks.length; ++counter) {
-            updateTick(ticks[counter], svgAxis.ordinal.length ? svgAxis.ordinal[counter] : values[counter]);
-        }
-
-        for (; counter < values.length; ++counter) {
-            const newTick = {
-                label: copyElement(ticks[0].label),
-                marks: ticks[0].marks.map(tick => copyElement(tick)),
-                value: 0
-            };
-
-            updateTick(newTick, values[counter]);
-            ticks[0].label.parentElement.appendChild(newTick.label);
-            ticks[0].marks.forEach((d, i) => d.parentElement.insertBefore(newTick.marks[i], d));
-            ticks.push(newTick);
-        }
-
-        const length = ticks.length;
-        for (; counter < length; ++counter) {
-            const pos = ticks.length - 1;
-            if (ticks[pos].label) ticks[pos].label.remove();
-            ticks[pos].marks.forEach(d => d.remove());
-            ticks.pop();
-        }
-    }
-
-    axis.applyTransform = function(_) {
-        return arguments.length ? (scale_transform = _, axis) : axis;
-    };
-
-    axis.scale = function(_) {
-        return arguments.length ? (scale = _, axis) : scale;
-    };
-
-    axis.ticks = function() {
-        return tickArguments = Array.from(arguments), axis;
-    };
-
-    axis.tickArguments = function(_) {
-        return arguments.length ? (tickArguments = _ == null ? [] : Array.from(_), axis) : tickArguments.slice();
-    };
-
-    axis.tickValues = function(_) {
-        return arguments.length ? (tickValues = _ == null ? null : Array.from(_), axis) : tickValues && tickValues.slice();
-    };
-
-    axis.tickFormat = function(_) {
-        return arguments.length ? (tickFormat = _, axis) : tickFormat;
-    };
-
-    axis.tickSize = function(_) {
-        return arguments.length ? (tickSizeInner = tickSizeOuter = +_, axis) : tickSizeInner;
-    };
-
-    axis.tickSizeInner = function(_) {
-        return arguments.length ? (tickSizeInner = +_, axis) : tickSizeInner;
-    };
-
-    axis.tickSizeOuter = function(_) {
-        return arguments.length ? (tickSizeOuter = +_, axis) : tickSizeOuter;
-    };
-
-    axis.tickPadding = function(_) {
-        return arguments.length ? (tickPadding = +_, axis) : tickPadding;
-    };
-
-    axis.offset = function(_) {
-        return arguments.length ? (offset = +_, axis) : offset;
-    };
-
-    return axis;
-}
-
-function axisBottom(scale, SVG) {
-    return axis(bottom, scale, SVG);
-}
-
-function axisLeft(scale, SVG) {
-    return axis(left, scale, SVG);
-}
-
-function invertBand(scale, value) {
-    const step = scale.step();
-    const start = scale(scale.domain()[0]) + scale.paddingOuter() * step;
-    const bandwidth = scale.bandwidth();
-
-    let index = Math.round(Math.abs((value - start - bandwidth / 2)) / step);
-    index = max([0, min([scale.domain().length - 1, index])]);
-    return scale.domain()[scale.domain().length - 1 - index];
-}
-
-function invertOrdinal(scale, value) {
-    return scale.domain()[scale.range().indexOf(value)];
-}
-
-function bindLegendData(legend) {
-    const { scale, title, type, matchingAttr } = legend;
-    for (const { mark } of legend.marks) {
-        const style = type === CategoricalColorLegend
-            ? window.getComputedStyle(mark)[matchingAttr]
-            : mark._getBBox().width ** 2;
-
-        const data = invertOrdinal(scale, style);
-        mark[DataAttr] = { [title ? title.innerHTML.toLowerCase() : 'legend-0']: data };
-    }
-}
-
-function parseLegends(state, legends) {
-    let scale;
-    function inferScale(legend) {
-        if (legend.type === CategoricalColorLegend) { // Ordinal legends
-            const domain = legend.marks.map(d => d.label.innerHTML);
-            const range = legend.marks.map(d => window.getComputedStyle(d.mark)[legend.matchingAttr]);
-            scale = ordinal().domain(domain).range(range);
-        } else { // Size legend
-            const domain = legend.marks.map(d => +d.label.innerHTML);
-            const range = legend.marks.map(d => d.mark._getBBox().width ** 2);
-            scale = linear().domain(domain).range(range);
-        }
-
-        legend.scale = scale;
-    }
-
-    function formatLegend(legend) {
-        const group = Array.from(legend.group[0][0]);
-        return {
-            title: null,
-            marks: group.map(([text, mark]) => {
-                return { label: text, mark };
-            })
-        };
-    }
-
-    for (let legend of legends) {
-        legend = formatLegend(legend);
-        const mark1Style = window.getComputedStyle(legend.marks[0].mark);
-        const mark2Style = window.getComputedStyle(legend.marks[1].mark);
-        let matchingAttr = null;
-
-        if (mark1Style.stroke !== mark2Style.stroke) {
-            matchingAttr = StrokeAttr;
-        } else if (mark1Style.color !== mark2Style.color) {
-            matchingAttr = ColorAttr;
-        } else if (mark1Style.fill !== mark2Style.fill) {
-            matchingAttr = FillAttr;
-        }
-
-        if (matchingAttr) {
-            legend.type = CategoricalColorLegend;
-            legend.matchingAttr = matchingAttr;
-        } else {
-            const widths = []; const heights = [];
-            for (let i = 1; i < legend.marks.length; ++i) {
-                const bbox1 = legend.marks[i - 1].mark._getBBox();
-                const bbox2 = legend.marks[i].mark._getBBox();
-                widths.push(Math.abs(bbox1.width - bbox2.width));
-                heights.push(Math.abs(bbox1.height - bbox2.height));
-            }
-
-            if (mean(widths) > 2 || mean(heights) > 2) {
-                legend.type = SizeLegend;
-            } else {
-                legends.splice(legends.indexOf(legend), 1);
-                return;
-            }
-        }
-
-        for (const { label, mark } of legend.marks) {
-            label[RoleProperty] = mark[RoleProperty] = LegendRole;
-            mark.style['pointer-events'] = 'fill';
-            mark.legend = legend;
-            mark[OpacityField] = mark.hasAttribute('opacity')
-                ? +mark.getAttribute('opacity')
-                : window.getComputedStyle(mark).opacity || SelectOpacity;
-        }
-
-        inferScale(legend);
-        sortByViewPos('label', legend.marks, legend.type === SizeLegend);
-        state.legends.push(legend);
-    }
-}
-
-function parseTransform(element, transforms = new Transform()) {
-    if (!element.transform) return;
-    const transformList = element.transform.baseVal;
-
-    for (let i = 0; i < transformList.numberOfItems; ++i) {
-        const transform = transformList.getItem(i);
-        const matrix = transform.matrix;
-
-        transforms.translate.x += matrix.e;
-        transforms.translate.y += matrix.f;
-        transforms.scale.x *= matrix.a;
-        transforms.scale.y *= matrix.d;
-        transforms.rotate += transform.angle;
-    }
-
-    return transforms;
-}
-
-function inferMarkAttributes(state) {
-    // function getData() {
-
-    // }
-
-    state.svgMarks = state.svgMarks.filter(d => d.type !== Line);
-    // console.log(state.xAxis.scale.domain(), state.yAxis.scale.domain())
-    for (let i = 0; i < state.svgMarks.length; ++i) {
-        const mark = state.svgMarks[i]; const svgRect = state.svg._getBBox();
-        const markRect = mark._getBBox();
-
-        if (mark.type === Line) continue;
-        if (mark.type === Polyline) {
-            const points = mark.getAttribute('points').split(' ').map(d => d.split(',').map(e => Number(e)));
-            mark[DataAttr] = [];
-
-            for (const point of points) {
-                let [x, y] = point;
-                x = x - svgRect.left;
-                y = y - svgRect.top;
-
-                const iterable = { };
-                iterable[state.xAxis.title ? state.xAxis.title.innerHTML.toLowerCase() : 'x'] = state.xAxis.scale.invert(x);
-                iterable[state.yAxis.title ? state.yAxis.title.innerHTML.toLowerCase() : 'y'] = state.yAxis.scale.invert(y);
-
-                for (let j = 0; j < state.legends.length; ++j) {
-                    const legend = state.legends[j];
-                    const val = legend.type === CategoricalColorLegend
-                        ? legend.scale.domain()[legend.scale.range().indexOf(window.getComputedStyle(mark)[legend.matchingAttr])]
-                        : legend.scale.invert(markRect.width ** 2);
-
-                    iterable[legend.title ? legend.title.innerHTML.toLowerCase() : 'legend-' + j] = val;
-                }
-
-                mark[DataAttr].push(iterable);
-            }
-
-            continue;
-        }
-        const markX = state.xAxis.ordinal.length
-            ? i
-            : state.yAxis.ordinal.length || mark.type === Rect
-                ? markRect.right - svgRect.left
-                : markRect.centerX - svgRect.left;
-        const markY = state.yAxis.ordinal.length
-            ? i
-            : state.xAxis.ordinal.length
-                ? markRect.top - svgRect.top
-                : markRect.centerY - svgRect.top;
-
-        // console.log(state.xAxis.scale.domain()[markX])
-        const iterable = { };
-        // console.log(markX, markY)
-        // console.log(state.xAxis.scale.invert(markX), state.yAxis.scale.invert(markY))
-        iterable[state.xAxis.title ? state.xAxis.title.innerHTML.toLowerCase() : 'x'] = state.xAxis.ordinal.length ? invertBand(state.xAxis.scale, markRect.centerX - svgRect.left) : state.xAxis.scale.invert(markX);
-        iterable[state.yAxis.title ? state.yAxis.title.innerHTML.toLowerCase() : 'y'] = state.yAxis.ordinal.length
-            ? invertBand(state.yAxis.scale, markRect.centerY - svgRect.top)
-            : mark.type === 'rect'
-                ? String(Math.round(state.yAxis.scale.invert(markY)))
-                : state.yAxis.scale.invert(markY);
-        // if (!state.yAxis.ordinal.length && state.yAxis.scale.invert(markY) <= 1 && state.yAxis.scale.invert(markY) >= 0) {
-        //     console.log(mark, mark.getBBox(), mark.getBoundingClientRect(), markY)
-        // }
-        for (let j = 0; j < state.legends.length; ++j) {
-            const legend = state.legends[j];
-            const val = legend.type === CategoricalColorLegend
-                ? legend.scale.domain()[legend.scale.range().indexOf(window.getComputedStyle(mark)[legend.matchingAttr])]
-                : legend.scale.invert(markRect.width ** 2);
-
-            iterable[legend.title ? legend.title.innerHTML.toLowerCase() : 'legend-' + j] = val;
-        }
-
-        mark.style['pointer-events'] = 'fill';
-        mark[DataAttr] = iterable;
-        mark[OpacityField] = mark.hasAttribute('opacity')
-            ? +mark.getAttribute('opacity')
-            : window.getComputedStyle(mark).opacity || SelectOpacity;
-    }
-}
-
-function getDate(d) {
-    // function levelLookup(value) {
-    //     value = value.toLowerCase();
-
-    //     if (value.includes('%y')) {
-    //         return '%Y %m %d %H:%M:%S';
-    //     }
-
-    //     if (value.includes('%m') || value.includes('%b')) {
-    //         return '%m %d %H:%M:%S';
-    //     }
-
-    //     if (value.includes('%a') || value.includes('%d')) {
-    //         return '%d %H:%M:%S';
-    //     }
-
-    //     if (value.includes('%h')) {
-    //         return '%H:%M:%S';
-    //     }
-    // }
-
-    // function toFormattedDate(date, specifier) {
-    //     return timeParse(specifier)(timeFormat(specifier)(date));
-    // }
-
-    function checkSubsets(subsets) {
-        function checkSubset(formats, priorFormat) {
-            if (!formats || !formats.length) return null;
-
-            for (const format of formats[0]) {
-                const f = priorFormat.length ? priorFormat + ' ' + format : format;
-                const parsedVal = timeParse(f)(d);
-
-                if (f !== '%m' && f !== '%d' && parsedVal) { // Skip conflicts with ints
-                    console.log(f, d, parsedVal);
-                    return { format: timeFormat(f), value: parsedVal };
-                }
-
-                const others = checkSubset(formats.slice(1), f);
-                if (others) return others;
-            }
-
-            return null;
-        }
-
-        for (const subset of subsets) {
-            const format = checkSubset(subset, '');
-            if (format) return format;
-        }
-    }
-
-    const dayFormats = ['%d'];
-    const weekFormats = ['%a', '%A'];
-    const monthFormats = ['%b', '%B', '%m'];
-    const yearFormats = ['%Y', '\'%y'];
-    const subsets = [
-        [yearFormats, monthFormats, dayFormats],
-        [monthFormats, dayFormats, yearFormats],
-        [monthFormats, yearFormats],
-        [dayFormats, monthFormats, yearFormats],
-        [weekFormats, monthFormats, dayFormats, yearFormats],
-        [weekFormats, dayFormats, monthFormats, yearFormats]
-    ];
-
-    const fullFormats = ['%Y-%m-%d', '%Y %m %d %H:%M:%S', '%Y-%m-%d% %H:%M:%S', '%Y %m %d %H:%M', '%Y-%m-%d% %H:%M',
-        '%H:%M:%S', '%H:%M'];
-
-    for (const format of fullFormats) {
-        const parsedVal = timeParse(format)(d);
-        if (parsedVal) return { format: timeFormat(format), value: parsedVal };
-    }
-
-    return checkSubsets(subsets);
-}
-
-// function getIntType() {
-//     const transformations = {
-//         Y: 1e24,
-//         Z: 1e21,
-//         E: 1e18,
-//         P: 1e15,
-//         T: 1e12,
-//         G: 1e9,
-//         M: 1e6,
-//         k: 1e3,
-//         h: 1e2,
-//         da: 1e1,
-//         d: 1e-1,
-//         c: 1e-2,
-//         m: 1e-3,
-//         μ: 1e-6,
-//         n: 1e-9,
-//         p: 1e-12,
-//         f: 1e-15,
-//         a: 1e-18,
-//         z: 1e-21,
-//         y: 1e-24,
-//         '%': 1e-2
-//     };
-
-//     const regexVals = {
-//         $: /£|\$/g,
-//         '+': /\+/g,
-//         ',': /,/g,
-//         '.': /./g
-//     };
-//     const formats = ['.0%', '.2%'];
-//     const currencies = /£|\$/g;
-// }
-
-function getFormatVal(element, isDate) {
-    if (!element) return null;
-
-    const elData = element.innerHTML.replace(/–/g, '-').replace(/−/g, '-') // Replace with hyphen for parsing
-        .replace(/,/g, ''); // Replace commas
-    // if (format) return format(element.innerHTML);
-
-    const int = parseFloat(elData);
-    const date = getDate(elData);
-
-    return isNaN(int) || (elData.includes('-') && elData.charAt(0) !== '-') || elData.includes('/')
-        ? (date && isDate
-            ? date
-            : elData)
-        : int;
-}
-
-// import { selectAll } from 'd3-selection';
-
-const epsilon = 3;
-let viewEpsilon = 25;
-
-function parseChart(state) {
-    let [candidateTextGroups, candidateTickGroups, candidateLegendGroups] = collectCandidateGroups(state.textMarks, state.svgMarks);
-    let axes = pruneGroups(candidateTextGroups, candidateTickGroups);
-    axes = axes.sort((a, b) => {
-        const t1 = a.text[0]._getBBox()[CenterX];
-        const t2 = b.text[0]._getBBox()[CenterY];
-        return t1 - t2;
-    });
-
-    if (axes.length >= 2) {
-        axes = [axes[0], axes[1]];
-        groupAxes(axes);
-        candidateTextGroups = candidateTextGroups.filter(d => !axes.map(a => a.text).includes(d.marks));
-    }
-    // console.log(candidateLegendGroups)
-    const legends = pruneGroups(candidateTextGroups, candidateLegendGroups, false).filter(d => d.dist < viewEpsilon * 5);
-    if (legends.length) {
-        parseLegends(state, legends);
-        candidateTextGroups = candidateTextGroups.filter(d => !legends.map(l => l.text).includes(d.marks));
-    }
-    assignTitles(candidateTextGroups.map(d => d.marks).flat());
-    state.legends.forEach(d => bindLegendData(d));
-
-    function assignTitles(titles) {
-        const titleAssignment = new Map();
-
-        function calculatePos(el) {
-            const elBBox = el._getBBox();
-            return [elBBox.centerX, elBBox.centerY];
-        }
-
-        function getClosestTitle(x, y) {
-            let closestTitle = { title: null, dist: Number.MAX_SAFE_INTEGER };
-            for (const title of titles) {
-                const [titleX, titleY] = calculatePos(title);
-                const posDiff = Math.abs(titleX - x) + Math.abs(titleY - y);
-
-                if (posDiff < closestTitle.dist) {
-                    closestTitle = { title, dist: posDiff };
-                }
-            }
-
-            return closestTitle;
-        }
-
-        const groups = [state.xAxis, state.yAxis, ...state.legends];
-        for (const group of groups) {
-            const _g = 'ticks' in group ? group.ticks : group.marks;
-            const pos = _g.filter(d => d.label).map(mark => calculatePos(mark.label));
-            const x = mean(pos.map(d => d[0])); const y = mean(pos.map(d => d[1]));
-
-            const titleGroup = getClosestTitle(x, y);
-            const { title, dist } = titleGroup;
-            if (!title) continue;
-
-            if (!titleAssignment.has(title) || dist < titleAssignment.get(title).dist) {
-                group.title = title;
-                title[RoleProperty] = TitleRole;
-                titleAssignment.set(title, titleGroup);
-            }
-        }
-        
-        state.title = titles.filter(d => !d[RoleProperty])[0];
-    }
-
-    function groupAxes(axes) {
-        const axisMap = new Map();
-        const orphanTicks = [];
-
-        function addTicks(text, alignment, ticks) {
-            if (alignment === Top || alignment === Bottom) {
-                state.xAxis.ticks.push({ label: text, marks: ticks });
-            } else {
-                state.yAxis.ticks.push({ label: text, marks: ticks });
-            }
-            ticks.forEach(tick => { text ? tick[RoleProperty] = Tick : tick[RoleProperty] = OrphanTickRole; });
-        }
-
-        for (const { alignment, group } of axes) {
-            for (const g of group) {
-                const [axis, allTicks] = g;
-                const seen = new Map();
-
-                for (const [text, tick] of axis) {
-                    seen.set(tick, true);
-                    axisMap.has(text)
-                        ? axisMap.get(text).ticks.push(tick)
-                        : axisMap.set(text, { alignment, ticks: [tick] });
-                }
-
-                allTicks.filter(d => !seen.has(d)).forEach(d => {
-                    orphanTicks.push({ alignment, tick: d });
-                });
-            }
-        }
-
-        for (const [text, { alignment, ticks }] of axisMap) {
-            addTicks(text, alignment, ticks);
-        }
-
-        for (const { alignment, tick } of orphanTicks) {
-            addTicks(null, alignment, [tick]);
-        }
-
-        [state.xAxis, state.yAxis].forEach(axis => sortByViewPos('label', axis.ticks));
-    }
-
-    function mergeArray(array) { // Assumes [key, mark] structure
-        array.sort((a, b) => a[0] - b[0]);
-        const groups = [[array[0][0], [array[0][1]]]];
-
-        for (let i = 1; i < array.length; ++i) {
-            const index = groups[groups.length - 1][0];
-
-            if (Math.abs(index - array[i][0]) < epsilon) {
-                groups[groups.length - 1][1].push(array[i][1]);
-            } else {
-                groups.push([array[i][0], [array[i][1]]]);
-            }
-        }
-
-        return groups.map(d => d[1]);
-    }
-
-    function pruneGroups(candidateTextGroups, candidateMarkGroups, append = true) {
-        // const t = selectAll('#test').nodes();
-        // console.log(t)
-        // for (const g of candidateMarkGroups) {
-        //     for (const _t of t) {
-        //         if (g.marks.includes(_t)) {
-        //             console.log(g)
-        //         }
-        //     }
-        // }
-        function _sort(alignment, group) {
-            group.sort((a, b) => {
-                const aBox = a._getBBox(); const bBox = b._getBBox();
-                return hs.includes(alignment) ? aBox[CenterX] - bBox[CenterX] : aBox[CenterY] - bBox[CenterY];
-            });
-        }
-
-        function getGroupDistance(groupA, groupB, alignment) {
-            const distsA = [0, 0, 0]; const distsB = [0, 0, 0];
-
-            function addVal(obj, mark, length) {
-                const bbox = mark._getBBox();
-                const keys = vs.includes(alignment) ? vs : hs;
-                for (let i = 0; i < keys.length; ++i) {
-                    obj[i] = obj[i] + (bbox[keys[i]] / length);
-                }
-            }
-
-            groupA.forEach(d => addVal(distsA, d, groupA.length));
-            groupB.forEach(d => addVal(distsB, d, groupB.length));
-
-            return min([
-                min(distsA) - min(distsB),
-                min(distsA) - max(distsB),
-                max(distsA) - min(distsB),
-                max(distsA) - max(distsB)
-            ].map(d => Math.abs(d)));
-        }
-
-        function matchGroup(alignment, textGroup, tickGroup) {
-            let i = 0; let distance = 0; const textMap = new Map();
-
-            for (const text of textGroup) {
-                const textBB = text._getBBox();
-                let prevDist = Number.MAX_SAFE_INTEGER;
-
-                if (i === tickGroup.length) return [Number.MAX_SAFE_INTEGER, null];
-
-                while (i <= tickGroup.length) {
-                    const tickBB = tickGroup[min([i, tickGroup.length - 1])]._getBBox();
-                    const key = hs.includes(alignment) ? CenterX : CenterY;
-                    const dist = Math.abs(tickBB[key] - textBB[key]);
-
-                    if (dist >= prevDist) {
-                        textMap.set(text, tickGroup[i - 1]);
-                        distance += prevDist;
-                        break;
-                    }
-
-                    prevDist = dist;
-                    ++i;
-                }
-            }
-
-            return [distance / textGroup.length, textMap];
-        }
-
-        const groups = []; const vs = [Left, Right, CenterX]; const hs = [Top, Bottom, CenterY];
-        for (const { alignment, marks: textGroup } of candidateTextGroups) {
-            if (textGroup.length === 1) {
-                continue;
-            }
-
-            let minGroup = { dist: Number.MAX_SAFE_INTEGER, group: null };
-            _sort(alignment, textGroup);
-
-            for (const { alignment: markAlignment, marks: markGroup } of candidateMarkGroups) {
-                if (markGroup.length < textGroup.length) continue;
-                if ((vs.includes(alignment) && !vs.includes(markAlignment)) ||
-                    (hs.includes(alignment) && !hs.includes(markAlignment))) continue;
-                if (getGroupDistance(textGroup, markGroup, alignment) > viewEpsilon) continue;
-
-                _sort(alignment, markGroup);
-                const [_dist, textMap] = matchGroup(alignment, textGroup, markGroup);
-                if (_dist === Number.MAX_SAFE_INTEGER) continue;
-
-                const withinEp = Math.abs(_dist - minGroup.dist) < epsilon;
-                if (append && withinEp) {
-                    minGroup.group.push([textMap, markGroup]);
-                } else if ((!append && withinEp && markGroup.length < minGroup.group[0][1].length) || _dist < minGroup.dist) {
-                    minGroup = { alignment, dist: _dist, group: [[textMap, markGroup]], text: textGroup };
-                }
-            }
-
-            if (minGroup.group) groups.push(minGroup);
-        }
-
-        groups.sort((a, b) => a.dist - b.dist);
-        return groups;
-    }
-
-    function collectCandidateGroups(textMarks, svgMarks) {
-        function getPositions(allMarks, useCenters = true) {
-            const positions = { [Left]: [], [Right]: [], [Top]: [], [Bottom]: [] };
-            if (useCenters) {
-                positions[CenterX] = [];
-                positions[CenterY] = [];
-            }
-
-            // Detect text groups
-            for (const mark of allMarks) {
-                const bbox = mark._getBBox();
-                for (const [position, array] of Object.entries(positions)) {
-                    const offset = bbox[position];
-                    array.push([offset, mark]);
-                }
-            }
-
-            return positions;
-        }
-
-        function mergePositions(positions, useStyle = false) {
-            const _positions = [];
-            if (useStyle) {
-                const keys = [CenterX, CenterY];
-                for (const key of keys) {
-                    const array = positions[key];
-                    const styles = { };
-                    array.forEach(([key, d]) => {
-                        const bbox = d._getBBox();
-                        const style = window.getComputedStyle(d);
-                        const styleKey = [bbox.width, bbox.height, style.fill, style.color, style.stroke].join(',');
-                        styleKey in styles ? styles[styleKey].push([key, d]) : styles[styleKey] = [[key, d]];
-                    });
-
-                    Object.values(styles).forEach(d => _positions.push([key, mergeArray(d)]));
-                }
-            } else {
-                for (const [key, array] of Object.entries(positions)) {
-                    _positions.push([key, mergeArray(array)]);
-                }
-            }
-
-            return _positions;
-        }
-
-        function assignGroups(allMarks, positions) {
-            // Assign each text element to its largest found group
-            const markAssignment = new Map();
-            const alignmentMap = new Map();
-            for (const [alignment, candidateGroups] of positions) {
-                for (const group of candidateGroups) {
-                    for (const mark of group) {
-                        const assignment = markAssignment.get(mark);
-
-                        if (!assignment || group.length > assignment.length) {
-                            markAssignment.set(mark, group);
-                            alignmentMap.set(group, alignment);
-                        }
-                    }
-                }
-            }
-
-            // Compute all candidate groups
-            const candidateGroups = [];
-            for (let i = 0; i < allMarks.length; ++i) {
-                const mark = allMarks[i];
-                const marks = markAssignment.get(mark);
-
-                if (!candidateGroups.includes(marks)) {
-                    candidateGroups.push(marks);
-                }
-            }
-
-            // Remove duplicates
-            for (let i = 0; i < candidateGroups.length; ++i) {
-                for (const mark of [...candidateGroups[i]]) {
-                    if (markAssignment.get(mark) !== candidateGroups[i]) {
-                        // Array.filter(...)
-                        candidateGroups[i].splice(candidateGroups[i].indexOf(mark), 1);
-                    }
-                }
-            }
-
-            return candidateGroups.map(d => {
-                return { alignment: alignmentMap.get(d), marks: d };
-            });
-        }
-
-        const textGroups = assignGroups(textMarks, mergePositions(getPositions(textMarks, false)));
-        const markPositions = getPositions(svgMarks);
-        const tickGroups = assignGroups(svgMarks, mergePositions(markPositions, true));
-        const legendGroups = mergePositions(markPositions).map(([k, v]) => v.map(d => { return { alignment: k, marks: d }; })).flat();
-
-        return [textGroups, tickGroups, legendGroups];
-    }
-}
-
-function cleanMarks(state) {
-    for (const mark of state.svgMarks) {
-        const clientRect = mark._getBBox();
-        if (clientRect.width >= state.xAxis.range[1] - state.xAxis.range[0] &&
-            clientRect.height >= state.yAxis.range[0] - state.yAxis.range[1]) {
-            mark[RoleProperty] = ViewportRole;
-            continue;
-        }
-        const svgR = state.svg._getBBox();
-        const [xLeft, xRight] = state.xAxis.range;
-        const [yBottom, yTop] = state.yAxis.range.map(d => d + svgR.top);
-        // if ((clientRect.left <= xLeft && clientRect.right >= xRight && clientRect.bottom <= yTop) ||
-        //     (clientRect.left <= xLeft && clientRect.right >= xRight && clientRect.top >= yBottom) )
-        if ((clientRect.top <= yTop && clientRect.bottom >= yBottom && clientRect.left <= xLeft) ||
-            (clientRect.top <= yTop && clientRect.bottom >= yBottom && clientRect.right >= xRight) ||
-            !(clientRect.right >= xLeft && clientRect.left <= xRight && clientRect.bottom >= yTop && clientRect.top <= yBottom)) {
-            mark[RoleProperty] = AxisDomainRole;
-        }
-        for (const legend of state.legends) {
-            for (const { mark } of legend.marks) {
-                mark[RoleProperty] = LegendRole;
-            }
-        }
-    }
-
-    state.svgMarks = state.svgMarks.filter(d => !d[RoleProperty]);
-    state.svgMarks.forEach(d => { d[RoleProperty] = MarkRole; });
-    sortByViewPos(null, state.svgMarks, false);
-}
-
-function computeDomain(axis) {
-    let isDate = true;
-    for (const [, value] of Object.entries(axis.ticks)) {
-        if (value.label == null) continue;
-        if (Object.prototype.toString.call(getFormatVal(value.label, true).value) !== '[object Date]') {
-            isDate = false;
-            break;
-        }
-    }
-
-    for (const [, value] of Object.entries(axis.ticks)) {
-        if (!value.label) continue;
-
-        let formatVal = getFormatVal(value.label, isDate);
-        if (formatVal.value) {
-            axis.formatter = { format: formatVal.format };
-            formatVal = formatVal.value;
-        }
-        value.value = formatVal;
-
-        if (typeof formatVal === 'string') {
-            axis.ordinal.push(formatVal);
-        } else {
-            axis.domain[0] = axis.domain[0] === null ? formatVal : min([axis.domain[0], formatVal]);
-            axis.domain[1] = axis.domain[1] === null ? formatVal : max([axis.domain[1], formatVal]);
-        }
-    }
-}
-
-function configureAxes(state) {
-    const svgClientRect = state.svg._getBBox();
-
-    if (state.xAxis.scale && !state.xAxis.ordinal.length) {
-        // Infer original X-axis domains
-
-        const tickLeft = computeCenterPos(
-            state.xAxis.ticks.filter(d => d.value === state.xAxis.domain[0])[0].marks[0], Left
-        );
-        const tickRight = computeCenterPos(
-            state.xAxis.ticks.filter(d => d.value === state.xAxis.domain[1])[0].marks[0], Left
-        );
-
-        const ticks = [tickLeft, tickRight].map(d => d - svgClientRect.left);
-        const newDomainX = state.xAxis.range.map(
-            state.xAxis.scale.copy().range(ticks).invert, state.xAxis.scale
-        );
-
-        state.xAxis.scale.domain(newDomainX);
-    }
-
-    if (state.yAxis.scale && !state.yAxis.ordinal.length) {
-        // Infer original Y-axis domain
-        const tickTop = computeCenterPos(
-            state.yAxis.ticks.filter(d => d.value === state.yAxis.domain[0])[0].marks[0], Top
-        );
-        const tickBottom = computeCenterPos(
-            state.yAxis.ticks.filter(d => d.value === state.yAxis.domain[1])[0].marks[0], Top
-        );
-
-        const ticks = [tickTop, tickBottom].map(d => d - svgClientRect.top);
-        const newDomainY = state.yAxis.range.map(
-            state.yAxis.scale.copy().range(ticks).invert, state.yAxis.scale
-        );
-
-        state.yAxis.scale.domain(newDomainY);
-    }
-}
-
-function deconstructChart(state) {
-    viewEpsilon = 1e-1 * max([state.svg._getBBox().width, state.svg._getBBox().height]);
-    parseChart(state);
-    computeDomain(state.xAxis);
-    computeDomain(state.yAxis);
-
-    let width = +convertPtToPx(state.svg.getAttribute('width'));
-    let height = +convertPtToPx(state.svg.getAttribute('height'));
-    if (!width) width = state.svg._getBBox().width;
-    if (!height) height = state.svg._getBBox().height;
-    const svgBBox = state.svg._getBBox();
-
-    if (!state.xAxis.ticks.length && !state.yAxis.ticks.length) {
-        state.xAxis.range = [0, width];
-        state.yAxis.range = [height, 0];
-        cleanMarks(state);
-        return;
-    }
-
-    /* TODO: More robust axis ranges */
-    const yTick = state.yAxis.ticks[0].marks[0];
-    const yTickBB = yTick._getBBox();
-    const xTick = state.xAxis.ticks[0].marks[0];
-    const xTickBB = xTick._getBBox();
-
-    const yTickRange = [yTickBB.left, yTickBB.left + yTickBB.width];
-    const xTickRange = [xTickBB.top + xTickBB.height, xTickBB.top];
-
-    const xMin = max([(yTickBB.width < 10 ? yTickRange[1] : yTickRange[0]) - svgBBox.left, 0]);
-    const xMax = max([min([yTickRange[1] - svgBBox.left, width]), state.xAxis.ticks[state.xAxis.ticks.length - 1].marks[0]._getBBox().right - svgBBox.left]);
-    const yMin = max([(xTickBB.height < 10 ? state.yAxis.ticks[state.yAxis.ticks.length - 1].marks[0]._getBBox().top : xTickRange[1]) - svgBBox.top, 0]);
-    const yMax = min([xTickRange[0] - svgBBox.top, height]);
-
-    state.xAxis.range = [xMin, xMax];
-    state.yAxis.range = [yMax, yMin];
-
-    state.xAxis.scale = (state.xAxis.domain[0] instanceof Date ? time() : (state.xAxis.ordinal.length ? band() : linear()))
-        .domain(state.xAxis.ordinal.length ? state.xAxis.ordinal : state.xAxis.domain)
-        .range(state.xAxis.range);
-    state.xAxis.axis = axisBottom(state.xAxis.scale, state)
-        .ticks(state.xAxis.ticks.length);
-    if (state.xAxis.domain[0] instanceof Date) state.xAxis.axis = state.xAxis.axis.tickFormat(state.xAxis.formatter.format);
-
-    state.yAxis.scale = (state.yAxis.domain[0] instanceof Date ? time() : (state.yAxis.ordinal.length ? band() : linear()))
-        .domain(state.yAxis.ordinal.length ? state.yAxis.ordinal : state.yAxis.domain)
-        .range(state.yAxis.range);
-    state.yAxis.axis = axisLeft(state.yAxis.scale, state)
-        .ticks(state.yAxis.ticks.length);
-    // .tickFormat(d => {
-    // let s = state.y_axis.ticks[0]['label'].innerHTML;
-    //     return s.includes("M") || s.includes("k") ? d3.format(".2s")(d) : d3.format(",")(d);
-    // });
-
-    configureAxes(state);
-    cleanMarks(state);
-
-    // TO-DO: Domain path 0.5 difference.
-    // if (state.hasDomain) {
-    //     let axes = [].slice.call(state.svg.querySelectorAll(".domain")).map((d) => { return d.getBoundingClientRect() });
-    //     let y_axis = axes[0].width < axes[1].width ? axes[0] : axes[1];
-    //     let x_axis = axes[0].height < axes[1].height ? axes[0] : axes[1];
-
-    //     var x_min = x_axis.left - state.svg.getBoundingClientRect().left;
-    //     var x_max = x_axis.right - state.svg.getBoundingClientRect().left;
-
-    //     var y_max = y_axis.bottom - state.svg.getBoundingClientRect().top;
-    //     var y_min = y_axis.top - state.svg.getBoundingClientRect().top;
-    // } else {
-
-    // if (yTick.clientRect.right < xTick.clientRect.left) {
-    //     var x_min = y_tick.right - state.svg.getBoundingClientRect().left;
-    //     var x_max = width;
-    // } else {
-    //     var x_min = y_tick.left - state.svg.getBoundingClientRect().left;
-    //     var x_max = d3.min([y_tick.width + x_min, width]);
-    // }
-
-    // if (x_tick.top > y_tick.bottom) {
-    //     var y_max = x_tick.top - state.svg.getBoundingClientRect().top;
-    //     var y_min = 0;
-    // } else {
-    //     var y_max = x_tick.bottom - state.svg.getBoundingClientRect().top;
-    //     var y_min = d3.max([y_max - x_tick.height, 0]);
-    // }
-    // }
-
-    // state.xAxis.scale = (state.xAxis.domain[0] instanceof Date ? d3.scaleTime() : (state.xAxis.ordinal.length ? d3.scaleBand() : d3.scaleLinear()))
-    // .domain(state.xAxis.ordinal.length ? state.xAxis.ordinal : state.xAxis.domain)
-    // .range(state.xAxis.range)
-    // state.x_axis.scale = (state.x_axis.domain[0] instanceof Date ? d3.scaleTime() : d3.scaleLinear())
-    //     .domain(state.x_axis.ordinal.length ? state.x_axis.range : state.x_axis.domain)
-    //     .range(state.x_axis.range);
-    // state.xAxis.axis = axisBottom(state.x_axis.scale, SVG).ticks(state.x_axis.ticks.length);
-    // state.x_axis.axis(state.x_axis.ticks);
-    // .tickSize(state.x_axis.ticks[1].children[0].getAttribute("y2"))
-    // .ticks(typeof x_axis.ticks[0].__data__ === "string" ? state.x_axis.ordinal.length : state.x_axis.ticks.length);
-
-    // configureAxes();
-
-    // let diff_1_y = +state.y_axis.ticks[1]['label'].innerHTML - +state.y_axis.ticks[0]['label'].innerHTML;
-    // let diff_2_y = +state.y_axis.ticks[2]['label'].innerHTML - +state.y_axis.ticks[1]['label'].innerHTML;
-
-    // let diff_1_x = +state.x_axis.ticks[1]['label'].innerHTML - +state.x_axis.ticks[0]['label'].innerHTML;
-    // if (state.x_axis.ticks.length < 3) {
-    //     var diff_2_x = 0;
-    // } else {
-    //     var diff_2_x = +state.x_axis.ticks[2]['label'].innerHTML - +state.x_axis.ticks[1]['label'].innerHTML;
-    // }
-
-    // let diff_tick_a = state.x_axis.ticks[1]['ticks'][0].getBoundingClientRect().left -
-    //     state.x_axis.ticks[0]['ticks'][0].getBoundingClientRect().left;
-
-    // if (state.x_axis.ticks.length < 3) {
-    //     var diff_tick_b = 0;
-    // } else {
-    //     var diff_tick_b = state.x_axis.ticks[2]['ticks'][0].getBoundingClientRect().left -
-    //         state.x_axis.ticks[1]['ticks'][0].getBoundingClientRect().left;
-    // }
-
-    // if (Math.abs(diff_1_x - diff_2_x) > 5e-1 || Math.abs(diff_tick_a - diff_tick_b) > 5e-1) {
-    //     // let tick_diff_1 = state.x_axis.ticks['ticks'][1].getBoundingClientRect().left -
-    //     //     state.x_axis.ticks['ticks'][0].getBoundingClientRect().left;
-    //     // let tick_diff_2 = state.x_axis.ticks['ticks'][2].getBoundingClientRect().left -
-    //     //     state.x_axis.ticks['ticks'][1].getBoundingClientRect().left;
-
-    //     if (Math.abs(diff_tick_a - diff_tick_b) < 5e-1) {
-    //         let format = state.x_axis.ticks['ticks'][0].childNodes[1].innerHTML;
-    //         if (format != state.x_axis.ticks[0].__data__ && typeof format === "string") {
-    //             var exponent = format.match(/^(e|\d+)\^(e|\d+)$/);
-    //             var superscript = format.match(/^(e|d+)([\u2070-\u209F\u00B2\u00B3\u00B9])$/);
-    //             if (exponent) {
-    //                 var base = exponent[1];
-    //                 base = (base === 'e' ? Math.E : parseInt(base));
-    //             } else if (superscript) {
-    //                 var base = superscript[1];
-    //                 base = (base === 'e' ? Math.E : parseInt(base));
-    //             }
-    //         }
-    //     }
-
-    //     function format(d) {
-    //         function digitToSuperscript(superChar) {
-    //             let table = "⁰¹²³⁴⁵⁶⁷⁸⁹";
-    //             return table[superChar];
-    //         }
-
-    //         let exp = Math.log(d) / Math.log(base);
-    //         return superscript ? 'e' + String(exp).replace(/\d/g, digitToSuperscript) : d + '^' + exp;
-    //     }
-
-    //     state.x_axis.scale = d3.scaleLog()
-    //         .domain(state.x_axis.domain)
-    //         .range(state.x_axis.range);
-    //     state.x_axis.axis = axisBottom(state.x_axis.scale, SVG)
-    //         // .tickSize(state.x_axis.ticks[1].children[0].getAttribute("y2"))
-    //         .ticks(state.x_axis.ticks.filter(d => d['label'].innerHTML).length)
-    //     if (base) {
-    //         state.x_axis.scale = state.x_axis.scale.base(base);
-    //         state.x_axis.axis = state.x_axis.axis.tickFormat(d => exponent || superscript ? format(d) : d);
-    //     }
-    // } else {
-    //     state.x_axis.scale = (state.x_axis.domain[0] instanceof Date ? d3.scaleTime() : (state.x_axis.ordinal.length ? d3.scaleBand() : d3.scaleLinear()))
-    //         .domain(state.x_axis.ordinal.length ? state.x_axis.ordinal : state.x_axis.domain)
-    //         .range(state.x_axis.range)
-    //     // state.x_axis.scale = (state.x_axis.domain[0] instanceof Date ? d3.scaleTime() : d3.scaleLinear())
-    //     //     .domain(state.x_axis.ordinal.length ? state.x_axis.range : state.x_axis.domain)
-    //     //     .range(state.x_axis.range);
-    //     state.x_axis.axis = axisBottom(state.x_axis.scale, SVG)
-    //         .ticks(state.x_axis.ticks.length);
-    //     // state.x_axis.axis(state.x_axis.ticks);
-    //         // .tickSize(state.x_axis.ticks[1].children[0].getAttribute("y2"))
-    //         // .ticks(typeof x_axis.ticks[0].__data__ === "string" ? state.x_axis.ordinal.length : state.x_axis.ticks.length);
-    // }
-
-    // if (Math.abs(diff_1_y - diff_2_y) > 5e-1) {
-    //     state.y_axis.scale = d3.scaleLog()
-    //         .domain(state.y_axis.domain)
-    //         .range(state.y_axis.range);
-    //     state.y_axis.axis = d3.axisLeft(state.y_axis.scale)
-    //         .tickSize(-state.y_axis.ticks[1].children[0].getAttribute("x2"))
-    //         .ticks(state.y_axis.ticks.length);
-    // } else {
-    //     state.y_axis.scale = (state.y_axis.domain[0] instanceof Date ? d3.scaleTime() : (state.y_axis.ordinal.length ? d3.scaleBand() : d3.scaleLinear()))
-    //         .domain(state.y_axis.ordinal.length ? state.y_axis.ordinal : state.y_axis.domain)
-    //         .range(state.y_axis.range);
-    //     state.y_axis.axis = axisLeft(state.y_axis.scale, SVG)
-    //         .ticks(state.y_axis.ticks.length)
-    //         .tickFormat(d => {
-    //             let s = state.y_axis.ticks[0]['label'].innerHTML;
-    //             return s.includes("M") || s.includes("k") ? d3.format(".2s")(d) : d3.format(",")(d);
-    //         });
-    //     // state.y_axis.axis(state.y_axis.ticks);
-    //         // .tickSize(-state.y_axis.ticks[1].children[0].getAttribute("x2"))
-    //         // .ticks(typeof state.y_axis.ticks[0].__data__ === "string" ? state.y_axis.ordinal.length : state.y_axis.ticks.length);
-    // }
-}
-
-class DataState {
-    constructor(table) {
-        this.table = table;
-        this.active = {
-            table,
-            selected: table,
-            filtered: null,
-            type: LINK_TYPES.NONE
-        };
-        this.children = [];
-        this.parents = [];
-    }
-}
-
-async function parseDataset(options) {
-    if (!options || !Object.keys(options).length) return { };
-    const { url } = options;
-    const type = url.split('.').pop();
-    const _table = await (type === 'json' ? loadJSON(url) : loadCSV(url));
-
-    return new DataState(_table.assign(table({ [tableIndexField]: range(_table.numRows()) })));
-}
-
-function parseDataFromMarks(marks) {
-    const dataset = { };
-    let dataList = marks.map(d => d[DataAttr]);
-    dataList = dataList.flat();
-    const keys = Object.keys(dataList[0]);
-
-    marks.forEach((d, i) => { d[tableIndexField] = i; });
-    keys.forEach(k => { dataset[k.toLowerCase()] = map$1(dataList, d => d[k.toLowerCase()]); });
-    dataset[tableMarkField] = marks;
-    dataset[tableIndexField] = range(marks.length);
-
-    return new DataState(table(dataset));
-}
-
-// import { DataState } from './data-state';
-
-class ViewState {
-    constructor() {
-        this.hasDomain = false;
-        this.svg = null;
-        this.svgMarks = [];
-        this.textMarks = [];
-        this.data = null;
-
-        this.xAxis = {
-            domain: [null, null],
-            ordinal: [],
-            range: [null, null],
-            ticks: [],
-            scale: null,
-            axis: null,
-            title: null
-        };
-        this.yAxis = {
-            domain: [null, null],
-            ordinal: [],
-            range: [null, null],
-            ticks: [],
-            scale: null,
-            axis: null,
-            title: null
-        };
-
-        this.legends = [];
-        this.title = null;
-
-        this.interactions = {
-            selection: true,
-            brush: true,
-            navigate: false,
-            filter: false,
-            sort: false,
-            annotate: false
-        };
-    }
-}
-
 /*
  * Generated by PEG.js 0.10.0.
  *
@@ -34039,6 +32031,2014 @@ function makeSVGPathCommandsAbsolute(commands) {
 	return commands;
 }
 
+const SELECT_TYPE = {
+    POINT: 0,
+    RANGE: 1
+};
+
+function generateQuery(predicates) {
+    const queries = [];
+    for (const predicate of predicates) {
+        const field = Object.keys(predicate)[0];
+        const { value, cond, type } = predicate[field];
+        let q;
+
+        if (type === SELECT_TYPE.POINT) {
+            q = query().filter(escape(d => d[field] === value)).reify();
+        } else if (type === SELECT_TYPE.RANGE) {
+            q = query().filter(escape(d => {
+                return (cond === '>=' ? d[field] >= value : d[field] <= value);
+            })).reify();
+        }
+        queries.push(q);
+    }
+    return queries;
+}
+
+function generatePredicates(field, object, type) {
+    if (type === SELECT_TYPE.POINT) {
+        return [{ [field]: { value: object[field], type } }];
+    } else {
+        console.log('TODO');
+    }
+}
+
+function generateBrushPredicates(field1, field2, xR, yR) {
+    return [
+        { [field1]: { value: xR[0], cond: '>=', type: SELECT_TYPE.RANGE } },
+        { [field1]: { value: xR[1], cond: '<=', type: SELECT_TYPE.RANGE } },
+        { [field2]: { value: yR[0], cond: '<=', type: SELECT_TYPE.RANGE } },
+        { [field2]: { value: yR[1], cond: '>=', type: SELECT_TYPE.RANGE } }
+    ];
+}
+
+// Interactions
+
+// Interaction defaults
+const SelectOpacity = 1;
+const UnselectOpacity = 0.1;
+const OpacityField = '__opacity__';
+const Tick = 'tick';
+const Background = 'background';
+const Foreground = 'foreground';
+
+// Chart marks / defaults
+const DefaultSvgId = 'svgPlot';
+const SvgContainer = 'svg';
+const SvgGroup = 'g';
+const Circle = 'circle';
+const Ellipse = 'ellipse';
+const Line = 'line';
+const Polygon = 'polygon';
+const Polyline = 'polyline';
+const Rect = 'rect';
+const Path = 'path';
+const Text = 'text';
+const TextRef = '#text';
+const Style = 'style';
+const Use = 'use';
+
+// View fields
+const Left = 'left';
+const Right = 'right';
+const Top = 'top';
+const Bottom = 'bottom';
+const CenterX = 'centerX';
+const CenterY = 'centerY';
+const Width = 'width';
+const Height = 'height';
+
+// Legend and title constants
+const SizeLegend = 'size';
+const CategoricalColorLegend = 'colorCat';
+
+const FillAttr = 'fill';
+const ColorAttr = 'color';
+const StrokeAttr = 'stroke';
+const DataAttr = '__inferred__data__';
+
+const RoleProperty = '__role__';
+const LegendRole = 'legend';
+const AxisDomainRole = 'axis-domain';
+const TitleRole = 'title';
+const OrphanTickRole = 'orphan-tick';
+const ViewportRole = 'viewport';
+const MarkRole = 'mark';
+
+const tableMarkField = '_mark_';
+const tableIndexField = '_I_';
+const tableGroupIndexField = '_gI_';
+
+const epsilon$1 = 2;
+const AGGREGATIONS = {
+    COUNT: 'count',
+    MIN: 'min',
+    MAX: 'max',
+    MEAN: 'mean',
+    SUM: 'sum',
+    STDEV: 'stdev',
+    MEDIAN: 'median'
+};
+
+const LINK_TYPES = {
+    NONE: 0,
+    DIRECT: 1,
+    SUBSET: 2,
+    AGGREGATE: 3
+};
+
+function isEqual(val1, val2, ep = epsilon$1) {
+    return typeof val1 === 'string' && typeof val2 === 'string'
+        ? val1.toLowerCase() === val2.toLowerCase()
+        : Math.abs(val1 - val2) <= ep;
+}
+
+// function isDirectLink(source, target, ep = epsilon) {
+//     if (!source.length || !target.length || source.length !== target.length) return false;
+//     return range(source.length).filter(i => isEqual(source[i], target[i], ep)).length === source.length;
+// }
+
+function getSubset(source, sourceMap, target, ep = epsilon$1) {
+    const sourceIndices = []; const targetIndices = [];
+    let i = 0; let j = 0;
+
+    while (i < source.length && j < target.length) {
+        if (isEqual(source[i], target[j], ep)) {
+            while (i < source.length && j < target.length && isEqual(source[i], target[j], ep)) {
+                sourceIndices.push(sourceMap[i++]);
+                targetIndices.push(j++);
+            }
+            while (i < source.length && j < target.length && isEqual(source[i], target[j - 1], ep)) { // Include all candidates from target
+                sourceIndices.push(sourceMap[i++]);
+            }
+        } else {
+            ++i;
+        }
+    }
+
+    if (i < source.length) {
+        while (i < source.length && isEqual(source[i], target[j - 1], ep)) {
+            sourceIndices.push(sourceMap[i++]);
+        }
+    }
+
+    if (j < target.length) {
+        while (j < target.length && isEqual(source[i - 1], target[j], ep)) {
+            targetIndices.push(j++);
+        }
+    }
+
+    return [sourceIndices, targetIndices];
+}
+
+function getFields(table, useMeta = false) {
+    const metaFields = [tableMarkField, tableIndexField, tableGroupIndexField];
+    return useMeta ? table.columnNames() : table.columnNames(d => !metaFields.includes(d));
+}
+
+function LinkIterator(sourceTable, targetTable, candidateBins, epsilons, useAggregate = true) {
+    function linker() { }
+
+    linker.exists = function(link) {
+        return link && Object.keys(link).length;
+    };
+
+    linker.direct = function() {
+        const link = getDirectLinks(sourceTable, targetTable, false);
+        return { link, type: linker.exists(link) ? LINK_TYPES.DIRECT : LINK_TYPES.NONE };
+    };
+
+    linker.subset = function() {
+        const link = getDirectLinks(sourceTable, targetTable, true);
+        return { link, type: linker.exists(link) ? LINK_TYPES.SUBSET : LINK_TYPES.NONE };
+    };
+
+    linker.aggregate = function() {
+        // return { type: LINK_TYPES.NONE }
+        const link = getAggregateLinks(sourceTable, targetTable, [], []);
+        return { link, type: linker.exists(link) ? LINK_TYPES.AGGREGATE : LINK_TYPES.NONE };
+    };
+
+    linker.getLink = function() {
+        const direct = linker.direct();
+        if (direct.type === LINK_TYPES.DIRECT) return direct;
+
+        if (useAggregate) {
+            const aggregate = linker.aggregate();
+            if (aggregate.type === LINK_TYPES.AGGREGATE) return aggregate;
+        }
+
+        const subset = linker.subset();
+        if (subset.type === LINK_TYPES.SUBSET) return subset;
+
+        return { type: LINK_TYPES.NONE };
+    };
+
+    function getIndexMap(tableA, tableB, sortA, sortB) {
+        const A = tableA.orderby(sortA).array(tableIndexField);
+        const B = tableB.orderby(sortB).array(tableIndexField);
+
+        const _fromToMap = Object.fromEntries(A.map((a, i) => [a, B[i]]));
+        const _toFromMap = Object.fromEntries(B.map((b, i) => [b, A[i]]));
+
+        const newCols = getFields(tableA).filter(d => !sortA.includes(d));
+        let mergedTable;
+        if (newCols.length) {
+            const _table = tableA.orderby(sortA).select(newCols);
+            mergedTable = tableB.orderby(sortB).assign(_table).orderby(tableIndexField).reify();
+        }
+
+        return {
+            map: {
+                fromToMap: _fromToMap,
+                toFromMap: _toFromMap,
+                mergedTable
+            }
+        };
+    }
+
+    function getAggregateQueries(groupBy, groupKeys, rollupObj) {
+        const fromToQ = query().groupby([...groupBy, tableIndexField]).rollup(rollupObj);
+        const toFromQ = query().groupby(groupBy).derive(rollupObj);
+
+        return { fromToQuery: fromToQ, toFromQuery: toFromQ, assignTable: table({ [tableGroupIndexField]: groupKeys }) };
+    }
+
+    function getDirectLinks(tableA, tableB, allowProjections = false) {
+        const fieldsA = getFields(tableA);
+        const fieldsB = getFields(tableB);
+
+        if (!fieldsA.length || !fieldsB.length || tableB.numRows() > tableA.numRows()) return null;
+        if (fieldsA.length === 2 && fieldsA.includes('precipitation') && fieldsA.includes('MEAN-maximum daily temperature (c)') &&
+            fieldsB.length === 2 && fieldsB.includes('precipitation (binned)') && fieldsB.includes('mean of temp_max')) ;
+        // var out = false;
+        // if (tableA.numRows() === 1461) var out = true;
+
+        const directLinks = { };
+        const foundIndices = [];
+        const sortA = []; const sortB = [];
+        // console.log(tableA, tableB)
+        // if (fieldsA.includes('COUNT-date') && fieldsB.includes('weather') && fieldsB.includes('count')) var out = true;
+
+        for (let j = 0; j < fieldsB.length && Object.keys(directLinks).length < fieldsA.length &&
+            Object.keys(directLinks).length < fieldsB.length; ++j) {
+            tableB = tableB.orderby(sortB.length ? [...sortB, fieldsB[j]] : fieldsB[j]);
+
+            for (let i = 0; i < fieldsA.length && Object.keys(directLinks).length < fieldsA.length &&
+                    Object.keys(directLinks).length < fieldsB.length; ++i) {
+                if (foundIndices.includes(i)) continue;
+
+                tableA = tableA.orderby(sortA.length ? [...sortA, fieldsA[i]] : fieldsA[i]);
+                const dataA = tableA.array(fieldsA[i]); const A_I = tableA.array(tableIndexField);
+                const dataB = tableB.array(fieldsB[j]);
+
+                const [sourceI, targetI] = getSubset(dataA, A_I, dataB, epsilons[fieldsB[j]] ? epsilons[fieldsB[j]] : epsilon$1);
+                // console.log(tableA, tableB, fieldsA[i], fieldsB[j], dataA, dataB, sourceI, targetI, epsilons[fieldsB[j]])
+
+                if (targetI.length === dataB.length && sourceI.length >= targetI.length) {
+                    // console.log(sourceI, targetI, tableA, tableB)
+                    tableA = tableA.filter(escape(d => sourceI.includes(d[tableIndexField]))).reify();
+                    directLinks[fieldsA[i]] = fieldsB[j];
+
+                    foundIndices.push(i);
+                    sortA.push(fieldsA[i]);
+                    sortB.push(fieldsB[j]);
+                    break;
+                }
+            }
+        }
+
+        const matched = Object.keys(directLinks).length; const projected = Object.keys(directLinks).length !== fieldsB.length;
+        if (matched && tableA.numRows() > tableB.numRows()) {
+            tableA = tableA.slice(0, tableB.numRows());
+        }
+        // if (out) console.log(tableA.array('MEAN-maximum daily temperature (c)'), tableB.array('mean of temp_max'), directLinks, epsilons['mean of temp_max']);
+        // console.log(directLinks)
+        return ((allowProjections && matched) || (!allowProjections && matched && !projected)) // matched && !projected
+            ? { fields: directLinks, ...getIndexMap(tableA, tableB, sortA, sortB) }
+            : { };
+    }
+
+    // function getSubsetLinks(tableA, tableB, usedFieldsA, usedFieldsB, indices, sortA, sortB) {
+    //     const fieldsA = getFields(tableA).filter(d => !usedFieldsA.includes(d));
+    //     const fieldsB = getFields(tableB).filter(d => !usedFieldsB.includes(d));
+
+    //     if (!fieldsA.length || !fieldsB.length || fieldsA.length < fieldsB.length) {
+    //         return !indices.length ? { } : getIndexMap(tableA, tableB, sortA, sortB, indices[0]);
+    //     }
+
+    //     for (let j = 0; j < fieldsB.length; ++j) {
+    //         tableB = tableB.orderby([...sortB, fieldsB[j]]);
+
+    //         for (let i = 0; i < fieldsA.length; ++i) {
+    //             tableA = tableA.orderby([...sortA, fieldsA[i]]);
+
+    //             const dataA = tableA.array(fieldsA[i]);
+    //             const dataB = tableB.array(fieldsB[j]);
+
+    //             const [sourceI, targetI] = getSubset(dataA, dataB, epsilons[fieldsB[j]] ? epsilons[fieldsB[j]] : epsilon);
+    //             const [prevSourceI, prevTargetI] = indices.length ? indices : [sourceI, targetI];
+
+    //             if (targetI.length !== tableB.numRows() || !isDirectLink(prevSourceI, sourceI) ||
+    //                 !isDirectLink(prevTargetI, targetI)) continue;
+
+    //             const subsets = getSubsetLinks(
+    //                 tableA, tableB,
+    //                 [...usedFieldsA, fieldsA[i]], [...usedFieldsB, fieldsB[j]],
+    //                 [prevSourceI, prevTargetI],
+    //                 [...sortA, fieldsA[i]], [...sortB, fieldsB[j]]
+    //             );
+    //             if (subsets) return { ...subsets, fields: { ...subsets.fields, [fieldsA[i]]: fieldsB[j] } };
+    //         }
+    //     }
+
+    //     return null;
+    // }
+
+    function getAggregateLinks(tableA, tableB, groupBy, processedFields) {
+        const fieldsA = getFields(tableA);
+        const fieldsB = getFields(tableB);
+
+        if (fieldsA.length < fieldsB.length || tableA.numRows() <= tableB.numRows() || groupBy.length > 2) return null;
+
+        for (let i = 0; i < fieldsA.length; ++i) {
+            if (processedFields.includes(fieldsA[i])) continue;
+            const q = query().groupby(groupBy);
+
+            for (const [aggName, aggFn] of Object.entries(AGGREGATIONS)) {
+                const rollupObj = { [aggName + '-' + fieldsA[i]]: op[aggFn](fieldsA[i]) };
+                const groupByTable = q.evaluate(tableA);
+                let rollupTable = groupByTable.rollup(rollupObj);
+                rollupTable = rollupTable.assign(table({ [tableIndexField]: range(rollupTable.numRows()) }));
+
+                const directLinks = getDirectLinks(rollupTable, tableB);
+                if (directLinks && Object.keys(directLinks).length) {
+                    const groupKeys = Array.from(groupByTable._group.keys); // .map(d => Object.keys(fromToMap).includes(d) ? d : null);
+                    // console.log(groupKeys, groupByTable, rollupTable)
+                    return { aggregation: getAggregateQueries(groupBy, groupKeys, rollupObj), ...directLinks };
+                }
+            }
+
+            // const newGroups = [fieldsA[i]]
+            const newGroups = typeof tableA.column(fieldsA[i]).get(0) === 'string'
+                ? [fieldsA[i]]
+                : candidateBins.map(function(b) {
+                    return { [fieldsA[i]]: escape(d => String((op.bin(d[fieldsA[i]], ...b) + b[2] / 2))) };
+                });
+
+            for (const newGroup of newGroups) {
+                const link = getAggregateLinks(tableA, tableB, [...groupBy, newGroup], [...processedFields, fieldsA[i]]);
+                if (link) return link;
+            }
+        }
+    }
+
+    return linker;
+}
+
+function getBins(state) {
+    function bin(scale, ticks) {
+        const domain = scale.domain();
+        const stepSize = Math.abs(domain[0] - domain[1]) / (ticks.length - 1);
+
+        return [...domain, stepSize];
+    }
+
+    const { yAxis } = state;
+    // const { scale: xScale, ticks: xTicks, ordinal: xOrdinal } = xAxis;
+    const { scale: yScale, ticks: yTicks, ordinal: yOrdinal } = yAxis;
+
+    // const xBins = xOrdinal.length ? [] : bin(xScale, xTicks);
+    const yBins = yOrdinal.length ? [] : bin(yScale, yTicks);
+    return [yBins];
+}
+
+function getEpsilons(state) {
+    const epsilons = { }; const epsilon = 0.01;
+    const { xAxis, yAxis, legends } = state;
+    const { domain: xDomain } = xAxis;
+    const { domain: yDomain } = yAxis;
+
+    if (!xAxis.ordinal.length) {
+        // let tmp = Math.abs(xDomain[1] - xDomain[0]) * epsilon;
+        // if (xAxis.formatter) tmp = {epsilon: tmp, format: xAxis.formatter.format };
+
+        epsilons[xAxis.title.innerHTML.toLowerCase()] = Math.abs(xDomain[1] - xDomain[0]) * epsilon;
+    }
+    if (!yAxis.ordinal.length) {
+        // let tmp = Math.abs(yDomain[1] - yDomain[0]) * epsilon;
+        // if (yAxis.formatter) tmp = {epsilon: tmp, format: yAxis.formatter.format };
+
+        epsilons[yAxis.title.innerHTML.toLowerCase()] = Math.abs(yDomain[1] - yDomain[0]) * epsilon;
+    }
+
+    for (const legend of legends) {
+        if (legend.type === SizeLegend) {
+            const { scale } = legend;
+            const sDomain = scale.domain();
+            epsilons[legend.title.innerHTML.toLowerCase()] = Math.abs(sDomain[0] - sDomain[sDomain.length - 1]) * epsilon;
+        }
+    }
+
+    return epsilons;
+}
+
+function storeLink(type, link, to, from, storeTable = false) {
+    const { aggregation, fields, map } = link;
+    const { fromToMap, toFromMap, mergedTable } = map;
+    let fromToQuery, toFromQuery, assignTable;
+    if (aggregation) {
+        ({ fromToQuery, toFromQuery, assignTable } = aggregation);
+    }
+
+    const fromToLink = { type, next: to, map: fromToMap, fields };
+    const toFromLink = { type, next: from, map: toFromMap, fields: invertFields(fields) };
+
+    if (type === LINK_TYPES.DIRECT || type === LINK_TYPES.SUBSET) {
+        from.children.push(fromToLink);
+        to.children.push(toFromLink);
+
+        if (storeTable && type === LINK_TYPES.SUBSET) to.table = mergedTable;
+    } else {
+        from.children.push({ ...fromToLink, aggregation: { query: fromToQuery, assignTable } });
+        to.parents.push({ ...toFromLink, aggregation: { query: toFromQuery, assignTable } });
+    }
+}
+
+function linkExternalDatasets(states, extState, aggregated) {
+    const { table: extTable } = extState;
+    if (!extTable) return;
+    const stored = new Map();
+
+    for (const state of states) {
+        const { data } = state;
+        if (!data.table) continue;
+
+        const linker = LinkIterator(extTable, data.table, null, getEpsilons(state));
+        const { type: dType, link } = linker.direct();
+        const candidates = [];
+        if (dType === LINK_TYPES.DIRECT) {
+            if (!link.map.mergedTable) return; // No new fields to match, return
+
+            // data.table = link.map.mergedTable;
+            // if (extTable.numRows() === data.table.numRows()) return; // Relegate newly formed direct linkings to views
+
+            stored.set(state, true);
+            candidates.push([dType, link, data]);
+        }
+
+        candidates.forEach(d => storeLink(...d, extState));
+    }
+
+    for (const state of states) {
+        const { data } = state;
+        if (stored.has(state)) continue;
+        if (!data.table) continue; // Skip subset views
+
+        const { type, link } = LinkIterator(extTable, data.table, getBins(state), getEpsilons(state), true).aggregate();
+        if (type === LINK_TYPES.AGGREGATE) {
+            storeLink(type, link, data, extState);
+            aggregated.set(state, true);
+        }
+    }
+}
+
+function linkCharts(states, aggregated) {
+    for (let i = 0; i < states.length; ++i) {
+        const { data: _d1 } = states[i];
+        if (!_d1.table) continue;
+
+        for (let j = i + 1; j < states.length; ++j) {
+            const { data: _d2 } = states[j];
+            if (!_d2.table) continue;
+
+            const { type: fType, link: fLink } = LinkIterator(
+                _d1.table, _d2.table, getBins(states[j]), getEpsilons(states[j]), !aggregated.has(states[j])
+            ).getLink();
+            if (fType !== LINK_TYPES.NONE) {
+                if (fType === LINK_TYPES.SUBSET) continue;
+                storeLink(fType, fLink, _d2, _d1, true);
+                if (fType === LINK_TYPES.AGGREGATE) aggregated.set(states[j], true);
+            } else {
+                const { type: bType, link: bLink } = LinkIterator(
+                    _d2.table, _d1.table, getBins(states[i]), getEpsilons(states[i]), !aggregated.has(states[i])
+                ).getLink();
+                if (bType !== LINK_TYPES.NONE) {
+                    storeLink(bType, bLink, _d1, _d2, true);
+                    if (bType === LINK_TYPES.AGGREGATE) aggregated.set(states[i], true);
+                }
+            }
+        }
+    }
+}
+
+function link(states, extState) {
+    const aggregated = new Map();
+    linkExternalDatasets(states, extState, aggregated);
+    linkCharts(states, aggregated);
+}
+
+function invertFields(fields) {
+    return Object.fromEntries(Object.keys(fields).map(k => [fields[k], k]));
+}
+
+function applyMap(_map, values) {
+    return values.map(v => _map[v]);
+}
+
+function propagateFields(fieldMap, newFields) {
+    return Object.fromEntries(
+        Object.keys(fieldMap).filter(k => k in newFields).map(k => [newFields[k], fieldMap[k]])
+    );
+}
+
+function propagateFieldValues(fieldMap, fields) {
+    return Object.fromEntries(Object.keys(fieldMap).map(k => k in fields ? [k, fields[k]] : [k, fieldMap[k]]));
+}
+
+function propagateAggregation(node, aggregations) {
+    let { table: _table } = node;
+    for (const [aggregation, map] of aggregations) {
+        const { query } = aggregation;
+        _table = query.evaluate(_table);
+
+        const groupKeys = applyMap(invertFields(map), Array.from(_table._group.keys)).map(d => Number(d));
+        _table = _table.assign(table({ [tableGroupIndexField]: groupKeys }));
+    }
+
+    return _table.ungroup();
+}
+
+function removeDuplicateRows(_table) {
+    return _table;
+}
+
+function propagateMapSelection(source, target, _map) {
+    const indices = source.array(tableIndexField).map(i => _map[i]);
+    return [source.assign({ [tableIndexField]: indices }), target.filter(escape(d => indices.includes(d[tableIndexField]))).reify()]
+        .map(t => t.filter(escape(d => d[tableIndexField] != null)));
+}
+
+function walkQueryPath(roots, rootPredicates, append = false) {
+    const visited = new Map();
+
+    function walkDownPath(node, data) {
+        if (visited.has(node)) return;
+        visited.set(node, true);
+
+        const { active, table: TABLE } = node;
+        active.selected = data;
+
+        const { children } = node;
+        for (const child of children) {
+            const { next, map, aggregation, fields, type } = child;
+            let NEXT_TABLE = next.table; let _data;
+            next.active.type = type;
+
+            if (aggregation) {
+                const { query, assignTable } = aggregation;
+                const idMap = Object.fromEntries(TABLE.array(tableIndexField).map(d => [d, d]));
+
+                [, _data] = propagateMapSelection(data, TABLE.assign(assignTable), idMap);
+                _data = query.evaluate(_data.rename({ [tableGroupIndexField]: tableIndexField }));
+
+                [_data, NEXT_TABLE] = propagateMapSelection(_data, NEXT_TABLE, map);
+                NEXT_TABLE = NEXT_TABLE.orderby(tableIndexField).assign(
+                    _data.rename(fields).orderby(tableIndexField)
+                ).unorder();
+            } else {
+                [, NEXT_TABLE] = propagateMapSelection(data, NEXT_TABLE, map);
+            }
+
+            walkDownPath(next, NEXT_TABLE);
+        }
+    }
+
+    function clearPath(node) {
+        if (visited.has(node)) return;
+        visited.set(node, true);
+
+        const { active, children } = node;
+        active.selected = active.table;
+
+        for (const child of children) {
+            const { next } = child;
+            next.active.type = LINK_TYPES.NONE;
+            clearPath(next);
+        }
+    }
+
+    for (const root of roots) {
+        const [node, startTable, fieldMap] = root;
+        const { active } = node;
+        if (rootPredicates) {
+            rootPredicates = rootPredicates.map(r => {
+                r = propagateFields(r, fieldMap);
+
+                if (getFields(startTable, true).includes(tableGroupIndexField) && tableIndexField in r) {
+                    r[tableGroupIndexField] = r[tableIndexField];
+                    delete r[tableIndexField];
+                }
+
+                return r;
+            });
+
+            let _table = active.selected.numRows() < active.table.numRows() && !append ? active.selected : null;
+            generateQuery(rootPredicates).forEach(q => { _table = q.evaluate(_table || startTable); });
+
+            if (append) _table = removeDuplicateRows(node.active.selected.concat(_table));
+            walkDownPath(node, _table);
+        } else {
+            clearPath(node);
+        }
+    }
+}
+
+function getRootNodes(startNode) {
+    function walkUpPath(node, aggregations, fieldMap) {
+        if (visited.has(node)) return [];
+        visited.set(node, true);
+
+        const { parents } = node;
+        if (!parents.length) {
+            return [[node, aggregations, fieldMap]];
+        }
+
+        let paths = [];
+        for (const parent of parents) {
+            const { next, aggregation, map, fields } = parent;
+            paths = [...paths, ...walkUpPath(next, [...aggregations, [aggregation, map]], propagateFieldValues(fieldMap, fields))];
+        }
+
+        return paths;
+    }
+
+    const visited = new Map(); const startFields = Object.fromEntries(getFields(startNode.table, true).map(c => [c, c]));
+    const roots = walkUpPath(startNode, [], startFields);
+    return roots.map(([root, aggregations, fieldMap]) => [root, propagateAggregation(root, aggregations), fieldMap]);
+}
+
+function setOpacity(marks, opacity) {
+    selectAll(marks).attr('opacity', opacity);
+}
+
+function setSelection(marks, opacity) {
+    setOpacity(marks, opacity);
+}
+
+function selectAllMarks(marks) {
+    setSelection(marks, marks[0][OpacityField] || SelectOpacity);
+}
+
+function unselectAllMarks(marks) {
+    setSelection(marks, UnselectOpacity);
+}
+
+function selectMarks(allMarks, marks) {
+    unselectAllMarks(allMarks);
+    setSelection(marks, SelectOpacity);
+}
+
+function selectLegends(legends, data) {
+    for (const legend of legends) {
+        if (!legend.title) continue;
+        const attr = legend.title.innerHTML.toLowerCase();
+        const attrData = data.array(attr);
+        if (attr === 'precipitation') continue;
+        const _marks = legend.marks
+            .filter(d => attrData.includes(d.mark[DataAttr][attr]))
+            .map(d => d.mark);
+
+        selectMarks(legend.marks.map(d => d.mark), _marks);
+    }
+}
+
+function drawAggregates(id, selected, xAxis) {
+    const marks = selected.array(tableMarkField);
+    selectAll('.' + id + '.AGGREGATE_LAYER').remove();
+    const newMarks = [];
+
+    for (let i = 0; i < marks.length; ++i) {
+        const markRect = marks[i]._getBBox();
+        const newMark = select(marks[i].parentElement).append('path').classed(id, true)
+            .classed('AGGREGATE_LAYER', true)
+            .attr('fill', window.getComputedStyle(marks[i]).fill);
+
+        if (marks[i].tagName === Path) {
+            const x = marks[i].contour[0].x; //, y = marks[i].contour[0].y;
+            // if (marks[i].globalPosition.translate.y) {
+            // var y = marks[i].globalPosition.translate.y - marks[i].globalPosition.translate.y / 2;
+            // console.log(x, y)
+            // } else {
+            const y = marks[i].contour[0].y - marks[i]._getBBox().height;
+            // const lx = marks[i].globalPosition.translate.x - marks[i].globalPosition.translate.x / 2,
+            //     ly = marks[i].globalPosition.translate.y - marks[i].globalPosition.translate.y / 2;
+            // const t = marks[i].localTransform;
+            // const x =
+            // }
+            const h = markRect.height;
+            const w = xAxis.scale(selected.array(xAxis.title.innerHTML.toLowerCase())[i]) - xAxis.range[0];
+
+            const p = path();
+            p.rect(x, y, w, h);
+            newMark.attr('d', p.toString());
+            newMarks.push(newMark);
+        }
+    }
+
+    selectAll([...marks, ...newMarks]).raise();
+}
+
+function applySelections(states) {
+    for (const state of states) {
+        const { data, legends, xAxis } = state;
+        const { table, active } = data;
+        const { selected, type } = active;
+
+        let selectedMarks = selected.array(tableMarkField);
+
+        if (type === LINK_TYPES.AGGREGATE) {
+            selectedMarks = drawAggregates(state.svg.id, selected, xAxis);
+        } else {
+            selectAll('.' + state.svg.id + 'AGGREGATE_LAYER').remove();
+        }
+        selectMarks(table.array(tableMarkField), selectedMarks);
+        selectLegends(legends, selected);
+    }
+}
+
+function selectPoint(state, target) {
+    if (target[RoleProperty] === MarkRole) {
+        return generatePredicates(tableIndexField, target, SELECT_TYPE.POINT);
+    } else if (target[RoleProperty] === LegendRole) {
+        return generatePredicates(Object.keys(target[DataAttr])[0], target[DataAttr], SELECT_TYPE.POINT);
+    } else {
+        selectAllMarks(state.svgMarks);
+        state.legends.forEach(d => selectAllMarks(d.marks.map(e => e.mark)));
+        return null;
+    }
+}
+
+// function getLegendFields(state, mark) {
+//     const legend = mark.legend;
+
+//     if (legend.type === CategoricalColorLegend) {
+//         const val = legend.scale.domain()[legend.scale.range().indexOf(window.getComputedStyle(mark)[legend.matchingAttr])];
+//         var condition = [val];
+//     } else {
+//         const val = legend.scale.invert(mark._getBBox().width);
+//         var condition = [val, val];
+//     }
+
+//     const candidateMarks = state.svgMarks.filter(function(d) {
+//         const data = d.__inferred__data__[legend.title.innerHTML];
+//         return typeof condition[0] === 'string' ? condition.includes(data) : data >= condition[0] && data <= condition[1];
+//     });
+
+//     selectMarks(legend.marks.map(d => d.mark), [mark]);
+//     selectMarks(state.svgMarks, candidateMarks);
+// }
+
+function identity(x) {
+    return x;
+}
+
+function isMetaKey(event) {
+    return event.metaKey || event.ctrlKey || event.altKey || event.shiftKey;
+}
+
+function copyElement(element) {
+    const newElement = element.cloneNode(true);
+    for (const [key, value] of Object.entries(element)) {
+        newElement[key] = value;
+    }
+
+    return newElement;
+}
+
+function computeCenterPos(element, orient) {
+    const clientRect = element._getBBox();
+    const offset = orient === Right || orient === Left ? clientRect.width / 2 : clientRect.height / 2;
+    return clientRect[orient] + (orient === Left || orient === Top ? offset : -offset);
+}
+
+function convertPtToPx(pt) {
+    if (!pt || !pt.includes('pt')) return pt;
+    return +pt.split('pt')[0] * 4 / 3;
+}
+
+function SVGToScreen(svg, element, svgX, svgY) {
+    const p = svg.createSVGPoint();
+    p.x = svgX;
+    p.y = svgY;
+    return p.matrixTransform(element.getScreenCTM());
+}
+
+function sortByViewPos(field, objects, useField = false) {
+    const comparator = (dim) => (a, b) => field == null
+        ? (a._getBBox()[dim] - b._getBBox()[dim])
+        : useField
+            ? a[field] - b[field]
+            : ((a[field] ? a[field] : a.marks[0])._getBBox()[dim] - (b[field] ? b[field] : b.marks[0])._getBBox()[dim]);
+    objects.sort(comparator(CenterX));
+    objects.sort(comparator(CenterY));
+}
+
+class Transform {
+    constructor(...args) {
+        if (args[0] instanceof Transform) {
+            const [other] = args;
+            this.translate = { ...other.translate };
+            this.scale = { ...other.scale };
+            this.rotate = other.rotate;
+        } else {
+            const [tx, ty, sx, sy, r] = args;
+            this.translate = { x: tx || 0, y: ty || 0 };
+            this.scale = { x: sx || 1, y: sy || 1 };
+            this.rotate = r || 0;
+        }
+    }
+
+    addTransform(appendTransform) {
+        this.translate.x += appendTransform.translate.x;
+        this.translate.y += appendTransform.translate.y;
+        this.scale.x *= appendTransform.scale.x;
+        this.scale.y *= appendTransform.scale.y;
+        this.rotate += appendTransform.rotate;
+
+        return this;
+    }
+
+    getTransform(appendTransform = new Transform()) {
+        return 'translate(' + (this.translate.x + appendTransform.translate.x) + ',' +
+            (this.translate.y + appendTransform.translate.y) + ') scale(' +
+            (this.scale.x * appendTransform.scale.x) + ',' +
+            (this.scale.y * appendTransform.scale.y) + ') rotate(' +
+            (this.rotate + appendTransform.rotate) + ')';
+    }
+}
+
+const top = 1;
+const right = 2;
+const bottom = 3;
+const left = 4;
+
+function number(scale) {
+    return d => +scale(d);
+}
+
+function center(scale, offset) {
+    offset = Math.max(0, scale.bandwidth() - offset * 2) / 2;
+    if (scale.round()) offset = Math.round(offset);
+    return d => +scale(d) + offset;
+}
+
+function axis(orient, scale, state) {
+    let tickArguments = [];
+    let tickValues = null;
+    let tickFormat = null;
+    let tickSizeInner = 6;
+    let tickSizeOuter = 6;
+    let tickPadding = 3;
+    let offset = typeof window !== 'undefined' && window.devicePixelRatio > 1 ? 0 : 0.5;
+    const svgAxis = orient === top || orient === bottom ? state.xAxis : state.yAxis;
+    const ticks = svgAxis.ticks;
+
+    function axis() {
+        let values = tickValues == null ? (scale.ticks ? scale.ticks.apply(scale, tickArguments) : scale.domain()) : tickValues;
+        const format = tickFormat == null ? (scale.tickFormat ? scale.tickFormat.apply(scale, tickArguments) : identity) : tickFormat;
+        const position = (scale.bandwidth ? center : number)(scale.copy(), offset);
+        values = orient === left || orient === right ? values.reverse() : values;
+
+        function updateTick(tick, value) {
+            tick.value = value;
+            const label = tick.label; const tickMarks = tick.marks;
+            label.innerHTML = svgAxis.ordinal.length || label.value === format(value) ? label.value : format(value);
+
+            const lx = label.globalPosition.translate.x; const ly = label.globalPosition.translate.y;
+            const translateX = orient === bottom ? position(value) - lx : 0;
+            const translateY = orient === left ? position(value) - ly : 0;
+            label.setAttribute('transform', label.localTransform.getTransform(new Transform(translateX, translateY)));
+
+            for (const mark of tickMarks) {
+                const tx = mark.globalPosition.translate.x; const ty = mark.globalPosition.translate.y;
+                const translateX = orient === bottom ? position(value) - tx : 0;
+                const translateY = orient === left ? position(value) - ty : 0;
+
+                mark.setAttribute('transform', mark.localTransform.getTransform(new Transform(translateX, translateY)));
+            }
+        }
+
+        let counter;
+        for (counter = 0; counter < values.length && counter < ticks.length; ++counter) {
+            updateTick(ticks[counter], svgAxis.ordinal.length ? svgAxis.ordinal[counter] : values[counter]);
+        }
+
+        for (; counter < values.length; ++counter) {
+            const newTick = {
+                label: copyElement(ticks[0].label),
+                marks: ticks[0].marks.map(tick => copyElement(tick)),
+                value: 0
+            };
+
+            updateTick(newTick, values[counter]);
+            ticks[0].label.parentElement.appendChild(newTick.label);
+            ticks[0].marks.forEach((d, i) => d.parentElement.insertBefore(newTick.marks[i], d));
+            ticks.push(newTick);
+        }
+
+        const length = ticks.length;
+        for (; counter < length; ++counter) {
+            const pos = ticks.length - 1;
+            if (ticks[pos].label) ticks[pos].label.remove();
+            ticks[pos].marks.forEach(d => d.remove());
+            ticks.pop();
+        }
+    }
+
+    axis.applyTransform = function(_) {
+        return arguments.length ? (scale_transform = _, axis) : axis;
+    };
+
+    axis.scale = function(_) {
+        return arguments.length ? (scale = _, axis) : scale;
+    };
+
+    axis.ticks = function() {
+        return tickArguments = Array.from(arguments), axis;
+    };
+
+    axis.tickArguments = function(_) {
+        return arguments.length ? (tickArguments = _ == null ? [] : Array.from(_), axis) : tickArguments.slice();
+    };
+
+    axis.tickValues = function(_) {
+        return arguments.length ? (tickValues = _ == null ? null : Array.from(_), axis) : tickValues && tickValues.slice();
+    };
+
+    axis.tickFormat = function(_) {
+        return arguments.length ? (tickFormat = _, axis) : tickFormat;
+    };
+
+    axis.tickSize = function(_) {
+        return arguments.length ? (tickSizeInner = tickSizeOuter = +_, axis) : tickSizeInner;
+    };
+
+    axis.tickSizeInner = function(_) {
+        return arguments.length ? (tickSizeInner = +_, axis) : tickSizeInner;
+    };
+
+    axis.tickSizeOuter = function(_) {
+        return arguments.length ? (tickSizeOuter = +_, axis) : tickSizeOuter;
+    };
+
+    axis.tickPadding = function(_) {
+        return arguments.length ? (tickPadding = +_, axis) : tickPadding;
+    };
+
+    axis.offset = function(_) {
+        return arguments.length ? (offset = +_, axis) : offset;
+    };
+
+    return axis;
+}
+
+function axisBottom(scale, SVG) {
+    return axis(bottom, scale, SVG);
+}
+
+function axisLeft(scale, SVG) {
+    return axis(left, scale, SVG);
+}
+
+function invertBand(scale, value) {
+    const step = scale.step();
+    const start = scale(scale.domain()[0]) + scale.paddingOuter() * step;
+    const bandwidth = scale.bandwidth();
+
+    let index = Math.round(Math.abs((value - start - bandwidth / 2)) / step);
+    index = max([0, min([scale.domain().length - 1, index])]);
+    return scale.domain()[scale.domain().length - 1 - index];
+}
+
+function invertOrdinal(scale, value) {
+    return scale.domain()[scale.range().indexOf(value)];
+}
+
+function bindLegendData(legend) {
+    const { scale, title, type, matchingAttr } = legend;
+    for (const { mark } of legend.marks) {
+        const style = type === CategoricalColorLegend
+            ? window.getComputedStyle(mark)[matchingAttr]
+            : mark._getBBox().width ** 2;
+
+        const data = invertOrdinal(scale, style);
+        mark[DataAttr] = { [title ? title.innerHTML.toLowerCase() : 'legend-0']: data };
+    }
+}
+
+function parseLegends(state, legends) {
+    let scale;
+    function inferScale(legend) {
+        if (legend.type === CategoricalColorLegend) { // Ordinal legends
+            const domain = legend.marks.map(d => d.label.innerHTML);
+            const range = legend.marks.map(d => window.getComputedStyle(d.mark)[legend.matchingAttr]);
+            scale = ordinal().domain(domain).range(range);
+        } else { // Size legend
+            const domain = legend.marks.map(d => +d.label.innerHTML);
+            const range = legend.marks.map(d => d.mark._getBBox().width ** 2);
+            scale = linear().domain(domain).range(range);
+        }
+
+        legend.scale = scale;
+    }
+
+    function formatLegend(legend) {
+        const group = Array.from(legend.group[0][0]);
+        return {
+            title: null,
+            marks: group.map(([text, mark]) => {
+                return { label: text, mark };
+            })
+        };
+    }
+
+    for (let legend of legends) {
+        legend = formatLegend(legend);
+        const mark1Style = window.getComputedStyle(legend.marks[0].mark);
+        const mark2Style = window.getComputedStyle(legend.marks[1].mark);
+        let matchingAttr = null;
+
+        if (mark1Style.stroke !== mark2Style.stroke) {
+            matchingAttr = StrokeAttr;
+        } else if (mark1Style.color !== mark2Style.color) {
+            matchingAttr = ColorAttr;
+        } else if (mark1Style.fill !== mark2Style.fill) {
+            matchingAttr = FillAttr;
+        }
+
+        if (matchingAttr) {
+            legend.type = CategoricalColorLegend;
+            legend.matchingAttr = matchingAttr;
+        } else {
+            const widths = []; const heights = [];
+            for (let i = 1; i < legend.marks.length; ++i) {
+                const bbox1 = legend.marks[i - 1].mark._getBBox();
+                const bbox2 = legend.marks[i].mark._getBBox();
+                widths.push(Math.abs(bbox1.width - bbox2.width));
+                heights.push(Math.abs(bbox1.height - bbox2.height));
+            }
+
+            if (mean(widths) > 2 || mean(heights) > 2) {
+                legend.type = SizeLegend;
+            } else {
+                legends.splice(legends.indexOf(legend), 1);
+                return;
+            }
+        }
+
+        for (const { label, mark } of legend.marks) {
+            label[RoleProperty] = mark[RoleProperty] = LegendRole;
+            mark.style['pointer-events'] = 'fill';
+            mark.legend = legend;
+            mark[OpacityField] = mark.hasAttribute('opacity')
+                ? +mark.getAttribute('opacity')
+                : window.getComputedStyle(mark).opacity || SelectOpacity;
+        }
+
+        inferScale(legend);
+        sortByViewPos('label', legend.marks, legend.type === SizeLegend);
+        state.legends.push(legend);
+    }
+}
+
+function parseTransform(element, transforms = new Transform()) {
+    if (!element.transform) return;
+    const transformList = element.transform.baseVal;
+
+    for (let i = 0; i < transformList.numberOfItems; ++i) {
+        const transform = transformList.getItem(i);
+        const matrix = transform.matrix;
+
+        transforms.translate.x += matrix.e;
+        transforms.translate.y += matrix.f;
+        transforms.scale.x *= matrix.a;
+        transforms.scale.y *= matrix.d;
+        transforms.rotate += transform.angle;
+    }
+
+    return transforms;
+}
+
+function inferMarkAttributes(state) {
+    // function getData() {
+
+    // }
+
+    state.svgMarks = state.svgMarks.filter(d => d.type !== Line);
+    // console.log(state.xAxis.scale.domain(), state.yAxis.scale.domain())
+    for (let i = 0; i < state.svgMarks.length; ++i) {
+        const mark = state.svgMarks[i]; const svgRect = state.svg._getBBox();
+        const markRect = mark._getBBox();
+
+        if (mark.type === Line) continue;
+        if (mark.type === Polyline) {
+            const points = mark.getAttribute('points').split(' ').map(d => d.split(',').map(e => Number(e)));
+            mark[DataAttr] = [];
+
+            for (const point of points) {
+                let [x, y] = point;
+                x = x - svgRect.left;
+                y = y - svgRect.top;
+
+                const iterable = { };
+                iterable[state.xAxis.title ? state.xAxis.title.innerHTML.toLowerCase() : 'x'] = state.xAxis.scale.invert(x);
+                iterable[state.yAxis.title ? state.yAxis.title.innerHTML.toLowerCase() : 'y'] = state.yAxis.scale.invert(y);
+
+                for (let j = 0; j < state.legends.length; ++j) {
+                    const legend = state.legends[j];
+                    const val = legend.type === CategoricalColorLegend
+                        ? legend.scale.domain()[legend.scale.range().indexOf(window.getComputedStyle(mark)[legend.matchingAttr])]
+                        : legend.scale.invert(markRect.width ** 2);
+
+                    iterable[legend.title ? legend.title.innerHTML.toLowerCase() : 'legend-' + j] = val;
+                }
+
+                mark[DataAttr].push(iterable);
+            }
+
+            continue;
+        }
+        const markX = state.xAxis.ordinal.length
+            ? i
+            : state.yAxis.ordinal.length || mark.type === Rect
+                ? markRect.right - svgRect.left
+                : markRect.centerX - svgRect.left;
+        const markY = state.yAxis.ordinal.length
+            ? i
+            : state.xAxis.ordinal.length
+                ? markRect.top - svgRect.top
+                : markRect.centerY - svgRect.top;
+
+        // console.log(state.xAxis.scale.domain()[markX])
+        const iterable = { };
+        // console.log(markX, markY)
+        // console.log(state.xAxis.scale.invert(markX), state.yAxis.scale.invert(markY))
+        iterable[state.xAxis.title ? state.xAxis.title.innerHTML.toLowerCase() : 'x'] = state.xAxis.ordinal.length ? invertBand(state.xAxis.scale, markRect.centerX - svgRect.left) : state.xAxis.scale.invert(markX);
+        iterable[state.yAxis.title ? state.yAxis.title.innerHTML.toLowerCase() : 'y'] = state.yAxis.ordinal.length
+            ? invertBand(state.yAxis.scale, markRect.centerY - svgRect.top)
+            : mark.type === 'rect'
+                ? String(Math.round(state.yAxis.scale.invert(markY)))
+                : state.yAxis.scale.invert(markY);
+        // if (!state.yAxis.ordinal.length && state.yAxis.scale.invert(markY) <= 1 && state.yAxis.scale.invert(markY) >= 0) {
+        //     console.log(mark, mark.getBBox(), mark.getBoundingClientRect(), markY)
+        // }
+        for (let j = 0; j < state.legends.length; ++j) {
+            const legend = state.legends[j];
+            const val = legend.type === CategoricalColorLegend
+                ? legend.scale.domain()[legend.scale.range().indexOf(window.getComputedStyle(mark)[legend.matchingAttr])]
+                : legend.scale.invert(markRect.width ** 2);
+
+            iterable[legend.title ? legend.title.innerHTML.toLowerCase() : 'legend-' + j] = val;
+        }
+
+        mark.style['pointer-events'] = 'fill';
+        mark[DataAttr] = iterable;
+        mark[OpacityField] = mark.hasAttribute('opacity')
+            ? +mark.getAttribute('opacity')
+            : window.getComputedStyle(mark).opacity || SelectOpacity;
+    }
+}
+
+function getDate(d) {
+    // function levelLookup(value) {
+    //     value = value.toLowerCase();
+
+    //     if (value.includes('%y')) {
+    //         return '%Y %m %d %H:%M:%S';
+    //     }
+
+    //     if (value.includes('%m') || value.includes('%b')) {
+    //         return '%m %d %H:%M:%S';
+    //     }
+
+    //     if (value.includes('%a') || value.includes('%d')) {
+    //         return '%d %H:%M:%S';
+    //     }
+
+    //     if (value.includes('%h')) {
+    //         return '%H:%M:%S';
+    //     }
+    // }
+
+    // function toFormattedDate(date, specifier) {
+    //     return timeParse(specifier)(timeFormat(specifier)(date));
+    // }
+
+    function checkSubsets(subsets) {
+        function checkSubset(formats, priorFormat) {
+            if (!formats || !formats.length) return null;
+
+            for (const format of formats[0]) {
+                const f = priorFormat.length ? priorFormat + ' ' + format : format;
+                const parsedVal = timeParse(f)(d);
+
+                if (f !== '%m' && f !== '%d' && parsedVal) { // Skip conflicts with ints
+                    console.log(f, d, parsedVal);
+                    return { format: timeFormat(f), value: parsedVal };
+                }
+
+                const others = checkSubset(formats.slice(1), f);
+                if (others) return others;
+            }
+
+            return null;
+        }
+
+        for (const subset of subsets) {
+            const format = checkSubset(subset, '');
+            if (format) return format;
+        }
+    }
+
+    const dayFormats = ['%d'];
+    const weekFormats = ['%a', '%A'];
+    const monthFormats = ['%b', '%B', '%m'];
+    const yearFormats = ['%Y', '\'%y'];
+    const subsets = [
+        [yearFormats, monthFormats, dayFormats],
+        [monthFormats, dayFormats, yearFormats],
+        [monthFormats, yearFormats],
+        [dayFormats, monthFormats, yearFormats],
+        [weekFormats, monthFormats, dayFormats, yearFormats],
+        [weekFormats, dayFormats, monthFormats, yearFormats]
+    ];
+
+    const fullFormats = ['%Y-%m-%d', '%Y %m %d %H:%M:%S', '%Y-%m-%d% %H:%M:%S', '%Y %m %d %H:%M', '%Y-%m-%d% %H:%M',
+        '%H:%M:%S', '%H:%M'];
+
+    for (const format of fullFormats) {
+        const parsedVal = timeParse(format)(d);
+        if (parsedVal) return { format: timeFormat(format), value: parsedVal };
+    }
+
+    return checkSubsets(subsets);
+}
+
+// function getIntType() {
+//     const transformations = {
+//         Y: 1e24,
+//         Z: 1e21,
+//         E: 1e18,
+//         P: 1e15,
+//         T: 1e12,
+//         G: 1e9,
+//         M: 1e6,
+//         k: 1e3,
+//         h: 1e2,
+//         da: 1e1,
+//         d: 1e-1,
+//         c: 1e-2,
+//         m: 1e-3,
+//         μ: 1e-6,
+//         n: 1e-9,
+//         p: 1e-12,
+//         f: 1e-15,
+//         a: 1e-18,
+//         z: 1e-21,
+//         y: 1e-24,
+//         '%': 1e-2
+//     };
+
+//     const regexVals = {
+//         $: /£|\$/g,
+//         '+': /\+/g,
+//         ',': /,/g,
+//         '.': /./g
+//     };
+//     const formats = ['.0%', '.2%'];
+//     const currencies = /£|\$/g;
+// }
+
+function getFormatVal(element, isDate) {
+    if (!element) return null;
+
+    const elData = element.innerHTML.replace(/–/g, '-').replace(/−/g, '-') // Replace with hyphen for parsing
+        .replace(/,/g, ''); // Replace commas
+    // if (format) return format(element.innerHTML);
+
+    const int = parseFloat(elData);
+    const date = getDate(elData);
+
+    return isNaN(int) || (elData.includes('-') && elData.charAt(0) !== '-') || elData.includes('/')
+        ? (date && isDate
+            ? date
+            : elData)
+        : int;
+}
+
+// import { selectAll } from 'd3-selection';
+
+const epsilon = 3;
+let viewEpsilon = 25;
+
+function parseChart(state) {
+    let [candidateTextGroups, candidateTickGroups, candidateLegendGroups] = collectCandidateGroups(state.textMarks, state.svgMarks);
+    let axes = pruneGroups(candidateTextGroups, candidateTickGroups);
+    axes = axes.sort((a, b) => {
+        const t1 = a.text[0]._getBBox()[CenterX];
+        const t2 = b.text[0]._getBBox()[CenterY];
+        return t1 - t2;
+    });
+
+    if (axes.length >= 2) {
+        axes = [axes[0], axes[1]];
+        groupAxes(axes);
+        candidateTextGroups = candidateTextGroups.filter(d => !axes.map(a => a.text).includes(d.marks));
+    }
+    // console.log(candidateLegendGroups)
+    const legends = pruneGroups(candidateTextGroups, candidateLegendGroups, false).filter(d => d.dist < viewEpsilon * 5);
+    if (legends.length) {
+        parseLegends(state, legends);
+        candidateTextGroups = candidateTextGroups.filter(d => !legends.map(l => l.text).includes(d.marks));
+    }
+    assignTitles(candidateTextGroups.map(d => d.marks).flat());
+    state.legends.forEach(d => bindLegendData(d));
+
+    function assignTitles(titles) {
+        const titleAssignment = new Map();
+
+        function calculatePos(el) {
+            const elBBox = el._getBBox();
+            return [elBBox.centerX, elBBox.centerY];
+        }
+
+        function getClosestTitle(x, y) {
+            let closestTitle = { title: null, dist: Number.MAX_SAFE_INTEGER };
+            for (const title of titles) {
+                const [titleX, titleY] = calculatePos(title);
+                const posDiff = Math.abs(titleX - x) + Math.abs(titleY - y);
+
+                if (posDiff < closestTitle.dist) {
+                    closestTitle = { title, dist: posDiff };
+                }
+            }
+
+            return closestTitle;
+        }
+
+        const groups = [state.xAxis, state.yAxis, ...state.legends];
+        for (const group of groups) {
+            const _g = 'ticks' in group ? group.ticks : group.marks;
+            const pos = _g.filter(d => d.label).map(mark => calculatePos(mark.label));
+            const x = mean(pos.map(d => d[0])); const y = mean(pos.map(d => d[1]));
+
+            const titleGroup = getClosestTitle(x, y);
+            const { title, dist } = titleGroup;
+            if (!title) continue;
+
+            if (!titleAssignment.has(title) || dist < titleAssignment.get(title).dist) {
+                group.title = title;
+                title[RoleProperty] = TitleRole;
+                titleAssignment.set(title, titleGroup);
+            }
+        }
+
+        state.title = titles.filter(d => !d[RoleProperty])[0];
+    }
+
+    function groupAxes(axes) {
+        const axisMap = new Map();
+        const orphanTicks = [];
+
+        function addTicks(text, alignment, ticks) {
+            if (alignment === Top || alignment === Bottom) {
+                state.xAxis.ticks.push({ label: text, marks: ticks });
+            } else {
+                state.yAxis.ticks.push({ label: text, marks: ticks });
+            }
+            ticks.forEach(tick => { text ? tick[RoleProperty] = Tick : tick[RoleProperty] = OrphanTickRole; });
+        }
+
+        for (const { alignment, group } of axes) {
+            for (const g of group) {
+                const [axis, allTicks] = g;
+                const seen = new Map();
+
+                for (const [text, tick] of axis) {
+                    seen.set(tick, true);
+                    axisMap.has(text)
+                        ? axisMap.get(text).ticks.push(tick)
+                        : axisMap.set(text, { alignment, ticks: [tick] });
+                }
+
+                allTicks.filter(d => !seen.has(d)).forEach(d => {
+                    orphanTicks.push({ alignment, tick: d });
+                });
+            }
+        }
+
+        for (const [text, { alignment, ticks }] of axisMap) {
+            addTicks(text, alignment, ticks);
+        }
+
+        for (const { alignment, tick } of orphanTicks) {
+            addTicks(null, alignment, [tick]);
+        }
+
+        [state.xAxis, state.yAxis].forEach(axis => sortByViewPos('label', axis.ticks));
+    }
+
+    function mergeArray(array) { // Assumes [key, mark] structure
+        array.sort((a, b) => a[0] - b[0]);
+        const groups = [[array[0][0], [array[0][1]]]];
+
+        for (let i = 1; i < array.length; ++i) {
+            const index = groups[groups.length - 1][0];
+
+            if (Math.abs(index - array[i][0]) < epsilon) {
+                groups[groups.length - 1][1].push(array[i][1]);
+            } else {
+                groups.push([array[i][0], [array[i][1]]]);
+            }
+        }
+
+        return groups.map(d => d[1]);
+    }
+
+    function pruneGroups(candidateTextGroups, candidateMarkGroups, append = true) {
+        // const t = selectAll('#test').nodes();
+        // console.log(t)
+        // for (const g of candidateMarkGroups) {
+        //     for (const _t of t) {
+        //         if (g.marks.includes(_t)) {
+        //             console.log(g)
+        //         }
+        //     }
+        // }
+        function _sort(alignment, group) {
+            group.sort((a, b) => {
+                const aBox = a._getBBox(); const bBox = b._getBBox();
+                return hs.includes(alignment) ? aBox[CenterX] - bBox[CenterX] : aBox[CenterY] - bBox[CenterY];
+            });
+        }
+
+        function getGroupDistance(groupA, groupB, alignment) {
+            const distsA = [0, 0, 0]; const distsB = [0, 0, 0];
+
+            function addVal(obj, mark, length) {
+                const bbox = mark._getBBox();
+                const keys = vs.includes(alignment) ? vs : hs;
+                for (let i = 0; i < keys.length; ++i) {
+                    obj[i] = obj[i] + (bbox[keys[i]] / length);
+                }
+            }
+
+            groupA.forEach(d => addVal(distsA, d, groupA.length));
+            groupB.forEach(d => addVal(distsB, d, groupB.length));
+
+            return min([
+                min(distsA) - min(distsB),
+                min(distsA) - max(distsB),
+                max(distsA) - min(distsB),
+                max(distsA) - max(distsB)
+            ].map(d => Math.abs(d)));
+        }
+
+        function matchGroup(alignment, textGroup, tickGroup) {
+            let i = 0; let distance = 0; const textMap = new Map();
+
+            for (const text of textGroup) {
+                const textBB = text._getBBox();
+                let prevDist = Number.MAX_SAFE_INTEGER;
+
+                if (i === tickGroup.length) return [Number.MAX_SAFE_INTEGER, null];
+
+                while (i <= tickGroup.length) {
+                    const tickBB = tickGroup[min([i, tickGroup.length - 1])]._getBBox();
+                    const key = hs.includes(alignment) ? CenterX : CenterY;
+                    const dist = Math.abs(tickBB[key] - textBB[key]);
+
+                    if (dist >= prevDist) {
+                        textMap.set(text, tickGroup[i - 1]);
+                        distance += prevDist;
+                        break;
+                    }
+
+                    prevDist = dist;
+                    ++i;
+                }
+            }
+
+            return [distance / textGroup.length, textMap];
+        }
+
+        const groups = []; const vs = [Left, Right, CenterX]; const hs = [Top, Bottom, CenterY];
+        for (const { alignment, marks: textGroup } of candidateTextGroups) {
+            if (textGroup.length === 1) {
+                continue;
+            }
+
+            let minGroup = { dist: Number.MAX_SAFE_INTEGER, group: null };
+            _sort(alignment, textGroup);
+
+            for (const { alignment: markAlignment, marks: markGroup } of candidateMarkGroups) {
+                if (markGroup.length < textGroup.length) continue;
+                if ((vs.includes(alignment) && !vs.includes(markAlignment)) ||
+                    (hs.includes(alignment) && !hs.includes(markAlignment))) continue;
+                if (getGroupDistance(textGroup, markGroup, alignment) > viewEpsilon) continue;
+
+                _sort(alignment, markGroup);
+                const [_dist, textMap] = matchGroup(alignment, textGroup, markGroup);
+                if (_dist === Number.MAX_SAFE_INTEGER) continue;
+
+                const withinEp = Math.abs(_dist - minGroup.dist) < epsilon;
+                if (append && withinEp) {
+                    minGroup.group.push([textMap, markGroup]);
+                } else if ((!append && withinEp && markGroup.length < minGroup.group[0][1].length) || _dist < minGroup.dist) {
+                    minGroup = { alignment, dist: _dist, group: [[textMap, markGroup]], text: textGroup };
+                }
+            }
+
+            if (minGroup.group) groups.push(minGroup);
+        }
+
+        groups.sort((a, b) => a.dist - b.dist);
+        return groups;
+    }
+
+    function collectCandidateGroups(textMarks, svgMarks) {
+        function getPositions(allMarks, useCenters = true) {
+            const positions = { [Left]: [], [Right]: [], [Top]: [], [Bottom]: [] };
+            if (useCenters) {
+                positions[CenterX] = [];
+                positions[CenterY] = [];
+            }
+
+            // Detect text groups
+            for (const mark of allMarks) {
+                const bbox = mark._getBBox();
+                for (const [position, array] of Object.entries(positions)) {
+                    const offset = bbox[position];
+                    array.push([offset, mark]);
+                }
+            }
+
+            return positions;
+        }
+
+        function mergePositions(positions, useStyle = false) {
+            const _positions = [];
+            if (useStyle) {
+                const keys = [CenterX, CenterY];
+                for (const key of keys) {
+                    const array = positions[key];
+                    const styles = { };
+                    array.forEach(([key, d]) => {
+                        const bbox = d._getBBox();
+                        const style = window.getComputedStyle(d);
+                        const styleKey = [bbox.width, bbox.height, style.fill, style.color, style.stroke].join(',');
+                        styleKey in styles ? styles[styleKey].push([key, d]) : styles[styleKey] = [[key, d]];
+                    });
+
+                    Object.values(styles).forEach(d => _positions.push([key, mergeArray(d)]));
+                }
+            } else {
+                for (const [key, array] of Object.entries(positions)) {
+                    _positions.push([key, mergeArray(array)]);
+                }
+            }
+
+            return _positions;
+        }
+
+        function assignGroups(allMarks, positions) {
+            // Assign each text element to its largest found group
+            const markAssignment = new Map();
+            const alignmentMap = new Map();
+            for (const [alignment, candidateGroups] of positions) {
+                for (const group of candidateGroups) {
+                    for (const mark of group) {
+                        const assignment = markAssignment.get(mark);
+
+                        if (!assignment || group.length > assignment.length) {
+                            markAssignment.set(mark, group);
+                            alignmentMap.set(group, alignment);
+                        }
+                    }
+                }
+            }
+
+            // Compute all candidate groups
+            const candidateGroups = [];
+            for (let i = 0; i < allMarks.length; ++i) {
+                const mark = allMarks[i];
+                const marks = markAssignment.get(mark);
+
+                if (!candidateGroups.includes(marks)) {
+                    candidateGroups.push(marks);
+                }
+            }
+
+            // Remove duplicates
+            for (let i = 0; i < candidateGroups.length; ++i) {
+                for (const mark of [...candidateGroups[i]]) {
+                    if (markAssignment.get(mark) !== candidateGroups[i]) {
+                        // Array.filter(...)
+                        candidateGroups[i].splice(candidateGroups[i].indexOf(mark), 1);
+                    }
+                }
+            }
+
+            return candidateGroups.map(d => {
+                return { alignment: alignmentMap.get(d), marks: d };
+            });
+        }
+
+        const textGroups = assignGroups(textMarks, mergePositions(getPositions(textMarks, false)));
+        const markPositions = getPositions(svgMarks);
+        const tickGroups = assignGroups(svgMarks, mergePositions(markPositions, true));
+        const legendGroups = mergePositions(markPositions).map(([k, v]) => v.map(d => { return { alignment: k, marks: d }; })).flat();
+
+        return [textGroups, tickGroups, legendGroups];
+    }
+}
+
+function cleanMarks(state) {
+    for (const mark of state.svgMarks) {
+        const clientRect = mark._getBBox();
+        if (clientRect.width >= state.xAxis.range[1] - state.xAxis.range[0] &&
+            clientRect.height >= state.yAxis.range[0] - state.yAxis.range[1]) {
+            mark[RoleProperty] = ViewportRole;
+            continue;
+        }
+        const svgR = state.svg._getBBox();
+        const [xLeft, xRight] = state.xAxis.range;
+        const [yBottom, yTop] = state.yAxis.range.map(d => d + svgR.top);
+        // if ((clientRect.left <= xLeft && clientRect.right >= xRight && clientRect.bottom <= yTop) ||
+        //     (clientRect.left <= xLeft && clientRect.right >= xRight && clientRect.top >= yBottom) )
+        if ((clientRect.top <= yTop && clientRect.bottom >= yBottom && clientRect.left <= xLeft) ||
+            (clientRect.top <= yTop && clientRect.bottom >= yBottom && clientRect.right >= xRight) ||
+            !(clientRect.right >= xLeft && clientRect.left <= xRight && clientRect.bottom >= yTop && clientRect.top <= yBottom)) {
+            mark[RoleProperty] = AxisDomainRole;
+        }
+        for (const legend of state.legends) {
+            for (const { mark } of legend.marks) {
+                mark[RoleProperty] = LegendRole;
+            }
+        }
+    }
+
+    state.svgMarks = state.svgMarks.filter(d => !d[RoleProperty]);
+    state.svgMarks.forEach(d => { d[RoleProperty] = MarkRole; });
+    sortByViewPos(null, state.svgMarks, false);
+}
+
+function computeDomain(axis) {
+    let isDate = true;
+    for (const [, value] of Object.entries(axis.ticks)) {
+        if (value.label == null) continue;
+        if (Object.prototype.toString.call(getFormatVal(value.label, true).value) !== '[object Date]') {
+            isDate = false;
+            break;
+        }
+    }
+
+    for (const [, value] of Object.entries(axis.ticks)) {
+        if (!value.label) continue;
+
+        let formatVal = getFormatVal(value.label, isDate);
+        if (formatVal.value) {
+            axis.formatter = { format: formatVal.format };
+            formatVal = formatVal.value;
+        }
+        value.value = formatVal;
+
+        if (typeof formatVal === 'string') {
+            axis.ordinal.push(formatVal);
+        } else {
+            axis.domain[0] = axis.domain[0] === null ? formatVal : min([axis.domain[0], formatVal]);
+            axis.domain[1] = axis.domain[1] === null ? formatVal : max([axis.domain[1], formatVal]);
+        }
+    }
+}
+
+function configureAxes(state) {
+    const svgClientRect = state.svg._getBBox();
+
+    if (state.xAxis.scale && !state.xAxis.ordinal.length) {
+        // Infer original X-axis domains
+
+        const tickLeft = computeCenterPos(
+            state.xAxis.ticks.filter(d => d.value === state.xAxis.domain[0])[0].marks[0], Left
+        );
+        const tickRight = computeCenterPos(
+            state.xAxis.ticks.filter(d => d.value === state.xAxis.domain[1])[0].marks[0], Left
+        );
+
+        const ticks = [tickLeft, tickRight].map(d => d - svgClientRect.left);
+        const newDomainX = state.xAxis.range.map(
+            state.xAxis.scale.copy().range(ticks).invert, state.xAxis.scale
+        );
+
+        state.xAxis.scale.domain(newDomainX);
+    }
+
+    if (state.yAxis.scale && !state.yAxis.ordinal.length) {
+        // Infer original Y-axis domain
+        const tickTop = computeCenterPos(
+            state.yAxis.ticks.filter(d => d.value === state.yAxis.domain[0])[0].marks[0], Top
+        );
+        const tickBottom = computeCenterPos(
+            state.yAxis.ticks.filter(d => d.value === state.yAxis.domain[1])[0].marks[0], Top
+        );
+
+        const ticks = [tickTop, tickBottom].map(d => d - svgClientRect.top);
+        const newDomainY = state.yAxis.range.map(
+            state.yAxis.scale.copy().range(ticks).invert, state.yAxis.scale
+        );
+
+        state.yAxis.scale.domain(newDomainY);
+    }
+}
+
+function deconstructChart(state) {
+    viewEpsilon = 1e-1 * max([state.svg._getBBox().width, state.svg._getBBox().height]);
+    parseChart(state);
+    computeDomain(state.xAxis);
+    computeDomain(state.yAxis);
+
+    let width = +convertPtToPx(state.svg.getAttribute('width'));
+    let height = +convertPtToPx(state.svg.getAttribute('height'));
+    if (!width) width = state.svg._getBBox().width;
+    if (!height) height = state.svg._getBBox().height;
+    const svgBBox = state.svg._getBBox();
+
+    if (!state.xAxis.ticks.length && !state.yAxis.ticks.length) {
+        state.xAxis.range = [0, width];
+        state.yAxis.range = [height, 0];
+        cleanMarks(state);
+        return;
+    }
+
+    /* TODO: More robust axis ranges */
+    const yTick = state.yAxis.ticks[0].marks[0];
+    const yTickBB = yTick._getBBox();
+    const xTick = state.xAxis.ticks[0].marks[0];
+    const xTickBB = xTick._getBBox();
+
+    const yTickRange = [yTickBB.left, yTickBB.left + yTickBB.width];
+    const xTickRange = [xTickBB.top + xTickBB.height, xTickBB.top];
+
+    const xMin = max([(yTickBB.width < 10 ? yTickRange[1] : yTickRange[0]) - svgBBox.left, 0]);
+    const xMax = max([min([yTickRange[1] - svgBBox.left, width]), state.xAxis.ticks[state.xAxis.ticks.length - 1].marks[0]._getBBox().right - svgBBox.left]);
+    const yMin = max([(xTickBB.height < 10 ? state.yAxis.ticks[state.yAxis.ticks.length - 1].marks[0]._getBBox().top : xTickRange[1]) - svgBBox.top, 0]);
+    const yMax = min([xTickRange[0] - svgBBox.top, height]);
+
+    state.xAxis.range = [xMin, xMax];
+    state.yAxis.range = [yMax, yMin];
+
+    state.xAxis.scale = (state.xAxis.domain[0] instanceof Date ? time() : (state.xAxis.ordinal.length ? band() : linear()))
+        .domain(state.xAxis.ordinal.length ? state.xAxis.ordinal : state.xAxis.domain)
+        .range(state.xAxis.range);
+    state.xAxis.axis = axisBottom(state.xAxis.scale, state)
+        .ticks(state.xAxis.ticks.length);
+    if (state.xAxis.domain[0] instanceof Date) state.xAxis.axis = state.xAxis.axis.tickFormat(state.xAxis.formatter.format);
+
+    state.yAxis.scale = (state.yAxis.domain[0] instanceof Date ? time() : (state.yAxis.ordinal.length ? band() : linear()))
+        .domain(state.yAxis.ordinal.length ? state.yAxis.ordinal : state.yAxis.domain)
+        .range(state.yAxis.range);
+    state.yAxis.axis = axisLeft(state.yAxis.scale, state)
+        .ticks(state.yAxis.ticks.length);
+    // .tickFormat(d => {
+    // let s = state.y_axis.ticks[0]['label'].innerHTML;
+    //     return s.includes("M") || s.includes("k") ? d3.format(".2s")(d) : d3.format(",")(d);
+    // });
+
+    configureAxes(state);
+    cleanMarks(state);
+
+    // TO-DO: Domain path 0.5 difference.
+    // if (state.hasDomain) {
+    //     let axes = [].slice.call(state.svg.querySelectorAll(".domain")).map((d) => { return d.getBoundingClientRect() });
+    //     let y_axis = axes[0].width < axes[1].width ? axes[0] : axes[1];
+    //     let x_axis = axes[0].height < axes[1].height ? axes[0] : axes[1];
+
+    //     var x_min = x_axis.left - state.svg.getBoundingClientRect().left;
+    //     var x_max = x_axis.right - state.svg.getBoundingClientRect().left;
+
+    //     var y_max = y_axis.bottom - state.svg.getBoundingClientRect().top;
+    //     var y_min = y_axis.top - state.svg.getBoundingClientRect().top;
+    // } else {
+
+    // if (yTick.clientRect.right < xTick.clientRect.left) {
+    //     var x_min = y_tick.right - state.svg.getBoundingClientRect().left;
+    //     var x_max = width;
+    // } else {
+    //     var x_min = y_tick.left - state.svg.getBoundingClientRect().left;
+    //     var x_max = d3.min([y_tick.width + x_min, width]);
+    // }
+
+    // if (x_tick.top > y_tick.bottom) {
+    //     var y_max = x_tick.top - state.svg.getBoundingClientRect().top;
+    //     var y_min = 0;
+    // } else {
+    //     var y_max = x_tick.bottom - state.svg.getBoundingClientRect().top;
+    //     var y_min = d3.max([y_max - x_tick.height, 0]);
+    // }
+    // }
+
+    // state.xAxis.scale = (state.xAxis.domain[0] instanceof Date ? d3.scaleTime() : (state.xAxis.ordinal.length ? d3.scaleBand() : d3.scaleLinear()))
+    // .domain(state.xAxis.ordinal.length ? state.xAxis.ordinal : state.xAxis.domain)
+    // .range(state.xAxis.range)
+    // state.x_axis.scale = (state.x_axis.domain[0] instanceof Date ? d3.scaleTime() : d3.scaleLinear())
+    //     .domain(state.x_axis.ordinal.length ? state.x_axis.range : state.x_axis.domain)
+    //     .range(state.x_axis.range);
+    // state.xAxis.axis = axisBottom(state.x_axis.scale, SVG).ticks(state.x_axis.ticks.length);
+    // state.x_axis.axis(state.x_axis.ticks);
+    // .tickSize(state.x_axis.ticks[1].children[0].getAttribute("y2"))
+    // .ticks(typeof x_axis.ticks[0].__data__ === "string" ? state.x_axis.ordinal.length : state.x_axis.ticks.length);
+
+    // configureAxes();
+
+    // let diff_1_y = +state.y_axis.ticks[1]['label'].innerHTML - +state.y_axis.ticks[0]['label'].innerHTML;
+    // let diff_2_y = +state.y_axis.ticks[2]['label'].innerHTML - +state.y_axis.ticks[1]['label'].innerHTML;
+
+    // let diff_1_x = +state.x_axis.ticks[1]['label'].innerHTML - +state.x_axis.ticks[0]['label'].innerHTML;
+    // if (state.x_axis.ticks.length < 3) {
+    //     var diff_2_x = 0;
+    // } else {
+    //     var diff_2_x = +state.x_axis.ticks[2]['label'].innerHTML - +state.x_axis.ticks[1]['label'].innerHTML;
+    // }
+
+    // let diff_tick_a = state.x_axis.ticks[1]['ticks'][0].getBoundingClientRect().left -
+    //     state.x_axis.ticks[0]['ticks'][0].getBoundingClientRect().left;
+
+    // if (state.x_axis.ticks.length < 3) {
+    //     var diff_tick_b = 0;
+    // } else {
+    //     var diff_tick_b = state.x_axis.ticks[2]['ticks'][0].getBoundingClientRect().left -
+    //         state.x_axis.ticks[1]['ticks'][0].getBoundingClientRect().left;
+    // }
+
+    // if (Math.abs(diff_1_x - diff_2_x) > 5e-1 || Math.abs(diff_tick_a - diff_tick_b) > 5e-1) {
+    //     // let tick_diff_1 = state.x_axis.ticks['ticks'][1].getBoundingClientRect().left -
+    //     //     state.x_axis.ticks['ticks'][0].getBoundingClientRect().left;
+    //     // let tick_diff_2 = state.x_axis.ticks['ticks'][2].getBoundingClientRect().left -
+    //     //     state.x_axis.ticks['ticks'][1].getBoundingClientRect().left;
+
+    //     if (Math.abs(diff_tick_a - diff_tick_b) < 5e-1) {
+    //         let format = state.x_axis.ticks['ticks'][0].childNodes[1].innerHTML;
+    //         if (format != state.x_axis.ticks[0].__data__ && typeof format === "string") {
+    //             var exponent = format.match(/^(e|\d+)\^(e|\d+)$/);
+    //             var superscript = format.match(/^(e|d+)([\u2070-\u209F\u00B2\u00B3\u00B9])$/);
+    //             if (exponent) {
+    //                 var base = exponent[1];
+    //                 base = (base === 'e' ? Math.E : parseInt(base));
+    //             } else if (superscript) {
+    //                 var base = superscript[1];
+    //                 base = (base === 'e' ? Math.E : parseInt(base));
+    //             }
+    //         }
+    //     }
+
+    //     function format(d) {
+    //         function digitToSuperscript(superChar) {
+    //             let table = "⁰¹²³⁴⁵⁶⁷⁸⁹";
+    //             return table[superChar];
+    //         }
+
+    //         let exp = Math.log(d) / Math.log(base);
+    //         return superscript ? 'e' + String(exp).replace(/\d/g, digitToSuperscript) : d + '^' + exp;
+    //     }
+
+    //     state.x_axis.scale = d3.scaleLog()
+    //         .domain(state.x_axis.domain)
+    //         .range(state.x_axis.range);
+    //     state.x_axis.axis = axisBottom(state.x_axis.scale, SVG)
+    //         // .tickSize(state.x_axis.ticks[1].children[0].getAttribute("y2"))
+    //         .ticks(state.x_axis.ticks.filter(d => d['label'].innerHTML).length)
+    //     if (base) {
+    //         state.x_axis.scale = state.x_axis.scale.base(base);
+    //         state.x_axis.axis = state.x_axis.axis.tickFormat(d => exponent || superscript ? format(d) : d);
+    //     }
+    // } else {
+    //     state.x_axis.scale = (state.x_axis.domain[0] instanceof Date ? d3.scaleTime() : (state.x_axis.ordinal.length ? d3.scaleBand() : d3.scaleLinear()))
+    //         .domain(state.x_axis.ordinal.length ? state.x_axis.ordinal : state.x_axis.domain)
+    //         .range(state.x_axis.range)
+    //     // state.x_axis.scale = (state.x_axis.domain[0] instanceof Date ? d3.scaleTime() : d3.scaleLinear())
+    //     //     .domain(state.x_axis.ordinal.length ? state.x_axis.range : state.x_axis.domain)
+    //     //     .range(state.x_axis.range);
+    //     state.x_axis.axis = axisBottom(state.x_axis.scale, SVG)
+    //         .ticks(state.x_axis.ticks.length);
+    //     // state.x_axis.axis(state.x_axis.ticks);
+    //         // .tickSize(state.x_axis.ticks[1].children[0].getAttribute("y2"))
+    //         // .ticks(typeof x_axis.ticks[0].__data__ === "string" ? state.x_axis.ordinal.length : state.x_axis.ticks.length);
+    // }
+
+    // if (Math.abs(diff_1_y - diff_2_y) > 5e-1) {
+    //     state.y_axis.scale = d3.scaleLog()
+    //         .domain(state.y_axis.domain)
+    //         .range(state.y_axis.range);
+    //     state.y_axis.axis = d3.axisLeft(state.y_axis.scale)
+    //         .tickSize(-state.y_axis.ticks[1].children[0].getAttribute("x2"))
+    //         .ticks(state.y_axis.ticks.length);
+    // } else {
+    //     state.y_axis.scale = (state.y_axis.domain[0] instanceof Date ? d3.scaleTime() : (state.y_axis.ordinal.length ? d3.scaleBand() : d3.scaleLinear()))
+    //         .domain(state.y_axis.ordinal.length ? state.y_axis.ordinal : state.y_axis.domain)
+    //         .range(state.y_axis.range);
+    //     state.y_axis.axis = axisLeft(state.y_axis.scale, SVG)
+    //         .ticks(state.y_axis.ticks.length)
+    //         .tickFormat(d => {
+    //             let s = state.y_axis.ticks[0]['label'].innerHTML;
+    //             return s.includes("M") || s.includes("k") ? d3.format(".2s")(d) : d3.format(",")(d);
+    //         });
+    //     // state.y_axis.axis(state.y_axis.ticks);
+    //         // .tickSize(-state.y_axis.ticks[1].children[0].getAttribute("x2"))
+    //         // .ticks(typeof state.y_axis.ticks[0].__data__ === "string" ? state.y_axis.ordinal.length : state.y_axis.ticks.length);
+    // }
+}
+
+class DataState {
+    constructor(table) {
+        this.table = table;
+        this.active = {
+            table,
+            selected: table,
+            filtered: null,
+            type: LINK_TYPES.NONE
+        };
+        this.children = [];
+        this.parents = [];
+    }
+}
+
+async function parseDataset(options) {
+    if (!options || !Object.keys(options).length) return { };
+    const { url } = options;
+    const type = url.split('.').pop();
+    const _table = await (type === 'json' ? loadJSON(url) : loadCSV(url));
+
+    return new DataState(_table.assign(table({ [tableIndexField]: range(_table.numRows()) })));
+}
+
+function parseDataFromMarks(marks) {
+    const dataset = { };
+    let dataList = marks.map(d => d[DataAttr]);
+    dataList = dataList.flat();
+    const keys = Object.keys(dataList[0]);
+
+    marks.forEach((d, i) => { d[tableIndexField] = i; });
+    keys.forEach(k => { dataset[k.toLowerCase()] = map$1(dataList, d => d[k.toLowerCase()]); });
+    dataset[tableMarkField] = marks;
+    dataset[tableIndexField] = range(marks.length);
+
+    return new DataState(table(dataset));
+}
+
+// import { DataState } from './data-state';
+
+class ViewState {
+    constructor() {
+        this.hasDomain = false;
+        this.svg = null;
+        this.svgMarks = [];
+        this.textMarks = [];
+        this.data = null;
+
+        this.xAxis = {
+            domain: [null, null],
+            ordinal: [],
+            range: [null, null],
+            ticks: [],
+            scale: null,
+            axis: null,
+            title: null
+        };
+        this.yAxis = {
+            domain: [null, null],
+            ordinal: [],
+            range: [null, null],
+            ticks: [],
+            scale: null,
+            axis: null,
+            title: null
+        };
+
+        this.legends = [];
+        this.title = null;
+
+        this.interactions = {
+            selection: true,
+            brush: true,
+            navigate: false,
+            filter: false,
+            sort: false,
+            annotate: false
+        };
+    }
+}
+
 const markTypes = [Circle, Ellipse, Line, Polygon, Polyline, Rect, Path, Use];
 let id = 1;
 
@@ -34380,12 +34380,17 @@ function orchestrate(svg, extState) {
     return states;
 }
 
-async function hydrate(svg, options = {}) {
+async function hydrate$1(svg, options = {}) {
+    console.log('here!');
     if (!svg) return;
     if (!Array.isArray(svg)) svg = [svg];
 
     svg = svg.map(d => typeof d === 'string' ? document.querySelector(d) : d);
     return orchestrate(svg, await parseDataset(options));
+}
+
+async function hydrate(svg, options = {}) {
+    return hydrate$1(svg);
 }
 
 export { hydrate };

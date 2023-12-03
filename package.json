@@ -1,12 +1,11 @@
 {
-  "private": true,
-  "name": "divi",
-  "version": "1.0.0",
+  "name": "uwdata-divi",
+  "version": "0.0.0",
   "description": "Dynamic interaction for SVG visualizations",
   "main": "src/index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/luke-s-snyder/DIVI.git"
+    "url": "https://github.com/uwdata/DIVI.git"
   },
   "type": "module",
   "author": "Luke Snyder (https://luke-s-snyder.github.io)",
