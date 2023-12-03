@@ -33,7 +33,7 @@ function createMap() {
     //             .style("opacity", 0);
 
     // Load in my states data!
-    d3.csv("https://raw.githubusercontent.com/Luke-S-Snyder/AutomaticInteraction/main/examples/data/stateslived.csv").then(function(data) {
+    d3.csv("https://raw.githubusercontent.com/Luke-S-Snyder/divi/main/examples/data/stateslived.csv").then(function(data) {
         color.domain([0,1,2,3]); // setting the range of the input data
             // Load GeoJSON data and merge with states data
         d3.json("https://gist.githubusercontent.com/michellechandra/0b2ce4923dc9b5809922/raw/a476b9098ba0244718b496697c5b350460d32f99/us-states.json").then(function(json) {
@@ -83,7 +83,7 @@ function createMap() {
                 });
 
                 // Map the cities I have lived in!
-                d3.csv("https://raw.githubusercontent.com/Luke-S-Snyder/AutomaticInteraction/main/examples/data/cities-lived.csv").then(function(data) {
+                d3.csv("https://raw.githubusercontent.com/Luke-S-Snyder/divi/main/examples/data/cities-lived.csv").then(function(data) {
 
                     svg.selectAll("circle")
                         .data(data)
@@ -123,7 +123,7 @@ function createMap() {
                     //       	  .attr("y", 9)
                     //       	  .attr("dy", ".35em")
                     //       	  .text(function(d) { return d; });
-                    AutomaticInteraction.hydrate("#mapsvg");
+                    divi.hydrate("#mapsvg");
                 });
         });
     });

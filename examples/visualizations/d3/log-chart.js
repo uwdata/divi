@@ -78,5 +78,5 @@ function createLogChart() {
     //       )
     // }));
 
-    AutomaticInteraction.hydrate("#chart");
+    divi.hydrate("#chart");
 }

@@ -42,7 +42,7 @@ function createScatterPlot() {
     view.toSVG().then(function(svg) {
       document.querySelector("#container").innerHTML = svg;
       document.querySelector("#container svg").id = "chart";
-      AutomaticInteraction.hydrate("#chart");
+      divi.hydrate("#chart");
     });
   }
   

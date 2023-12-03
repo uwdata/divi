@@ -53,7 +53,7 @@ async function createVegaMultiView() {
                 "range": ["#e7ba52", "#a7a7a7", "#aec7e8", "#1f77b4", "#9467bd"]
                 }
                 },
-            "x": {"aggregate": "sum", "field": "temp_max"},
+            "x": {"aggregate": "max", "field": "wind"},
             "y": {"title": "Weather", "field": "weather"}
         },
         "width": 700,
@@ -67,7 +67,7 @@ async function createVegaMultiView() {
           "url": "https://vega.github.io/vega-datasets/data/seattle-weather.csv"
         },
         "encoding": {
-            "x": {"aggregate": "mean", "field": "temp_max"},
+            "x": {"aggregate": "max", "field": "wind"},
             "y": {"field": "precipitation", "bin": true}
         },
         "width": 700,
@@ -86,9 +86,9 @@ async function createVegaMultiView() {
             document.querySelector("#chart1 svg").id = "chart1";
             document.querySelector("#chart2").innerHTML = svg2;
             document.querySelector("#chart2 svg").id = "chart2";
-            document.querySelector("#chart3").innerHTML = svg3;
-            document.querySelector("#chart3 svg").id = "chart3";
-            AutomaticInteraction.hydrate(["#chart1 svg", "#chart2 svg", "#chart3 svg"], { url: "https://vega.github.io/vega-datasets/data/seattle-weather.csv" });
+            // document.querySelector("#chart3").innerHTML = svg3;
+            // document.querySelector("#chart3 svg").id = "chart3";
+            divi.hydrate(["#chart1 svg", "#chart2 svg"], { url: "https://vega.github.io/vega-datasets/data/seattle-weather.csv" });
         })
     });
   }

@@ -63,6 +63,6 @@ function createStackedChart() {
           .y1(function(d) { return y(d[1]); })
       )
 
-      AutomaticInteraction.hydrate("#chart");
+      divi.hydrate("#chart");
   })
 }

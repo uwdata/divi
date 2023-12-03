@@ -48,7 +48,7 @@ async function createVegaMatplotlib() {
             document.querySelector("#chart1 svg").id = "chart1";
             document.querySelector("#chart2").innerHTML = svg2;
             document.querySelector("#chart2 svg").id = "chart2";
-            AutomaticInteraction.hydrate(["#chart1 svg", "#chart2 svg"], { url: "https://vega.github.io/vega-datasets/data/seattle-weather.csv" });
+            divi.hydrate(["#chart1 svg", "#chart2 svg"], { url: "https://vega.github.io/vega-datasets/data/seattle-weather.csv" });
     });
   }
   

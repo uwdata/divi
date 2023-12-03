@@ -113,7 +113,7 @@ function createGlyphMap() {
             .text(d => `${d.title}
             ${d3.format(d.value)}`);
 
-            AutomaticInteraction.hydrate("#chart")
+            divi.hydrate("#chart")
         });
     });
     });

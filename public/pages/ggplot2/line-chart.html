@@ -1,7 +1,7 @@
 <html>
     <head>
         <title>ggplot2 Line Chart</title>
-        <script src="../../../dist/automatic-interaction.min.js"></script>
+        <script src="../../../dist/divi.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
         <script src="https://code.jquery.com/jquery-3.6.1.min.js"></script>
     </head>
@@ -9,7 +9,7 @@
         <div id="container"></div>
         <script>
             $('#container').load('../../../examples/visualizations/ggplot2/line-chart.svg', function() {
-                AutomaticInteraction.hydrate(d3.select('#container').select('svg').node());
+                divi.hydrate(d3.select('#container').select('svg').node());
             });
         </script>
     </body>

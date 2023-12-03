@@ -54,6 +54,6 @@ function createLineChart() {
           .y(function(d) { return y(d.value) })
           )
 
-      AutomaticInteraction.hydrate("#chart");
+      divi.hydrate("#chart");
   })
 }

@@ -71,6 +71,6 @@ function createScatterPlot() {
 
         // d3.selectAll(".tick").attr("opacity", 0.5);
 
-        AutomaticInteraction.hydrate("#chart");
+        divi.hydrate("#chart");
     })
 }

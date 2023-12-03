@@ -90,6 +90,6 @@
         .attr("dy", "0.32em")
         .text(function(d) { return d; });
 
-        AutomaticInteraction.hydrate("#chart");
+        divi.hydrate("#chart");
   });
  }

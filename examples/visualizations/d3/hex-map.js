@@ -44,7 +44,7 @@ function createHexChart() {
                 .style("font-size", 11)
                 .style("fill", "white")
 
-                AutomaticInteraction.hydrate("#chart");
+                divi.hydrate("#chart");
         })
 
 }

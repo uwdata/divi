@@ -16,7 +16,7 @@ async function createVegaBarScatter() {
         "mark": "bar",
         "encoding": {
         "y": {"field": "Miles_per_Gallon", "bin": true},
-        "x": {"aggregate": "max", "field": "Displacement"},
+        "x": {"aggregate": "max", "field": "Horsepower"},
         // "color": {"field": "Origin", "legend": null}
         },
         width: 200,
@@ -74,19 +74,19 @@ const spec5 = {
     document.querySelector("#chart1").innerHTML = svg1;
     document.querySelector("#chart1 svg").id = "chart1";
 
-    document.querySelector("#chart2").innerHTML = svg2;
-    document.querySelector("#chart2 svg").id = "chart2";
+    // document.querySelector("#chart2").innerHTML = svg2;
+    // document.querySelector("#chart2 svg").id = "chart2";
 
-    document.querySelector("#chart3").innerHTML = svg3;
-    document.querySelector("#chart3 svg").id = "chart3";
+    // document.querySelector("#chart3").innerHTML = svg3;
+    // document.querySelector("#chart3 svg").id = "chart3";
 
     document.querySelector("#chart4").innerHTML = svg4;
     document.querySelector("#chart4 svg").id = "chart4";
 
-    document.querySelector("#chart5").innerHTML = svg5;
-    document.querySelector("#chart5 svg").id = "chart5";
+    // document.querySelector("#chart5").innerHTML = svg5;
+    // document.querySelector("#chart5 svg").id = "chart5";
         
-    AutomaticInteraction.hydrate(["#chart1 svg", "#chart2 svg", "#chart3 svg", "#chart4 svg", "#chart5 svg"], 
+    divi.hydrate(["#chart1 svg","#chart4 svg"], 
     { url: "https://vega.github.io/vega-datasets/data/cars.json" });
 }
   

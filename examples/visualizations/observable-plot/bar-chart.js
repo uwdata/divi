@@ -14,5 +14,5 @@ async function createBarChart() {
    
     d3.select(p).attr('id', 'chart1');
     d3.select('#container').node().append(p);
-    AutomaticInteraction.hydrate("#chart1");
+    divi.hydrate("#chart1");
 }

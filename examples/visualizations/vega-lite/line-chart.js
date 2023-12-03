@@ -17,7 +17,7 @@ function createLineChart() {
     view.toSVG().then(function(svg) {
       document.querySelector("#container1").innerHTML = svg;
       document.querySelector("#container1 svg").id = "chart";
-    //   AutomaticInteraction.hydrate("#chart");
+    //   divi.hydrate("#chart");
     });
   }
   

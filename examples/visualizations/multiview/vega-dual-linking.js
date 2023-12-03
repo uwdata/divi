@@ -9,8 +9,8 @@ async function getPlot(id) {
     //     {Origin: origins[2], Income: incomes[2]}
     // ];
     const p = Plot.plot({
-        width: 400,
-        height: 400,
+        width: 350,
+        height: 350,
         color: {
             legend: false,
             style: { marginLeft: 300 },
@@ -36,7 +36,7 @@ async function createVegaDualLinking() {
         "mark": "bar",
         "encoding": {
         "y": {"field": "Horsepower", "bin": true},
-        "x": {"aggregate": "sum", "field": "Acceleration"},
+        "x": {"aggregate": "mean", "field": "Acceleration"},
         },
         width: 300,
         height: 300
@@ -47,7 +47,7 @@ async function createVegaDualLinking() {
         "mark": "bar",
         "encoding": {
         "y": {"field": "Acceleration", "bin": true},
-        "x": {"aggregate": "count"},
+        "x": {"aggregate": "max", "field": "Cylinders"},
         },
         width: 300,
         height: 300
@@ -61,8 +61,8 @@ async function createVegaDualLinking() {
         "y": {"field": "Displacement", "type": "quantitative"},
         "color": {"field": "Origin"},
         },
-        width: 400,
-        height: 400
+        width: 300,
+        height: 300
     };
 
     var view1 = new vega.View(vega.parse(vegaLite.compile(spec1).spec), { renderer: 'svg' });
@@ -80,13 +80,14 @@ async function createVegaDualLinking() {
     document.querySelector("#chart2").innerHTML = svg2;
     document.querySelector("#chart2 svg").id = "chart2";
 
-    document.querySelector("#chart4").innerHTML = svg3;
-    document.querySelector("#chart4 svg").id = "chart3";
+    document.querySelector("#chart3").innerHTML = svg3;
+    document.querySelector("#chart3 svg").id = "chart3";
 
-    d3.select("#chart3").node().append(svg4);
-    d3.select("#chart3 svg").node().id = "chart4";
+    d3.select("#chart4").node().append(svg4);
+    d3.select("#chart4 svg").node().id = "chart4";
+    d3.select('#chart4 svg').style('max-width', 350)
         
-    AutomaticInteraction.hydrate([ "#chart1 svg", "#chart2 svg", "#chart3 svg", "#chart4 svg"], 
+    divi.hydrate([ "#chart1 svg", "#chart2 svg", "#chart3 svg", "#chart4 svg"], 
     { url: "https://vega.github.io/vega-datasets/data/cars.json" });
 }
   
