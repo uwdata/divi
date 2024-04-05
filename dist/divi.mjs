@@ -3043,7 +3043,7 @@ function formatUTCDate(d, short) {
 const iso_re = /^([-+]\d{2})?\d{4}(-\d{2}(-\d{2})?)?(T\d{2}:\d{2}(:\d{2}(\.\d{3})?)?(Z|[-+]\d{2}:\d{2})?)?$/;
 
 function isISODateString(value) {
-  return value.match(iso_re);
+  return value.match(iso_re) && !isNaN(Date.parse(value));
 }
 
 function parseIsoDate(value, parse = Date.parse) {
@@ -5018,60 +5018,65 @@ LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
 OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 ***************************************************************************** */
-/* global Reflect, Promise */
+/* global Reflect, Promise, SuppressedError, Symbol */
 
 
 function __awaiter(thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
+  function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+  return new (P || (P = Promise))(function (resolve, reject) {
+      function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+      function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+      function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+      step((generator = generator.apply(thisArg, _arguments || [])).next());
+  });
 }
 
 function __values(o) {
-    var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) return m.call(o);
-    if (o && typeof o.length === "number") return {
-        next: function () {
-            if (o && i >= o.length) o = void 0;
-            return { value: o && o[i++], done: !o };
-        }
-    };
-    throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
+  var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
+  if (m) return m.call(o);
+  if (o && typeof o.length === "number") return {
+      next: function () {
+          if (o && i >= o.length) o = void 0;
+          return { value: o && o[i++], done: !o };
+      }
+  };
+  throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
 }
 
 function __await(v) {
-    return this instanceof __await ? (this.v = v, this) : new __await(v);
+  return this instanceof __await ? (this.v = v, this) : new __await(v);
 }
 
 function __asyncGenerator(thisArg, _arguments, generator) {
-    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
-    var g = generator.apply(thisArg, _arguments || []), i, q = [];
-    return i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i;
-    function verb(n) { if (g[n]) i[n] = function (v) { return new Promise(function (a, b) { q.push([n, v, a, b]) > 1 || resume(n, v); }); }; }
-    function resume(n, v) { try { step(g[n](v)); } catch (e) { settle(q[0][3], e); } }
-    function step(r) { r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r); }
-    function fulfill(value) { resume("next", value); }
-    function reject(value) { resume("throw", value); }
-    function settle(f, v) { if (f(v), q.shift(), q.length) resume(q[0][0], q[0][1]); }
+  if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+  var g = generator.apply(thisArg, _arguments || []), i, q = [];
+  return i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i;
+  function verb(n) { if (g[n]) i[n] = function (v) { return new Promise(function (a, b) { q.push([n, v, a, b]) > 1 || resume(n, v); }); }; }
+  function resume(n, v) { try { step(g[n](v)); } catch (e) { settle(q[0][3], e); } }
+  function step(r) { r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r); }
+  function fulfill(value) { resume("next", value); }
+  function reject(value) { resume("throw", value); }
+  function settle(f, v) { if (f(v), q.shift(), q.length) resume(q[0][0], q[0][1]); }
 }
 
 function __asyncDelegator(o) {
-    var i, p;
-    return i = {}, verb("next"), verb("throw", function (e) { throw e; }), verb("return"), i[Symbol.iterator] = function () { return this; }, i;
-    function verb(n, f) { i[n] = o[n] ? function (v) { return (p = !p) ? { value: __await(o[n](v)), done: false } : f ? f(v) : v; } : f; }
+  var i, p;
+  return i = {}, verb("next"), verb("throw", function (e) { throw e; }), verb("return"), i[Symbol.iterator] = function () { return this; }, i;
+  function verb(n, f) { i[n] = o[n] ? function (v) { return (p = !p) ? { value: __await(o[n](v)), done: false } : f ? f(v) : v; } : f; }
 }
 
 function __asyncValues(o) {
-    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
-    var m = o[Symbol.asyncIterator], i;
-    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
-    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
-    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
+  if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+  var m = o[Symbol.asyncIterator], i;
+  return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
+  function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
+  function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
 }
+
+typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
+  var e = new Error(message);
+  return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
+};
 
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -5112,36 +5117,6 @@ const encodeUtf8 = (value) => encoder$1.encode(value);
 // KIND, either express or implied.  See the License for the
 // specific language governing permissions and limitations
 // under the License.
-/** @ignore */
-const [BigIntCtor, BigIntAvailable] = (() => {
-    const BigIntUnavailableError = () => { throw new Error('BigInt is not available in this environment'); };
-    function BigIntUnavailable() { throw BigIntUnavailableError(); }
-    BigIntUnavailable.asIntN = () => { throw BigIntUnavailableError(); };
-    BigIntUnavailable.asUintN = () => { throw BigIntUnavailableError(); };
-    return typeof BigInt !== 'undefined' ? [BigInt, true] : [BigIntUnavailable, false];
-})();
-/** @ignore */
-const [BigInt64ArrayCtor, BigInt64ArrayAvailable] = (() => {
-    const BigInt64ArrayUnavailableError = () => { throw new Error('BigInt64Array is not available in this environment'); };
-    class BigInt64ArrayUnavailable {
-        static get BYTES_PER_ELEMENT() { return 8; }
-        static of() { throw BigInt64ArrayUnavailableError(); }
-        static from() { throw BigInt64ArrayUnavailableError(); }
-        constructor() { throw BigInt64ArrayUnavailableError(); }
-    }
-    return typeof BigInt64Array !== 'undefined' ? [BigInt64Array, true] : [BigInt64ArrayUnavailable, false];
-})();
-/** @ignore */
-const [BigUint64ArrayCtor, BigUint64ArrayAvailable] = (() => {
-    const BigUint64ArrayUnavailableError = () => { throw new Error('BigUint64Array is not available in this environment'); };
-    class BigUint64ArrayUnavailable {
-        static get BYTES_PER_ELEMENT() { return 8; }
-        static of() { throw BigUint64ArrayUnavailableError(); }
-        static from() { throw BigUint64ArrayUnavailableError(); }
-        constructor() { throw BigUint64ArrayUnavailableError(); }
-    }
-    return typeof BigUint64Array !== 'undefined' ? [BigUint64Array, true] : [BigUint64ArrayUnavailable, false];
-})();
 /** @ignore */ const isBoolean = (x) => typeof x === 'boolean';
 /** @ignore */ const isFunction = (x) => typeof x === 'function';
 /** @ignore */
@@ -5361,12 +5336,12 @@ function rebaseValueOffsets(offset, length, valueOffsets) {
     // If we have a non-zero offset, create a new offsets array with the values
     // shifted by the start offset, such that the new start offset is 0
     if (offset !== 0) {
-        valueOffsets = valueOffsets.slice(0, length + 1);
-        for (let i = -1; ++i <= length;) {
+        valueOffsets = valueOffsets.slice(0, length);
+        for (let i = -1, n = valueOffsets.length; ++i < n;) {
             valueOffsets[i] += offset;
         }
     }
-    return valueOffsets;
+    return valueOffsets.subarray(0, length);
 }
 /** @ignore */
 function compareArrayLike(a, b) {
@@ -5834,7 +5809,7 @@ var MessageHeader$1;
  * nested type consisting of other data types, or another data type (e.g. a
  * timestamp encoded as an int64).
  *
- * **Note**: Only enum values 0-17 (NONE through Map) are written to an Arrow
+ * **Note**: Only enum values 0-18 (NONE through Duration) are written to an Arrow
  * IPC payload.
  *
  * The rest of the values are specified here so TypeScript can narrow the type
@@ -5872,6 +5847,7 @@ var Type$1;
     Type[Type["FixedSizeBinary"] = 15] = "FixedSizeBinary";
     Type[Type["FixedSizeList"] = 16] = "FixedSizeList";
     Type[Type["Map"] = 17] = "Map";
+    Type[Type["Duration"] = 18] = "Duration";
     Type[Type["Dictionary"] = -1] = "Dictionary";
     Type[Type["Int8"] = -2] = "Int8";
     Type[Type["Int16"] = -3] = "Int16";
@@ -5898,6 +5874,10 @@ var Type$1;
     Type[Type["SparseUnion"] = -24] = "SparseUnion";
     Type[Type["IntervalDayTime"] = -25] = "IntervalDayTime";
     Type[Type["IntervalYearMonth"] = -26] = "IntervalYearMonth";
+    Type[Type["DurationSecond"] = -27] = "DurationSecond";
+    Type[Type["DurationMillisecond"] = -28] = "DurationMillisecond";
+    Type[Type["DurationMicrosecond"] = -29] = "DurationMicrosecond";
+    Type[Type["DurationNanosecond"] = -30] = "DurationNanosecond";
 })(Type$1 || (Type$1 = {}));
 var BufferType;
 (function (BufferType) {
@@ -5957,7 +5937,7 @@ function valueToString(x) {
         return x[Symbol.toPrimitive]('string');
     }
     if (ArrayBuffer.isView(x)) {
-        if (x instanceof BigInt64ArrayCtor || x instanceof BigUint64ArrayCtor) {
+        if (x instanceof BigInt64Array || x instanceof BigUint64Array) {
             return `[${[...x].map(x => valueToString(x))}]`;
         }
         return `[${x}]`;
@@ -5991,17 +5971,17 @@ function BigNum(x, ...xs) {
     return Object.setPrototypeOf(new this['TypedArray'](x, ...xs), this.constructor.prototype);
 }
 BigNum.prototype[isArrowBigNumSymbol] = true;
-BigNum.prototype.toJSON = function () { return `"${bignumToString(this)}"`; };
-BigNum.prototype.valueOf = function () { return bignumToNumber(this); };
-BigNum.prototype.toString = function () { return bignumToString(this); };
+BigNum.prototype.toJSON = function () { return `"${bigNumToString(this)}"`; };
+BigNum.prototype.valueOf = function () { return bigNumToNumber(this); };
+BigNum.prototype.toString = function () { return bigNumToString(this); };
 BigNum.prototype[Symbol.toPrimitive] = function (hint = 'default') {
     switch (hint) {
-        case 'number': return bignumToNumber(this);
-        case 'string': return bignumToString(this);
-        case 'default': return bignumToBigInt(this);
+        case 'number': return bigNumToNumber(this);
+        case 'string': return bigNumToString(this);
+        case 'default': return bigNumToBigInt(this);
     }
     // @ts-ignore
-    return bignumToString(this);
+    return bigNumToString(this);
 };
 /** @ignore */
 function SignedBigNum(...args) { return BigNum.apply(this, args); }
@@ -6012,14 +5992,14 @@ function DecimalBigNum(...args) { return BigNum.apply(this, args); }
 Object.setPrototypeOf(SignedBigNum.prototype, Object.create(Int32Array.prototype));
 Object.setPrototypeOf(UnsignedBigNum.prototype, Object.create(Uint32Array.prototype));
 Object.setPrototypeOf(DecimalBigNum.prototype, Object.create(Uint32Array.prototype));
-Object.assign(SignedBigNum.prototype, BigNum.prototype, { 'constructor': SignedBigNum, 'signed': true, 'TypedArray': Int32Array, 'BigIntArray': BigInt64ArrayCtor });
-Object.assign(UnsignedBigNum.prototype, BigNum.prototype, { 'constructor': UnsignedBigNum, 'signed': false, 'TypedArray': Uint32Array, 'BigIntArray': BigUint64ArrayCtor });
-Object.assign(DecimalBigNum.prototype, BigNum.prototype, { 'constructor': DecimalBigNum, 'signed': true, 'TypedArray': Uint32Array, 'BigIntArray': BigUint64ArrayCtor });
+Object.assign(SignedBigNum.prototype, BigNum.prototype, { 'constructor': SignedBigNum, 'signed': true, 'TypedArray': Int32Array, 'BigIntArray': BigInt64Array });
+Object.assign(UnsignedBigNum.prototype, BigNum.prototype, { 'constructor': UnsignedBigNum, 'signed': false, 'TypedArray': Uint32Array, 'BigIntArray': BigUint64Array });
+Object.assign(DecimalBigNum.prototype, BigNum.prototype, { 'constructor': DecimalBigNum, 'signed': true, 'TypedArray': Uint32Array, 'BigIntArray': BigUint64Array });
 /** @ignore */
-function bignumToNumber(bn) {
+function bigNumToNumber(bn) {
     const { buffer, byteOffset, length, 'signed': signed } = bn;
-    const words = new BigUint64ArrayCtor(buffer, byteOffset, length);
-    const negative = signed && words[words.length - 1] & (BigInt(1) << BigInt(63));
+    const words = new BigUint64Array(buffer, byteOffset, length);
+    const negative = signed && words.at(-1) & (BigInt(1) << BigInt(63));
     let number = negative ? BigInt(1) : BigInt(0);
     let i = BigInt(0);
     if (!negative) {
@@ -6036,19 +6016,46 @@ function bignumToNumber(bn) {
     return number;
 }
 /** @ignore */
-let bignumToString;
+const bigNumToString = ((a) => {
+    // use BigInt native implementation
+    if (a.byteLength === 8) {
+        const bigIntArray = new a['BigIntArray'](a.buffer, a.byteOffset, 1);
+        return `${bigIntArray[0]}`;
+    }
+    // unsigned numbers
+    if (!a['signed']) {
+        return unsignedBigNumToString(a);
+    }
+    let array = new Uint16Array(a.buffer, a.byteOffset, a.byteLength / 2);
+    // detect positive numbers
+    const highOrderWord = new Int16Array([array.at(-1)])[0];
+    if (highOrderWord >= 0) {
+        return unsignedBigNumToString(a);
+    }
+    // flip the negative value
+    array = array.slice();
+    let carry = 1;
+    for (let i = 0; i < array.length; i++) {
+        const elem = array[i];
+        const updated = ~elem + carry;
+        array[i] = updated;
+        carry &= elem === 0 ? 1 : 0;
+    }
+    const negated = unsignedBigNumToString(array);
+    return `-${negated}`;
+});
 /** @ignore */
-let bignumToBigInt;
-if (!BigIntAvailable) {
-    bignumToString = decimalToString;
-    bignumToBigInt = bignumToString;
-}
-else {
-    bignumToBigInt = ((a) => a.byteLength === 8 ? new a['BigIntArray'](a.buffer, a.byteOffset, 1)[0] : decimalToString(a));
-    bignumToString = ((a) => a.byteLength === 8 ? `${new a['BigIntArray'](a.buffer, a.byteOffset, 1)[0]}` : decimalToString(a));
-}
+const bigNumToBigInt = ((a) => {
+    if (a.byteLength === 8) {
+        const bigIntArray = new a['BigIntArray'](a.buffer, a.byteOffset, 1);
+        return bigIntArray[0];
+    }
+    else {
+        return bigNumToString(a);
+    }
+});
 /** @ignore */
-function decimalToString(a) {
+function unsignedBigNumToString(a) {
     let digits = '';
     const base64 = new Uint32Array(2);
     let base32 = new Uint16Array(a.buffer, a.byteOffset, a.byteLength / 2);
@@ -6078,7 +6085,7 @@ class BN {
             case Int8Array:
             case Int16Array:
             case Int32Array:
-            case BigInt64ArrayCtor:
+            case BigInt64Array:
                 return new SignedBigNum(num);
         }
         if (num.byteLength === 16) {
@@ -6119,7 +6126,33 @@ class BN {
 // KIND, either express or implied.  See the License for the
 // specific language governing permissions and limitations
 // under the License.
-var _a$3, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u;
+/**
+ * Converts an integer as a number or bigint to a number, throwing an error if the input cannot safely be represented as a number.
+ */
+function bigIntToNumber(number) {
+    if (typeof number === 'bigint' && (number < Number.MIN_SAFE_INTEGER || number > Number.MAX_SAFE_INTEGER)) {
+        throw new TypeError(`${number} is not safe to convert to a number.`);
+    }
+    return Number(number);
+}
+
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+var _a$3, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v;
 /**
  * An abstract base class for classes that encapsulate metadata about each of
  * the logical types that Arrow can represent.
@@ -6136,6 +6169,7 @@ class DataType {
     /** @nocollapse */ static isTime(x) { return (x === null || x === void 0 ? void 0 : x.typeId) === Type$1.Time; }
     /** @nocollapse */ static isTimestamp(x) { return (x === null || x === void 0 ? void 0 : x.typeId) === Type$1.Timestamp; }
     /** @nocollapse */ static isInterval(x) { return (x === null || x === void 0 ? void 0 : x.typeId) === Type$1.Interval; }
+    /** @nocollapse */ static isDuration(x) { return (x === null || x === void 0 ? void 0 : x.typeId) === Type$1.Duration; }
     /** @nocollapse */ static isList(x) { return (x === null || x === void 0 ? void 0 : x.typeId) === Type$1.List; }
     /** @nocollapse */ static isStruct(x) { return (x === null || x === void 0 ? void 0 : x.typeId) === Type$1.Struct; }
     /** @nocollapse */ static isUnion(x) { return (x === null || x === void 0 ? void 0 : x.typeId) === Type$1.Union; }
@@ -6173,7 +6207,7 @@ class Int_ extends DataType {
             case 8: return this.isSigned ? Int8Array : Uint8Array;
             case 16: return this.isSigned ? Int16Array : Uint16Array;
             case 32: return this.isSigned ? Int32Array : Uint32Array;
-            case 64: return this.isSigned ? BigInt64ArrayCtor : BigUint64ArrayCtor;
+            case 64: return this.isSigned ? BigInt64Array : BigUint64Array;
         }
         throw new Error(`Unrecognized ${this[Symbol.toStringTag]} type`);
     }
@@ -6203,7 +6237,7 @@ class Int32 extends Int_ {
 /** @ignore */
 class Int64 extends Int_ {
     constructor() { super(true, 64); }
-    get ArrayType() { return BigInt64ArrayCtor; }
+    get ArrayType() { return BigInt64Array; }
 }
 /** @ignore */
 class Uint8 extends Int_ {
@@ -6223,16 +6257,16 @@ class Uint32 extends Int_ {
 /** @ignore */
 class Uint64 extends Int_ {
     constructor() { super(false, 64); }
-    get ArrayType() { return BigUint64ArrayCtor; }
+    get ArrayType() { return BigUint64Array; }
 }
 Object.defineProperty(Int8.prototype, 'ArrayType', { value: Int8Array });
 Object.defineProperty(Int16.prototype, 'ArrayType', { value: Int16Array });
 Object.defineProperty(Int32.prototype, 'ArrayType', { value: Int32Array });
-Object.defineProperty(Int64.prototype, 'ArrayType', { value: BigInt64ArrayCtor });
+Object.defineProperty(Int64.prototype, 'ArrayType', { value: BigInt64Array });
 Object.defineProperty(Uint8.prototype, 'ArrayType', { value: Uint8Array });
 Object.defineProperty(Uint16.prototype, 'ArrayType', { value: Uint16Array });
 Object.defineProperty(Uint32.prototype, 'ArrayType', { value: Uint32Array });
-Object.defineProperty(Uint64.prototype, 'ArrayType', { value: BigUint64ArrayCtor });
+Object.defineProperty(Uint64.prototype, 'ArrayType', { value: BigUint64Array });
 /** @ignore */
 class Float extends DataType {
     constructor(precision) {
@@ -6363,7 +6397,7 @@ class Time_ extends DataType {
     get ArrayType() {
         switch (this.bitWidth) {
             case 32: return Int32Array;
-            case 64: return BigInt64ArrayCtor;
+            case 64: return BigInt64Array;
         }
         // @ts-ignore
         throw new Error(`Unrecognized ${this[Symbol.toStringTag]} type`);
@@ -6432,6 +6466,21 @@ class IntervalYearMonth extends Interval_ {
     constructor() { super(IntervalUnit$1.YEAR_MONTH); }
 }
 /** @ignore */
+let Duration$1 = class Duration extends DataType {
+    constructor(unit) {
+        super();
+        this.unit = unit;
+    }
+    get typeId() { return Type$1.Duration; }
+    toString() { return `Duration<${TimeUnit$1[this.unit]}>`; }
+};
+_o = Symbol.toStringTag;
+Duration$1[_o] = ((proto) => {
+    proto.unit = null;
+    proto.ArrayType = BigInt64Array;
+    return proto[Symbol.toStringTag] = 'Duration';
+})(Duration$1.prototype);
+/** @ignore */
 let List$1 = class List extends DataType {
     constructor(child) {
         super();
@@ -6443,8 +6492,8 @@ let List$1 = class List extends DataType {
     get valueField() { return this.children[0]; }
     get ArrayType() { return this.valueType.ArrayType; }
 };
-_o = Symbol.toStringTag;
-List$1[_o] = ((proto) => {
+_p = Symbol.toStringTag;
+List$1[_p] = ((proto) => {
     proto.children = null;
     return proto[Symbol.toStringTag] = 'List';
 })(List$1.prototype);
@@ -6457,8 +6506,8 @@ class Struct extends DataType {
     get typeId() { return Type$1.Struct; }
     toString() { return `Struct<{${this.children.map((f) => `${f.name}:${f.type}`).join(`, `)}}>`; }
 }
-_p = Symbol.toStringTag;
-Struct[_p] = ((proto) => {
+_q = Symbol.toStringTag;
+Struct[_q] = ((proto) => {
     proto.children = null;
     return proto[Symbol.toStringTag] = 'Struct';
 })(Struct.prototype);
@@ -6476,8 +6525,8 @@ class Union_ extends DataType {
         return `${this[Symbol.toStringTag]}<${this.children.map((x) => `${x.type}`).join(` | `)}>`;
     }
 }
-_q = Symbol.toStringTag;
-Union_[_q] = ((proto) => {
+_r = Symbol.toStringTag;
+Union_[_r] = ((proto) => {
     proto.mode = null;
     proto.typeIds = null;
     proto.children = null;
@@ -6494,8 +6543,8 @@ let FixedSizeBinary$1 = class FixedSizeBinary extends DataType {
     get typeId() { return Type$1.FixedSizeBinary; }
     toString() { return `FixedSizeBinary[${this.byteWidth}]`; }
 };
-_r = Symbol.toStringTag;
-FixedSizeBinary$1[_r] = ((proto) => {
+_s = Symbol.toStringTag;
+FixedSizeBinary$1[_s] = ((proto) => {
     proto.byteWidth = null;
     proto.ArrayType = Uint8Array;
     return proto[Symbol.toStringTag] = 'FixedSizeBinary';
@@ -6513,18 +6562,34 @@ let FixedSizeList$1 = class FixedSizeList extends DataType {
     get ArrayType() { return this.valueType.ArrayType; }
     toString() { return `FixedSizeList[${this.listSize}]<${this.valueType}>`; }
 };
-_s = Symbol.toStringTag;
-FixedSizeList$1[_s] = ((proto) => {
+_t = Symbol.toStringTag;
+FixedSizeList$1[_t] = ((proto) => {
     proto.children = null;
     proto.listSize = null;
     return proto[Symbol.toStringTag] = 'FixedSizeList';
 })(FixedSizeList$1.prototype);
 /** @ignore */
 class Map_ extends DataType {
-    constructor(child, keysSorted = false) {
+    constructor(entries, keysSorted = false) {
+        var _w, _x, _y;
         super();
-        this.children = [child];
+        this.children = [entries];
         this.keysSorted = keysSorted;
+        // ARROW-8716
+        // https://github.com/apache/arrow/issues/17168
+        if (entries) {
+            entries['name'] = 'entries';
+            if ((_w = entries === null || entries === void 0 ? void 0 : entries.type) === null || _w === void 0 ? void 0 : _w.children) {
+                const key = (_x = entries === null || entries === void 0 ? void 0 : entries.type) === null || _x === void 0 ? void 0 : _x.children[0];
+                if (key) {
+                    key['name'] = 'key';
+                }
+                const val = (_y = entries === null || entries === void 0 ? void 0 : entries.type) === null || _y === void 0 ? void 0 : _y.children[1];
+                if (val) {
+                    val['name'] = 'value';
+                }
+            }
+        }
     }
     get typeId() { return Type$1.Map; }
     get keyType() { return this.children[0].type.children[0].type; }
@@ -6532,8 +6597,8 @@ class Map_ extends DataType {
     get childType() { return this.children[0].type; }
     toString() { return `Map<{${this.children[0].type.children.map((f) => `${f.name}:${f.type}`).join(`, `)}}>`; }
 }
-_t = Symbol.toStringTag;
-Map_[_t] = ((proto) => {
+_u = Symbol.toStringTag;
+Map_[_u] = ((proto) => {
     proto.children = null;
     proto.keysSorted = null;
     return proto[Symbol.toStringTag] = 'Map_';
@@ -6547,7 +6612,7 @@ class Dictionary extends DataType {
         this.indices = indices;
         this.dictionary = dictionary;
         this.isOrdered = isOrdered || false;
-        this.id = id == null ? getId() : (typeof id === 'number' ? id : id.low);
+        this.id = id == null ? getId() : bigIntToNumber(id);
     }
     get typeId() { return Type$1.Dictionary; }
     get children() { return this.dictionary.children; }
@@ -6555,8 +6620,8 @@ class Dictionary extends DataType {
     get ArrayType() { return this.dictionary.ArrayType; }
     toString() { return `Dictionary<${this.indices}, ${this.dictionary}>`; }
 }
-_u = Symbol.toStringTag;
-Dictionary[_u] = ((proto) => {
+_v = Symbol.toStringTag;
+Dictionary[_v] = ((proto) => {
     proto.id = null;
     proto.indices = null;
     proto.isOrdered = null;
@@ -6624,6 +6689,7 @@ class Visitor {
     visitUnion(_node, ..._args) { return null; }
     visitDictionary(_node, ..._args) { return null; }
     visitInterval(_node, ..._args) { return null; }
+    visitDuration(_node, ..._args) { return null; }
     visitFixedSizeList(_node, ..._args) { return null; }
     visitMap(_node, ..._args) { return null; }
 }
@@ -6770,6 +6836,21 @@ function getVisitFnByTypeId(visitor, dtype, throwIfNotFound = true) {
         case Type$1.IntervalYearMonth:
             fn = visitor.visitIntervalYearMonth || visitor.visitInterval;
             break;
+        case Type$1.Duration:
+            fn = visitor.visitDuration;
+            break;
+        case Type$1.DurationSecond:
+            fn = visitor.visitDurationSecond || visitor.visitDuration;
+            break;
+        case Type$1.DurationMillisecond:
+            fn = visitor.visitDurationMillisecond || visitor.visitDuration;
+            break;
+        case Type$1.DurationMicrosecond:
+            fn = visitor.visitDurationMicrosecond || visitor.visitDuration;
+            break;
+        case Type$1.DurationNanosecond:
+            fn = visitor.visitDurationNanosecond || visitor.visitDuration;
+            break;
         case Type$1.FixedSizeList:
             fn = visitor.visitFixedSizeList;
             break;
@@ -6842,6 +6923,15 @@ function inferDType(type) {
             }
             // @ts-ignore
             return Type$1.Interval;
+        case Type$1.Duration:
+            switch (type.unit) {
+                case TimeUnit$1.SECOND: return Type$1.DurationSecond;
+                case TimeUnit$1.MILLISECOND: return Type$1.DurationMillisecond;
+                case TimeUnit$1.MICROSECOND: return Type$1.DurationMicrosecond;
+                case TimeUnit$1.NANOSECOND: return Type$1.DurationNanosecond;
+            }
+            // @ts-ignore
+            return Type$1.Duration;
         case Type$1.Map: return Type$1.Map;
         case Type$1.List: return Type$1.List;
         case Type$1.Struct: return Type$1.Struct;
@@ -6885,6 +6975,11 @@ Visitor.prototype.visitDenseUnion = null;
 Visitor.prototype.visitSparseUnion = null;
 Visitor.prototype.visitIntervalDayTime = null;
 Visitor.prototype.visitIntervalYearMonth = null;
+Visitor.prototype.visitDuration = null;
+Visitor.prototype.visitDurationSecond = null;
+Visitor.prototype.visitDurationMillisecond = null;
+Visitor.prototype.visitDurationMicrosecond = null;
+Visitor.prototype.visitDurationNanosecond = null;
 
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -7196,6 +7291,24 @@ const setIntervalDayTime = ({ values }, index, value) => { values.set(value.suba
 /** @ignore */
 const setIntervalYearMonth = ({ values }, index, value) => { values[index] = (value[0] * 12) + (value[1] % 12); };
 /** @ignore */
+const setDurationSecond = ({ values }, index, value) => { values[index] = value; };
+/** @ignore */
+const setDurationMillisecond = ({ values }, index, value) => { values[index] = value; };
+/** @ignore */
+const setDurationMicrosecond = ({ values }, index, value) => { values[index] = value; };
+/** @ignore */
+const setDurationNanosecond = ({ values }, index, value) => { values[index] = value; };
+/* istanbul ignore next */
+/** @ignore */
+const setDuration = (data, index, value) => {
+    switch (data.type.unit) {
+        case TimeUnit$1.SECOND: return setDurationSecond(data, index, value);
+        case TimeUnit$1.MILLISECOND: return setDurationMillisecond(data, index, value);
+        case TimeUnit$1.MICROSECOND: return setDurationMicrosecond(data, index, value);
+        case TimeUnit$1.NANOSECOND: return setDurationNanosecond(data, index, value);
+    }
+};
+/** @ignore */
 const setFixedSizeList = (data, index, value) => {
     const { stride } = data;
     const child = data.children[0];
@@ -7251,6 +7364,11 @@ SetVisitor.prototype.visitDictionary = wrapSet(setDictionary);
 SetVisitor.prototype.visitInterval = wrapSet(setIntervalValue);
 SetVisitor.prototype.visitIntervalDayTime = wrapSet(setIntervalDayTime);
 SetVisitor.prototype.visitIntervalYearMonth = wrapSet(setIntervalYearMonth);
+SetVisitor.prototype.visitDuration = wrapSet(setDuration);
+SetVisitor.prototype.visitDurationSecond = wrapSet(setDurationSecond);
+SetVisitor.prototype.visitDurationMillisecond = wrapSet(setDurationMillisecond);
+SetVisitor.prototype.visitDurationMicrosecond = wrapSet(setDurationMicrosecond);
+SetVisitor.prototype.visitDurationNanosecond = wrapSet(setDurationNanosecond);
 SetVisitor.prototype.visitFixedSizeList = wrapSet(setFixedSizeList);
 SetVisitor.prototype.visitMap = wrapSet(setMap);
 /** @ignore */
@@ -7547,6 +7665,24 @@ const getIntervalYearMonth = ({ values }, index) => {
     return int32s;
 };
 /** @ignore */
+const getDurationSecond = ({ values }, index) => values[index];
+/** @ignore */
+const getDurationMillisecond = ({ values }, index) => values[index];
+/** @ignore */
+const getDurationMicrosecond = ({ values }, index) => values[index];
+/** @ignore */
+const getDurationNanosecond = ({ values }, index) => values[index];
+/* istanbul ignore next */
+/** @ignore */
+const getDuration = (data, index) => {
+    switch (data.type.unit) {
+        case TimeUnit$1.SECOND: return getDurationSecond(data, index);
+        case TimeUnit$1.MILLISECOND: return getDurationMillisecond(data, index);
+        case TimeUnit$1.MICROSECOND: return getDurationMicrosecond(data, index);
+        case TimeUnit$1.NANOSECOND: return getDurationNanosecond(data, index);
+    }
+};
+/** @ignore */
 const getFixedSizeList = (data, index) => {
     const { stride, children } = data;
     const child = children[0];
@@ -7594,6 +7730,11 @@ GetVisitor.prototype.visitDictionary = wrapGet(getDictionary);
 GetVisitor.prototype.visitInterval = wrapGet(getInterval);
 GetVisitor.prototype.visitIntervalDayTime = wrapGet(getIntervalDayTime);
 GetVisitor.prototype.visitIntervalYearMonth = wrapGet(getIntervalYearMonth);
+GetVisitor.prototype.visitDuration = wrapGet(getDuration);
+GetVisitor.prototype.visitDurationSecond = wrapGet(getDurationSecond);
+GetVisitor.prototype.visitDurationMillisecond = wrapGet(getDurationMillisecond);
+GetVisitor.prototype.visitDurationMicrosecond = wrapGet(getDurationMicrosecond);
+GetVisitor.prototype.visitDurationNanosecond = wrapGet(getDurationNanosecond);
 GetVisitor.prototype.visitFixedSizeList = wrapGet(getFixedSizeList);
 GetVisitor.prototype.visitMap = wrapGet(getMap);
 /** @ignore */
@@ -8053,6 +8194,44 @@ function popcnt_uint32(uint32) {
  * Data structure underlying {@link Vector}s. Use the convenience method {@link makeData}.
  */
 class Data {
+    get typeId() { return this.type.typeId; }
+    get ArrayType() { return this.type.ArrayType; }
+    get buffers() {
+        return [this.valueOffsets, this.values, this.nullBitmap, this.typeIds];
+    }
+    get nullable() {
+        if (this._nullCount !== 0) {
+            const { type } = this;
+            if (DataType.isSparseUnion(type)) {
+                return this.children.some((child) => child.nullable);
+            }
+            else if (DataType.isDenseUnion(type)) {
+                return this.children.some((child) => child.nullable);
+            }
+            return this.nullBitmap && this.nullBitmap.byteLength > 0;
+        }
+        return true;
+    }
+    get byteLength() {
+        let byteLength = 0;
+        const { valueOffsets, values, nullBitmap, typeIds } = this;
+        valueOffsets && (byteLength += valueOffsets.byteLength);
+        values && (byteLength += values.byteLength);
+        nullBitmap && (byteLength += nullBitmap.byteLength);
+        typeIds && (byteLength += typeIds.byteLength);
+        return this.children.reduce((byteLength, child) => byteLength + child.byteLength, byteLength);
+    }
+    get nullCount() {
+        if (DataType.isUnion(this.type)) {
+            return this.children.reduce((nullCount, child) => nullCount + child.nullCount, 0);
+        }
+        let nullCount = this._nullCount;
+        let nullBitmap;
+        if (nullCount <= kUnknownNullCount && (nullBitmap = this.nullBitmap)) {
+            this._nullCount = nullCount = this.length - popcnt_bit_range(nullBitmap, this.offset, this.offset + this.length);
+        }
+        return nullCount;
+    }
     constructor(type, offset, length, nullCount, buffers, children = [], dictionary) {
         this.type = type;
         this.children = children;
@@ -8077,31 +8256,15 @@ class Data {
                 (buffer = buffers[3]) && (this.typeIds = buffer);
             }
         }
-        this.nullable = this._nullCount !== 0 && this.nullBitmap && this.nullBitmap.byteLength > 0;
-    }
-    get typeId() { return this.type.typeId; }
-    get ArrayType() { return this.type.ArrayType; }
-    get buffers() {
-        return [this.valueOffsets, this.values, this.nullBitmap, this.typeIds];
-    }
-    get byteLength() {
-        let byteLength = 0;
-        const { valueOffsets, values, nullBitmap, typeIds } = this;
-        valueOffsets && (byteLength += valueOffsets.byteLength);
-        values && (byteLength += values.byteLength);
-        nullBitmap && (byteLength += nullBitmap.byteLength);
-        typeIds && (byteLength += typeIds.byteLength);
-        return this.children.reduce((byteLength, child) => byteLength + child.byteLength, byteLength);
-    }
-    get nullCount() {
-        let nullCount = this._nullCount;
-        let nullBitmap;
-        if (nullCount <= kUnknownNullCount && (nullBitmap = this.nullBitmap)) {
-            this._nullCount = nullCount = this.length - popcnt_bit_range(nullBitmap, this.offset, this.offset + this.length);
-        }
-        return nullCount;
     }
     getValid(index) {
+        const { type } = this;
+        if (DataType.isUnion(type)) {
+            const union = type;
+            const child = this.children[union.typeIdToChildIndex[this.typeIds[index]]];
+            const indexInChild = union.mode === UnionMode$1.Dense ? this.valueOffsets[index] : index;
+            return child.getValid(indexInChild);
+        }
         if (this.nullable && this.nullCount > 0) {
             const pos = this.offset + index;
             const val = this.nullBitmap[pos >> 3];
@@ -8110,23 +8273,40 @@ class Data {
         return true;
     }
     setValid(index, value) {
-        // Don't interact w/ nullBitmap if not nullable
-        if (!this.nullable) {
-            return value;
+        let prev;
+        const { type } = this;
+        if (DataType.isUnion(type)) {
+            const union = type;
+            const child = this.children[union.typeIdToChildIndex[this.typeIds[index]]];
+            const indexInChild = union.mode === UnionMode$1.Dense ? this.valueOffsets[index] : index;
+            prev = child.getValid(indexInChild);
+            child.setValid(indexInChild, value);
         }
-        // If no null bitmap, initialize one on the fly
-        if (!this.nullBitmap || this.nullBitmap.byteLength <= (index >> 3)) {
-            const { nullBitmap } = this._changeLengthAndBackfillNullBitmap(this.length);
-            Object.assign(this, { nullBitmap, _nullCount: 0 });
+        else {
+            let { nullBitmap } = this;
+            const { offset, length } = this;
+            const idx = offset + index;
+            const mask = 1 << (idx % 8);
+            const byteOffset = idx >> 3;
+            // If no null bitmap, initialize one on the fly
+            if (!nullBitmap || nullBitmap.byteLength <= byteOffset) {
+                nullBitmap = new Uint8Array((((offset + length) + 63) & ~63) >> 3).fill(255);
+                // if we have a nullBitmap, truncate + slice and set it over the pre-filled 1s
+                if (this.nullCount > 0) {
+                    nullBitmap.set(truncateBitmap(offset, length, this.nullBitmap), 0);
+                }
+                Object.assign(this, { nullBitmap, _nullCount: -1 });
+            }
+            const byte = nullBitmap[byteOffset];
+            prev = (byte & mask) !== 0;
+            value ?
+                (nullBitmap[byteOffset] = byte | mask) :
+                (nullBitmap[byteOffset] = byte & ~mask);
         }
-        const { nullBitmap, offset } = this;
-        const pos = (offset + index) >> 3;
-        const bit = (offset + index) % 8;
-        const val = (nullBitmap[pos] >> bit) & 1;
-        // If `val` is truthy and the current bit is 0, flip it to 1 and increment `_nullCount`.
-        // If `val` is falsey and the current bit is 1, flip it to 0 and decrement `_nullCount`.
-        value ? val === 0 && ((nullBitmap[pos] |= (1 << bit)), (this._nullCount = this.nullCount + 1))
-            : val === 1 && ((nullBitmap[pos] &= ~(1 << bit)), (this._nullCount = this.nullCount - 1));
+        if (prev !== !!value) {
+            // Update `_nullCount` if the new value is different from the old value.
+            this._nullCount = this.nullCount + (value ? -1 : 1);
+        }
         return value;
     }
     clone(type = this.type, offset = this.offset, length = this.length, nullCount = this._nullCount, buffers = this, children = this.children) {
@@ -8183,7 +8363,7 @@ class MakeDataVisitor extends Visitor {
     }
     visitNull(props) {
         const { ['type']: type, ['offset']: offset = 0, ['length']: length = 0, } = props;
-        return new Data(type, offset, length, 0);
+        return new Data(type, offset, length, length);
     }
     visitBool(props) {
         const { ['type']: type, ['offset']: offset = 0 } = props;
@@ -8272,14 +8452,13 @@ class MakeDataVisitor extends Visitor {
     }
     visitUnion(props) {
         const { ['type']: type, ['offset']: offset = 0, ['children']: children = [] } = props;
-        const nullBitmap = toUint8Array(props['nullBitmap']);
         const typeIds = toArrayBufferView(type.ArrayType, props['typeIds']);
-        const { ['length']: length = typeIds.length, ['nullCount']: nullCount = props['nullBitmap'] ? -1 : 0, } = props;
+        const { ['length']: length = typeIds.length, ['nullCount']: nullCount = -1, } = props;
         if (DataType.isSparseUnion(type)) {
-            return new Data(type, offset, length, nullCount, [undefined, undefined, nullBitmap, typeIds], children);
+            return new Data(type, offset, length, nullCount, [undefined, undefined, undefined, typeIds], children);
         }
         const valueOffsets = toInt32Array(props['valueOffsets']);
-        return new Data(type, offset, length, nullCount, [valueOffsets, undefined, nullBitmap, typeIds], children);
+        return new Data(type, offset, length, nullCount, [valueOffsets, undefined, undefined, typeIds], children);
     }
     visitDictionary(props) {
         const { ['type']: type, ['offset']: offset = 0 } = props;
@@ -8296,6 +8475,13 @@ class MakeDataVisitor extends Visitor {
         const { ['length']: length = data.length / strideForType(type), ['nullCount']: nullCount = props['nullBitmap'] ? -1 : 0, } = props;
         return new Data(type, offset, length, nullCount, [undefined, data, nullBitmap]);
     }
+    visitDuration(props) {
+        const { ['type']: type, ['offset']: offset = 0 } = props;
+        const nullBitmap = toUint8Array(props['nullBitmap']);
+        const data = toArrayBufferView(type.ArrayType, props['data']);
+        const { ['length']: length = data.length, ['nullCount']: nullCount = props['nullBitmap'] ? -1 : 0, } = props;
+        return new Data(type, offset, length, nullCount, [undefined, data, nullBitmap]);
+    }
     visitFixedSizeList(props) {
         const { ['type']: type, ['offset']: offset = 0, ['child']: child = new MakeDataVisitor().visit({ type: type.valueType }) } = props;
         const nullBitmap = toUint8Array(props['nullBitmap']);
@@ -8310,8 +8496,9 @@ class MakeDataVisitor extends Visitor {
         return new Data(type, offset, length, nullCount, [valueOffsets, undefined, nullBitmap], [child]);
     }
 }
+const makeDataVisitor = new MakeDataVisitor();
 function makeData(props) {
-    return new MakeDataVisitor().visit(props);
+    return makeDataVisitor.visit(props);
 }
 
 // Licensed to the Apache Software Foundation (ASF) under one
@@ -8501,7 +8688,17 @@ function indexOfValue(data, searchElement, fromIndex) {
         return -1;
     }
     if (searchElement === null) {
-        return indexOfNull(data, fromIndex);
+        switch (data.typeId) {
+            // Unions don't have a nullBitmap of its own, so compare the `searchElement` to `get()`.
+            case Type$1.Union:
+                break;
+            // Dictionaries do have a nullBitmap, but their dictionary could also have null elements.
+            case Type$1.Dictionary:
+                break;
+            // All other types can iterate the null bitmap
+            default:
+                return indexOfNull(data, fromIndex);
+        }
     }
     const get = instance$6.getVisitFn(data);
     const compare = createElementComparator(searchElement);
@@ -8568,6 +8765,11 @@ IndexOfVisitor.prototype.visitDictionary = indexOfValue;
 IndexOfVisitor.prototype.visitInterval = indexOfValue;
 IndexOfVisitor.prototype.visitIntervalDayTime = indexOfValue;
 IndexOfVisitor.prototype.visitIntervalYearMonth = indexOfValue;
+IndexOfVisitor.prototype.visitDuration = indexOfValue;
+IndexOfVisitor.prototype.visitDurationSecond = indexOfValue;
+IndexOfVisitor.prototype.visitDurationMillisecond = indexOfValue;
+IndexOfVisitor.prototype.visitDurationMicrosecond = indexOfValue;
+IndexOfVisitor.prototype.visitDurationNanosecond = indexOfValue;
 IndexOfVisitor.prototype.visitFixedSizeList = indexOfValue;
 IndexOfVisitor.prototype.visitMap = indexOfValue;
 /** @ignore */
@@ -8674,6 +8876,11 @@ IteratorVisitor.prototype.visitDictionary = vectorIterator;
 IteratorVisitor.prototype.visitInterval = vectorIterator;
 IteratorVisitor.prototype.visitIntervalDayTime = vectorIterator;
 IteratorVisitor.prototype.visitIntervalYearMonth = vectorIterator;
+IteratorVisitor.prototype.visitDuration = vectorIterator;
+IteratorVisitor.prototype.visitDurationSecond = vectorIterator;
+IteratorVisitor.prototype.visitDurationMillisecond = vectorIterator;
+IteratorVisitor.prototype.visitDurationMicrosecond = vectorIterator;
+IteratorVisitor.prototype.visitDurationNanosecond = vectorIterator;
 IteratorVisitor.prototype.visitFixedSizeList = vectorIterator;
 IteratorVisitor.prototype.visitMap = vectorIterator;
 /** @ignore */
@@ -8709,6 +8916,9 @@ class GetByteLengthVisitor extends Visitor {
     }
     visitInterval(data, _) {
         return (data.type.unit + 1) * 4;
+    }
+    visitDuration(____, _) {
+        return 8;
     }
     visitStruct(data, i) {
         return data.children.reduce((total, child) => total + instance$3.visit(child, i), 0);
@@ -8844,28 +9054,22 @@ class Vector {
         this.type = type;
         this.stride = strideForType(type);
         this.numChildren = (_d = (_c = type.children) === null || _c === void 0 ? void 0 : _c.length) !== null && _d !== void 0 ? _d : 0;
-        this.length = this._offsets[this._offsets.length - 1];
+        this.length = this._offsets.at(-1);
     }
     /**
      * The aggregate size (in bytes) of this Vector's buffers and/or child Vectors.
      */
     get byteLength() {
-        if (this._byteLength === -1) {
-            this._byteLength = this.data.reduce((byteLength, data) => byteLength + data.byteLength, 0);
-        }
-        return this._byteLength;
+        return this.data.reduce((byteLength, data) => byteLength + data.byteLength, 0);
     }
     /**
      * The number of null elements in this Vector.
      */
     get nullCount() {
-        if (this._nullCount === -1) {
-            this._nullCount = computeChunkNullCounts(this.data);
-        }
-        return this._nullCount;
+        return computeChunkNullCounts(this.data);
     }
     /**
-     * The Array or TypedAray constructor used for the JS representation
+     * The Array or TypedArray constructor used for the JS representation
      *  of the element's values in {@link Vector.prototype.toArray `toArray()`}.
      */
     get ArrayType() { return this.type.ArrayType; }
@@ -8905,7 +9109,10 @@ class Vector {
      */
     // @ts-ignore
     indexOf(element, offset) { return -1; }
-    includes(element, offset) { return this.indexOf(element, offset) > 0; }
+    includes(element, offset) {
+        // eslint-disable-next-line unicorn/prefer-includes
+        return this.indexOf(element, offset) > -1;
+    }
     /**
      * Get the size in bytes of an element by index.
      * @param index The index at which to get the byteLength.
@@ -9050,8 +9257,6 @@ Vector[_a$2] = ((proto) => {
     proto.length = 0;
     proto.stride = 1;
     proto.numChildren = 0;
-    proto._nullCount = -1;
-    proto._byteLength = -1;
     proto._offsets = new Uint32Array([0]);
     proto[Symbol.isConcatSpreadable] = true;
     const typeIds = Object.keys(Type$1)
@@ -9172,10 +9377,7 @@ function valueToCase(x) {
     if (typeof x !== 'bigint') {
         return valueToString(x);
     }
-    else if (BigIntAvailable) {
-        return `${valueToString(x)}n`;
-    }
-    return `"${valueToString(x)}"`;
+    return `${valueToString(x)}n`;
 }
 
 // Licensed to the Apache Software Foundation (ASF) under one
@@ -9351,7 +9553,7 @@ class OffsetsBufferBuilder extends DataBufferBuilder {
  *
  * @example
  * ```ts
- * import { Builder, Utf8 } from 'apache-arrow';
+ * import { makeBuilder, Utf8 } from 'apache-arrow';
  *
  * const utf8Builder = makeBuilder({
  *     type: new Utf8(),
@@ -9374,6 +9576,16 @@ class OffsetsBufferBuilder extends DataBufferBuilder {
  * @typeparam TNull The type(s) of values which will be considered null-value sentinels.
  */
 let Builder$3 = class Builder {
+    /** @nocollapse */
+    // @ts-ignore
+    static throughNode(options) {
+        throw new Error(`"throughNode" not available in this environment`);
+    }
+    /** @nocollapse */
+    // @ts-ignore
+    static throughDOM(options) {
+        throw new Error(`"throughDOM" not available in this environment`);
+    }
     /**
      * Construct a builder with the given Arrow DataType with optional null values,
      * which will be interpreted as "null" when set or appended to the `Builder`.
@@ -9398,16 +9610,6 @@ let Builder$3 = class Builder {
         if (nulls && nulls.length > 0) {
             this._isValid = createIsValidFunction(nulls);
         }
-    }
-    /** @nocollapse */
-    // @ts-ignore
-    static throughNode(options) {
-        throw new Error(`"throughNode" not available in this environment`);
-    }
-    /** @nocollapse */
-    // @ts-ignore
-    static throughDOM(options) {
-        throw new Error(`"throughDOM" not available in this environment`);
     }
     /**
      * Flush the `Builder` and return a `Vector<T>`.
@@ -9521,7 +9723,7 @@ let Builder$3 = class Builder {
             // Binary, Utf8
             data = _values === null || _values === void 0 ? void 0 : _values.flush(_offsets.last());
         }
-        else { // Fixed-width primitives (Int, Float, Decimal, Time, Timestamp, and Interval)
+        else { // Fixed-width primitives (Int, Float, Decimal, Time, Timestamp, Duration and Interval)
             data = _values === null || _values === void 0 ? void 0 : _values.flush(length);
         }
         if (nullCount > 0) {
@@ -9660,10 +9862,10 @@ class Block {
     }
     static createBlock(builder, offset, metaDataLength, bodyLength) {
         builder.prep(8, 24);
-        builder.writeInt64(bodyLength);
+        builder.writeInt64(BigInt(bodyLength !== null && bodyLength !== void 0 ? bodyLength : 0));
         builder.pad(4);
         builder.writeInt32(metaDataLength);
-        builder.writeInt64(offset);
+        builder.writeInt64(BigInt(offset !== null && offset !== void 0 ? offset : 0));
         return builder.offset();
     }
 }
@@ -9678,24 +9880,6 @@ const float32 = new Float32Array(int32.buffer);
 const float64 = new Float64Array(int32.buffer);
 const isLittleEndian = new Uint16Array(new Uint8Array([1, 0]).buffer)[0] === 1;
 
-let Long$3 = class Long {
-    constructor(low, high) {
-        this.low = low | 0;
-        this.high = high | 0;
-    }
-    static create(low, high) {
-        // Special-case zero to avoid GC overhead for default values
-        return low == 0 && high == 0 ? Long.ZERO : new Long(low, high);
-    }
-    toFloat64() {
-        return (this.low >>> 0) + this.high * 0x100000000;
-    }
-    equals(other) {
-        return this.low == other.low && this.high == other.high;
-    }
-};
-Long$3.ZERO = new Long$3(0, 0);
-
 var Encoding;
 (function (Encoding) {
     Encoding[Encoding["UTF8_BYTES"] = 1] = "UTF8_BYTES";
@@ -9709,6 +9893,7 @@ let ByteBuffer$2 = class ByteBuffer {
     constructor(bytes_) {
         this.bytes_ = bytes_;
         this.position_ = 0;
+        this.text_decoder_ = new TextDecoder();
     }
     /**
      * Create and allocate a new ByteBuffer with a given size.
@@ -9762,10 +9947,10 @@ let ByteBuffer$2 = class ByteBuffer {
         return this.readInt32(offset) >>> 0;
     }
     readInt64(offset) {
-        return new Long$3(this.readInt32(offset), this.readInt32(offset + 4));
+        return BigInt.asIntN(64, BigInt(this.readUint32(offset)) + (BigInt(this.readUint32(offset + 4)) << BigInt(32)));
     }
     readUint64(offset) {
-        return new Long$3(this.readUint32(offset), this.readUint32(offset + 4));
+        return BigInt.asUintN(64, BigInt(this.readUint32(offset)) + (BigInt(this.readUint32(offset + 4)) << BigInt(32)));
     }
     readFloat32(offset) {
         int32[0] = this.readInt32(offset);
@@ -9803,12 +9988,12 @@ let ByteBuffer$2 = class ByteBuffer {
         this.bytes_[offset + 3] = value >> 24;
     }
     writeInt64(offset, value) {
-        this.writeInt32(offset, value.low);
-        this.writeInt32(offset + 4, value.high);
+        this.writeInt32(offset, Number(BigInt.asIntN(32, value)));
+        this.writeInt32(offset + 4, Number(BigInt.asIntN(32, value >> BigInt(32))));
     }
     writeUint64(offset, value) {
-        this.writeUint32(offset, value.low);
-        this.writeUint32(offset + 4, value.high);
+        this.writeUint32(offset, Number(BigInt.asUintN(32, value)));
+        this.writeUint32(offset + 4, Number(BigInt.asUintN(32, value >> BigInt(32))));
     }
     writeFloat32(offset, value) {
         float32[0] = value;
@@ -9855,10 +10040,9 @@ let ByteBuffer$2 = class ByteBuffer {
      * Create a JavaScript string from UTF-8 data stored inside the FlatBuffer.
      * This allocates a new string and converts to wide chars upon each access.
      *
-     * To avoid the conversion to UTF-16, pass Encoding.UTF8_BYTES as
-     * the "optionalEncoding" argument. This is useful for avoiding conversion to
-     * and from UTF-16 when the data will just be packaged back up in another
-     * FlatBuffer later on.
+     * To avoid the conversion to string, pass Encoding.UTF8_BYTES as the
+     * "optionalEncoding" argument. This is useful for avoiding conversion when
+     * the data will just be packaged back up in another FlatBuffer later on.
      *
      * @param offset
      * @param opt_encoding Defaults to UTF16_STRING
@@ -9866,54 +10050,12 @@ let ByteBuffer$2 = class ByteBuffer {
     __string(offset, opt_encoding) {
         offset += this.readInt32(offset);
         const length = this.readInt32(offset);
-        let result = '';
-        let i = 0;
         offset += SIZEOF_INT;
-        if (opt_encoding === Encoding.UTF8_BYTES) {
-            return this.bytes_.subarray(offset, offset + length);
-        }
-        while (i < length) {
-            let codePoint;
-            // Decode UTF-8
-            const a = this.readUint8(offset + i++);
-            if (a < 0xC0) {
-                codePoint = a;
-            }
-            else {
-                const b = this.readUint8(offset + i++);
-                if (a < 0xE0) {
-                    codePoint =
-                        ((a & 0x1F) << 6) |
-                            (b & 0x3F);
-                }
-                else {
-                    const c = this.readUint8(offset + i++);
-                    if (a < 0xF0) {
-                        codePoint =
-                            ((a & 0x0F) << 12) |
-                                ((b & 0x3F) << 6) |
-                                (c & 0x3F);
-                    }
-                    else {
-                        const d = this.readUint8(offset + i++);
-                        codePoint =
-                            ((a & 0x07) << 18) |
-                                ((b & 0x3F) << 12) |
-                                ((c & 0x3F) << 6) |
-                                (d & 0x3F);
-                    }
-                }
-            }
-            // Encode UTF-16
-            if (codePoint < 0x10000) {
-                result += String.fromCharCode(codePoint);
-            }
-            else {
-                codePoint -= 0x10000;
-                result += String.fromCharCode((codePoint >> 10) + 0xD800, (codePoint & ((1 << 10) - 1)) + 0xDC00);
-            }
-        }
-        return result;
+        const utf8bytes = this.bytes_.subarray(offset, offset + length);
+        if (opt_encoding === Encoding.UTF8_BYTES)
+            return utf8bytes;
+        else
+            return this.text_decoder_.decode(utf8bytes);
     }
     /**
      * Handle unions that can contain string as its member, if a Table-derived type then initialize it,
@@ -9959,19 +10101,14 @@ let ByteBuffer$2 = class ByteBuffer {
         return true;
     }
     /**
-     * A helper function to avoid generated code depending on this file directly.
-     */
-    createLong(low, high) {
-        return Long$3.create(low, high);
-    }
-    /**
      * A helper function for generating list for obj api
      */
     createScalarList(listAccessor, listLength) {
         const ret = [];
         for (let i = 0; i < listLength; ++i) {
-            if (listAccessor(i) !== null) {
-                ret.push(listAccessor(i));
+            const val = listAccessor(i);
+            if (val !== null) {
+                ret.push(val);
             }
         }
         return ret;
@@ -10016,6 +10153,7 @@ let Builder$2 = class Builder {
         /** False omits default values from the serialized data */
         this.force_defaults = false;
         this.string_maps = null;
+        this.text_encoder = new TextEncoder();
         let initial_size;
         if (!opt_initial_size) {
             initial_size = 1024;
@@ -10118,7 +10256,7 @@ let Builder$2 = class Builder {
     }
     /**
      * Add an `int8` to the buffer, properly aligned, and grows the buffer (if necessary).
-     * @param value The `int8` to add the the buffer.
+     * @param value The `int8` to add the buffer.
      */
     addInt8(value) {
         this.prep(1, 0);
@@ -10126,7 +10264,7 @@ let Builder$2 = class Builder {
     }
     /**
      * Add an `int16` to the buffer, properly aligned, and grows the buffer (if necessary).
-     * @param value The `int16` to add the the buffer.
+     * @param value The `int16` to add the buffer.
      */
     addInt16(value) {
         this.prep(2, 0);
@@ -10134,7 +10272,7 @@ let Builder$2 = class Builder {
     }
     /**
      * Add an `int32` to the buffer, properly aligned, and grows the buffer (if necessary).
-     * @param value The `int32` to add the the buffer.
+     * @param value The `int32` to add the buffer.
      */
     addInt32(value) {
         this.prep(4, 0);
@@ -10142,7 +10280,7 @@ let Builder$2 = class Builder {
     }
     /**
      * Add an `int64` to the buffer, properly aligned, and grows the buffer (if necessary).
-     * @param value The `int64` to add the the buffer.
+     * @param value The `int64` to add the buffer.
      */
     addInt64(value) {
         this.prep(8, 0);
@@ -10150,7 +10288,7 @@ let Builder$2 = class Builder {
     }
     /**
      * Add a `float32` to the buffer, properly aligned, and grows the buffer (if necessary).
-     * @param value The `float32` to add the the buffer.
+     * @param value The `float32` to add the buffer.
      */
     addFloat32(value) {
         this.prep(4, 0);
@@ -10158,7 +10296,7 @@ let Builder$2 = class Builder {
     }
     /**
      * Add a `float64` to the buffer, properly aligned, and grows the buffer (if necessary).
-     * @param value The `float64` to add the the buffer.
+     * @param value The `float64` to add the buffer.
      */
     addFloat64(value) {
         this.prep(8, 0);
@@ -10183,7 +10321,7 @@ let Builder$2 = class Builder {
         }
     }
     addFieldInt64(voffset, value, defaultValue) {
-        if (this.force_defaults || !value.equals(defaultValue)) {
+        if (this.force_defaults || value !== defaultValue) {
             this.addInt64(value);
             this.slot(voffset);
         }
@@ -10222,7 +10360,7 @@ let Builder$2 = class Builder {
      */
     nested(obj) {
         if (obj != this.offset()) {
-            throw new Error('FlatBuffers: struct must be serialized inline.');
+            throw new TypeError('FlatBuffers: struct must be serialized inline.');
         }
     }
     /**
@@ -10231,7 +10369,7 @@ let Builder$2 = class Builder {
      */
     notNested() {
         if (this.isNested) {
-            throw new Error('FlatBuffers: object serialization must not be nested.');
+            throw new TypeError('FlatBuffers: object serialization must not be nested.');
         }
     }
     /**
@@ -10364,7 +10502,7 @@ let Builder$2 = class Builder {
             this.prep(this.minalign, SIZEOF_INT +
                 FILE_IDENTIFIER_LENGTH + size_prefix);
             if (file_identifier.length != FILE_IDENTIFIER_LENGTH) {
-                throw new Error('FlatBuffers: file identifier must be length ' +
+                throw new TypeError('FlatBuffers: file identifier must be length ' +
                     FILE_IDENTIFIER_LENGTH);
             }
             for (let i = FILE_IDENTIFIER_LENGTH - 1; i >= 0; i--) {
@@ -10391,10 +10529,11 @@ let Builder$2 = class Builder {
     requiredField(table, field) {
         const table_start = this.bb.capacity() - table;
         const vtable_start = table_start - this.bb.readInt32(table_start);
-        const ok = this.bb.readInt16(vtable_start + field) != 0;
+        const ok = field < this.bb.readInt16(vtable_start) &&
+            this.bb.readInt16(vtable_start + field) != 0;
         // If this fails, the caller will show what field needs to be set.
         if (!ok) {
-            throw new Error('FlatBuffers: field ' + field + ' must be set');
+            throw new TypeError('FlatBuffers: field ' + field + ' must be set');
         }
     }
     /**
@@ -10452,7 +10591,7 @@ let Builder$2 = class Builder {
      * @return The offset in the buffer where the encoded string starts
      */
     createString(s) {
-        if (!s) {
+        if (s === null || s === undefined) {
             return 0;
         }
         let utf8;
@@ -10460,39 +10599,7 @@ let Builder$2 = class Builder {
             utf8 = s;
         }
         else {
-            utf8 = [];
-            let i = 0;
-            while (i < s.length) {
-                let codePoint;
-                // Decode UTF-16
-                const a = s.charCodeAt(i++);
-                if (a < 0xD800 || a >= 0xDC00) {
-                    codePoint = a;
-                }
-                else {
-                    const b = s.charCodeAt(i++);
-                    codePoint = (a << 10) + b + (0x10000 - (0xD800 << 10) - 0xDC00);
-                }
-                // Encode UTF-8
-                if (codePoint < 0x80) {
-                    utf8.push(codePoint);
-                }
-                else {
-                    if (codePoint < 0x800) {
-                        utf8.push(((codePoint >> 6) & 0x1F) | 0xC0);
-                    }
-                    else {
-                        if (codePoint < 0x10000) {
-                            utf8.push(((codePoint >> 12) & 0x0F) | 0xE0);
-                        }
-                        else {
-                            utf8.push(((codePoint >> 18) & 0x07) | 0xF0, ((codePoint >> 12) & 0x3F) | 0x80);
-                        }
-                        utf8.push(((codePoint >> 6) & 0x3F) | 0x80);
-                    }
-                    utf8.push((codePoint & 0x3F) | 0x80);
-                }
-            }
+            utf8 = this.text_encoder.encode(s);
         }
         this.addInt8(0);
         this.startVector(1, utf8.length, 1);
@@ -10501,12 +10608,6 @@ let Builder$2 = class Builder {
             bytes[offset++] = utf8[i];
         }
         return this.endVector();
-    }
-    /**
-     * A helper function to avoid generated code depending on this file directly.
-     */
-    createLong(low, high) {
-        return Long$3.create(low, high);
     }
     /**
      * A helper function to pack an object
@@ -10537,14 +10638,14 @@ let Builder$2 = class Builder {
                 ret.push(this.createObjectOffset(val));
             }
             else {
-                throw new Error('FlatBuffers: Argument for createObjectOffsetList cannot contain null.');
+                throw new TypeError('FlatBuffers: Argument for createObjectOffsetList cannot contain null.');
             }
         }
         return ret;
     }
     createStructOffsetList(list, startFunc) {
         startFunc(this, list.length);
-        this.createObjectOffsetList(list);
+        this.createObjectOffsetList(list.slice().reverse());
         return this.endVector();
     }
 };
@@ -10606,8 +10707,9 @@ class KeyValue {
  * Logical types, vector layouts, and schemas
  * Format Version History.
  * Version 1.0 - Forward and backwards compatibility guaranteed.
- * Version 1.1 - Add Decimal256 (No format release).
- * Version 1.2 (Pending)- Add Interval MONTH_DAY_NANO
+ * Version 1.1 - Add Decimal256.
+ * Version 1.2 - Add Interval MONTH_DAY_NANO.
+ * Version 1.3 - Add Run-End Encoded.
  */
 var MetadataVersion;
 (function (MetadataVersion) {
@@ -10735,7 +10837,7 @@ class DictionaryEncoding {
      */
     id() {
         const offset = this.bb.__offset(this.bb_pos, 4);
-        return offset ? this.bb.readInt64(this.bb_pos + offset) : this.bb.createLong(0, 0);
+        return offset ? this.bb.readInt64(this.bb_pos + offset) : BigInt('0');
     }
     /**
      * The dictionary indices are constrained to be non-negative integers. If
@@ -10766,7 +10868,7 @@ class DictionaryEncoding {
         builder.startObject(4);
     }
     static addId(builder, id) {
-        builder.addFieldInt64(0, id, builder.createLong(0, 0));
+        builder.addFieldInt64(0, id, BigInt('0'));
     }
     static addIndexType(builder, indexTypeOffset) {
         builder.addFieldOffset(1, indexTypeOffset, 0);
@@ -10981,6 +11083,45 @@ var TimeUnit;
     TimeUnit[TimeUnit["MICROSECOND"] = 2] = "MICROSECOND";
     TimeUnit[TimeUnit["NANOSECOND"] = 3] = "NANOSECOND";
 })(TimeUnit || (TimeUnit = {}));
+
+// automatically generated by the FlatBuffers compiler, do not modify
+class Duration {
+    constructor() {
+        this.bb = null;
+        this.bb_pos = 0;
+    }
+    __init(i, bb) {
+        this.bb_pos = i;
+        this.bb = bb;
+        return this;
+    }
+    static getRootAsDuration(bb, obj) {
+        return (obj || new Duration()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+    }
+    static getSizePrefixedRootAsDuration(bb, obj) {
+        bb.setPosition(bb.position() + SIZE_PREFIX_LENGTH);
+        return (obj || new Duration()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+    }
+    unit() {
+        const offset = this.bb.__offset(this.bb_pos, 4);
+        return offset ? this.bb.readInt16(this.bb_pos + offset) : TimeUnit.MILLISECOND;
+    }
+    static startDuration(builder) {
+        builder.startObject(1);
+    }
+    static addUnit(builder, unit) {
+        builder.addFieldInt16(0, unit, TimeUnit.MILLISECOND);
+    }
+    static endDuration(builder) {
+        const offset = builder.endObject();
+        return offset;
+    }
+    static createDuration(builder, unit) {
+        Duration.startDuration(builder);
+        Duration.addUnit(builder, unit);
+        return Duration.endDuration(builder);
+    }
+}
 
 // automatically generated by the FlatBuffers compiler, do not modify
 class FixedSizeBinary {
@@ -11689,6 +11830,7 @@ var Type;
     Type[Type["LargeBinary"] = 19] = "LargeBinary";
     Type[Type["LargeUtf8"] = 20] = "LargeUtf8";
     Type[Type["LargeList"] = 21] = "LargeList";
+    Type[Type["RunEndEncoded"] = 22] = "RunEndEncoded";
 })(Type || (Type = {}));
 
 // automatically generated by the FlatBuffers compiler, do not modify
@@ -11732,7 +11874,6 @@ let Field$1 = class Field {
     /**
      * This is the type of the decoded value if the field is dictionary encoded.
      */
-    // @ts-ignore
     type(obj) {
         const offset = this.bb.__offset(this.bb_pos, 10);
         return offset ? this.bb.__union(obj, this.bb_pos + offset) : null;
@@ -11869,7 +12010,7 @@ let Schema$1 = class Schema {
      */
     features(index) {
         const offset = this.bb.__offset(this.bb_pos, 10);
-        return offset ? this.bb.readInt64(this.bb.__vector(this.bb_pos + offset) + index * 8) : this.bb.createLong(0, 0);
+        return offset ? this.bb.readInt64(this.bb.__vector(this.bb_pos + offset) + index * 8) : BigInt(0);
     }
     featuresLength() {
         const offset = this.bb.__offset(this.bb_pos, 10);
@@ -12061,13 +12202,14 @@ class Footer {
 // specific language governing permissions and limitations
 // under the License.
 class Schema {
-    constructor(fields = [], metadata, dictionaries) {
+    constructor(fields = [], metadata, dictionaries, metadataVersion = MetadataVersion$1.V5) {
         this.fields = (fields || []);
         this.metadata = metadata || new Map();
         if (!dictionaries) {
             dictionaries = generateDictionaryMap(fields);
         }
         this.dictionaries = dictionaries;
+        this.metadataVersion = metadataVersion;
     }
     get [Symbol.toStringTag]() { return 'Schema'; }
     get names() { return this.fields.map((f) => f.name); }
@@ -12119,12 +12261,6 @@ Schema.prototype.fields = null;
 Schema.prototype.metadata = null;
 Schema.prototype.dictionaries = null;
 class Field {
-    constructor(name, type, nullable = false, metadata) {
-        this.name = name;
-        this.type = type;
-        this.nullable = nullable;
-        this.metadata = metadata || new Map();
-    }
     /** @nocollapse */
     static new(...args) {
         let [name, type, nullable, metadata] = args;
@@ -12135,6 +12271,12 @@ class Field {
             (metadata === undefined) && (metadata = args[0].metadata);
         }
         return new Field(`${name}`, type, nullable, metadata);
+    }
+    constructor(name, type, nullable = false, metadata) {
+        this.name = name;
+        this.type = type;
+        this.nullable = nullable;
+        this.metadata = metadata || new Map();
     }
     get typeId() { return this.type.typeId; }
     get [Symbol.toStringTag]() { return 'Field'; }
@@ -12194,22 +12336,15 @@ function generateDictionaryMap(fields, dictionaries = new Map()) {
 // specific language governing permissions and limitations
 // under the License.
 /* eslint-disable @typescript-eslint/naming-convention */
-var Long$2 = Long$3;
 var Builder$1 = Builder$2;
 var ByteBuffer$1 = ByteBuffer$2;
 /** @ignore */
 class Footer_ {
-    constructor(schema, version = MetadataVersion$1.V4, recordBatches, dictionaryBatches) {
-        this.schema = schema;
-        this.version = version;
-        recordBatches && (this._recordBatches = recordBatches);
-        dictionaryBatches && (this._dictionaryBatches = dictionaryBatches);
-    }
     /** @nocollapse */
     static decode(buf) {
         buf = new ByteBuffer$1(toUint8Array(buf));
         const footer = Footer.getRootAsFooter(buf);
-        const schema = Schema.decode(footer.schema());
+        const schema = Schema.decode(footer.schema(), new Map(), footer.version());
         return new OffHeapFooter(schema, footer);
     }
     /** @nocollapse */
@@ -12228,7 +12363,7 @@ class Footer_ {
         const dictionaryBatchesOffset = b.endVector();
         Footer.startFooter(b);
         Footer.addSchema(b, schemaOffset);
-        Footer.addVersion(b, MetadataVersion$1.V4);
+        Footer.addVersion(b, MetadataVersion$1.V5);
         Footer.addRecordBatches(b, recordBatchesOffset);
         Footer.addDictionaries(b, dictionaryBatchesOffset);
         Footer.finishFooterBuffer(b, Footer.endFooter(b));
@@ -12236,6 +12371,12 @@ class Footer_ {
     }
     get numRecordBatches() { return this._recordBatches.length; }
     get numDictionaries() { return this._dictionaryBatches.length; }
+    constructor(schema, version = MetadataVersion$1.V5, recordBatches, dictionaryBatches) {
+        this.schema = schema;
+        this.version = version;
+        recordBatches && (this._recordBatches = recordBatches);
+        dictionaryBatches && (this._dictionaryBatches = dictionaryBatches);
+    }
     *recordBatches() {
         for (let block, i = -1, n = this.numRecordBatches; ++i < n;) {
             if (block = this.getRecordBatch(i)) {
@@ -12263,12 +12404,12 @@ class Footer_ {
 }
 /** @ignore */
 class OffHeapFooter extends Footer_ {
+    get numRecordBatches() { return this._footer.recordBatchesLength(); }
+    get numDictionaries() { return this._footer.dictionariesLength(); }
     constructor(schema, _footer) {
         super(schema, _footer.version());
         this._footer = _footer;
     }
-    get numRecordBatches() { return this._footer.recordBatchesLength(); }
-    get numDictionaries() { return this._footer.dictionariesLength(); }
     getRecordBatch(index) {
         if (index >= 0 && index < this.numRecordBatches) {
             const fileBlock = this._footer.recordBatches(index);
@@ -12290,11 +12431,6 @@ class OffHeapFooter extends Footer_ {
 }
 /** @ignore */
 class FileBlock {
-    constructor(metaDataLength, bodyLength, offset) {
-        this.metaDataLength = metaDataLength;
-        this.offset = typeof offset === 'number' ? offset : offset.low;
-        this.bodyLength = typeof bodyLength === 'number' ? bodyLength : bodyLength.low;
-    }
     /** @nocollapse */
     static decode(block) {
         return new FileBlock(block.metaDataLength(), block.bodyLength(), block.offset());
@@ -12302,9 +12438,14 @@ class FileBlock {
     /** @nocollapse */
     static encode(b, fileBlock) {
         const { metaDataLength } = fileBlock;
-        const offset = new Long$2(fileBlock.offset, 0);
-        const bodyLength = new Long$2(fileBlock.bodyLength, 0);
+        const offset = BigInt(fileBlock.offset);
+        const bodyLength = BigInt(fileBlock.bodyLength);
         return Block.createBlock(b, offset, metaDataLength, bodyLength);
+    }
+    constructor(metaDataLength, bodyLength, offset) {
+        this.metaDataLength = metaDataLength;
+        this.offset = bigIntToNumber(offset);
+        this.bodyLength = bigIntToNumber(bodyLength);
     }
 }
 
@@ -12458,12 +12599,14 @@ class AsyncByteQueue extends AsyncQueue {
     }
     toUint8Array(sync = false) {
         return sync ? joinUint8Arrays(this._values)[0] : (() => __awaiter(this, void 0, void 0, function* () {
-            var e_1, _a;
+            var _a, e_1, _b, _c;
             const buffers = [];
             let byteLength = 0;
             try {
-                for (var _b = __asyncValues(this), _c; _c = yield _b.next(), !_c.done;) {
-                    const chunk = _c.value;
+                for (var _d = true, _e = __asyncValues(this), _f; _f = yield _e.next(), _a = _f.done, !_a; _d = true) {
+                    _c = _f.value;
+                    _d = false;
+                    const chunk = _c;
                     buffers.push(chunk);
                     byteLength += chunk.byteLength;
                 }
@@ -12471,7 +12614,7 @@ class AsyncByteQueue extends AsyncQueue {
             catch (e_1_1) { e_1 = { error: e_1_1 }; }
             finally {
                 try {
-                    if (_c && !_c.done && (_a = _b.return)) yield _a.call(_b);
+                    if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
                 }
                 finally { if (e_1) throw e_1.error; }
             }
@@ -12824,6 +12967,43 @@ IntervalYearMonthBuilder.prototype._setValue = setIntervalYearMonth;
 // specific language governing permissions and limitations
 // under the License.
 /** @ignore */
+class DurationBuilder extends FixedWidthBuilder {
+}
+DurationBuilder.prototype._setValue = setDuration;
+/** @ignore */
+class DurationSecondBuilder extends DurationBuilder {
+}
+DurationSecondBuilder.prototype._setValue = setDurationSecond;
+/** @ignore */
+class DurationMillisecondBuilder extends DurationBuilder {
+}
+DurationMillisecondBuilder.prototype._setValue = setDurationMillisecond;
+/** @ignore */
+class DurationMicrosecondBuilder extends DurationBuilder {
+}
+DurationMicrosecondBuilder.prototype._setValue = setDurationMicrosecond;
+/** @ignore */
+class DurationNanosecondBuilder extends DurationBuilder {
+}
+DurationNanosecondBuilder.prototype._setValue = setDurationNanosecond;
+
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+/** @ignore */
 class IntBuilder extends FixedWidthBuilder {
     setValue(index, value) {
         this._values.set(index, value);
@@ -12892,10 +13072,11 @@ class ListBuilder extends VariableWidthBuilder {
                 offsets.set(index, 0);
             }
             else {
-                const n = value.length;
+                const v = value;
+                const n = v.length;
                 const start = offsets.set(index, n).buffer[index];
                 for (let i = -1; ++i < n;) {
-                    child.set(start + i, value[i]);
+                    child.set(start + i, v[i]);
                 }
             }
         }
@@ -13132,9 +13313,7 @@ class UnionBuilder extends Builder$3 {
         if (childTypeId === undefined) {
             childTypeId = this._valueToChildTypeId(this, value, index);
         }
-        if (this.setValid(index, this.isValid(value))) {
-            this.setValue(index, value, childTypeId);
-        }
+        this.setValue(index, value, childTypeId);
         return this;
     }
     setValue(index, value, childTypeId) {
@@ -13272,6 +13451,11 @@ class GetBuilderCtor extends Visitor {
     visitInterval() { return IntervalBuilder; }
     visitIntervalDayTime() { return IntervalDayTimeBuilder; }
     visitIntervalYearMonth() { return IntervalYearMonthBuilder; }
+    visitDuration() { return DurationBuilder; }
+    visitDurationSecond() { return DurationSecondBuilder; }
+    visitDurationMillisecond() { return DurationMillisecondBuilder; }
+    visitDurationMicrosecond() { return DurationMicrosecondBuilder; }
+    visistDurationNanosecond() { return DurationNanosecondBuilder; }
     visitFixedSizeList() { return FixedSizeListBuilder; }
     visitMap() { return MapBuilder; }
 }
@@ -13373,6 +13557,10 @@ function compareInterval(type, other) {
     return (type === other) || (compareConstructor(type, other) &&
         type.unit === other.unit);
 }
+function compareDuration(type, other) {
+    return (type === other) || (compareConstructor(type, other) &&
+        type.unit === other.unit);
+}
 function compareFixedSizeList(type, other) {
     return (type === other) || (compareConstructor(type, other) &&
         type.listSize === other.listSize &&
@@ -13426,6 +13614,11 @@ TypeComparator.prototype.visitDictionary = compareDictionary;
 TypeComparator.prototype.visitInterval = compareInterval;
 TypeComparator.prototype.visitIntervalDayTime = compareInterval;
 TypeComparator.prototype.visitIntervalYearMonth = compareInterval;
+TypeComparator.prototype.visitDuration = compareDuration;
+TypeComparator.prototype.visitDurationSecond = compareDuration;
+TypeComparator.prototype.visitDurationMillisecond = compareDuration;
+TypeComparator.prototype.visitDurationMicrosecond = compareDuration;
+TypeComparator.prototype.visitDurationNanosecond = compareDuration;
 TypeComparator.prototype.visitFixedSizeList = compareFixedSizeList;
 TypeComparator.prototype.visitMap = compareMap;
 /** @ignore */
@@ -13585,7 +13778,7 @@ class Table {
         if (args[0] instanceof Schema) {
             schema = args.shift();
         }
-        if (args[args.length - 1] instanceof Uint32Array) {
+        if (args.at(-1) instanceof Uint32Array) {
             offsets = args.pop();
         }
         const unwrap = (x) => {
@@ -14093,22 +14286,25 @@ function ensureSameLengthData(schema, chunks, maxLength = chunks.reduce((max, co
 }
 /** @ignore */
 function collectDictionaries(fields, children, dictionaries = new Map()) {
-    for (let i = -1, n = fields.length; ++i < n;) {
-        const field = fields[i];
-        const type = field.type;
-        const data = children[i];
-        if (DataType.isDictionary(type)) {
-            if (!dictionaries.has(type.id)) {
-                if (data.dictionary) {
-                    dictionaries.set(type.id, data.dictionary);
+    var _b, _c;
+    if (((_b = fields === null || fields === void 0 ? void 0 : fields.length) !== null && _b !== void 0 ? _b : 0) > 0 && ((fields === null || fields === void 0 ? void 0 : fields.length) === (children === null || children === void 0 ? void 0 : children.length))) {
+        for (let i = -1, n = fields.length; ++i < n;) {
+            const { type } = fields[i];
+            const data = children[i];
+            for (const next of [data, ...(((_c = data === null || data === void 0 ? void 0 : data.dictionary) === null || _c === void 0 ? void 0 : _c.data) || [])]) {
+                collectDictionaries(type.children, next === null || next === void 0 ? void 0 : next.children, dictionaries);
+            }
+            if (DataType.isDictionary(type)) {
+                const { id } = type;
+                if (!dictionaries.has(id)) {
+                    if (data === null || data === void 0 ? void 0 : data.dictionary) {
+                        dictionaries.set(id, data.dictionary);
+                    }
+                }
+                else if (dictionaries.get(id) !== data.dictionary) {
+                    throw new Error(`Cannot create Schema containing two different dictionaries with the same Id`);
                 }
             }
-            else if (dictionaries.get(type.id) !== data.dictionary) {
-                throw new Error(`Cannot create Schema containing two different dictionaries with the same Id`);
-            }
-        }
-        if (type.children && type.children.length > 0) {
-            collectDictionaries(type.children, data.children, dictionaries);
         }
     }
     return dictionaries;
@@ -14252,8 +14448,8 @@ class Buffer {
     }
     static createBuffer(builder, offset, length) {
         builder.prep(8, 16);
-        builder.writeInt64(length);
-        builder.writeInt64(offset);
+        builder.writeInt64(BigInt(length !== null && length !== void 0 ? length : 0));
+        builder.writeInt64(BigInt(offset !== null && offset !== void 0 ? offset : 0));
         return builder.offset();
     }
 }
@@ -14300,8 +14496,8 @@ let FieldNode$1 = class FieldNode {
     }
     static createFieldNode(builder, length, null_count) {
         builder.prep(8, 16);
-        builder.writeInt64(null_count);
-        builder.writeInt64(length);
+        builder.writeInt64(BigInt(null_count !== null && null_count !== void 0 ? null_count : 0));
+        builder.writeInt64(BigInt(length !== null && length !== void 0 ? length : 0));
         return builder.offset();
     }
 };
@@ -14335,7 +14531,7 @@ let RecordBatch$1 = class RecordBatch {
      */
     length() {
         const offset = this.bb.__offset(this.bb_pos, 4);
-        return offset ? this.bb.readInt64(this.bb_pos + offset) : this.bb.createLong(0, 0);
+        return offset ? this.bb.readInt64(this.bb_pos + offset) : BigInt('0');
     }
     /**
      * Nodes correspond to the pre-ordered flattened logical schema
@@ -14375,7 +14571,7 @@ let RecordBatch$1 = class RecordBatch {
         builder.startObject(4);
     }
     static addLength(builder, length) {
-        builder.addFieldInt64(0, length, builder.createLong(0, 0));
+        builder.addFieldInt64(0, length, BigInt('0'));
     }
     static addNodes(builder, nodesOffset) {
         builder.addFieldOffset(1, nodesOffset, 0);
@@ -14426,7 +14622,7 @@ let DictionaryBatch$1 = class DictionaryBatch {
     }
     id() {
         const offset = this.bb.__offset(this.bb_pos, 4);
-        return offset ? this.bb.readInt64(this.bb_pos + offset) : this.bb.createLong(0, 0);
+        return offset ? this.bb.readInt64(this.bb_pos + offset) : BigInt('0');
     }
     data(obj) {
         const offset = this.bb.__offset(this.bb_pos, 6);
@@ -14445,7 +14641,7 @@ let DictionaryBatch$1 = class DictionaryBatch {
         builder.startObject(3);
     }
     static addId(builder, id) {
-        builder.addFieldInt64(0, id, builder.createLong(0, 0));
+        builder.addFieldInt64(0, id, BigInt('0'));
     }
     static addData(builder, dataOffset) {
         builder.addFieldOffset(1, dataOffset, 0);
@@ -14506,14 +14702,13 @@ let Message$1 = class Message {
         const offset = this.bb.__offset(this.bb_pos, 6);
         return offset ? this.bb.readUint8(this.bb_pos + offset) : MessageHeader.NONE;
     }
-    // @ts-ignore
     header(obj) {
         const offset = this.bb.__offset(this.bb_pos, 8);
         return offset ? this.bb.__union(obj, this.bb_pos + offset) : null;
     }
     bodyLength() {
         const offset = this.bb.__offset(this.bb_pos, 10);
-        return offset ? this.bb.readInt64(this.bb_pos + offset) : this.bb.createLong(0, 0);
+        return offset ? this.bb.readInt64(this.bb_pos + offset) : BigInt('0');
     }
     customMetadata(index, obj) {
         const offset = this.bb.__offset(this.bb_pos, 12);
@@ -14536,7 +14731,7 @@ let Message$1 = class Message {
         builder.addFieldOffset(2, headerOffset, 0);
     }
     static addBodyLength(builder, bodyLength) {
-        builder.addFieldInt64(3, bodyLength, builder.createLong(0, 0));
+        builder.addFieldInt64(3, bodyLength, BigInt('0'));
     }
     static addCustomMetadata(builder, customMetadataOffset) {
         builder.addFieldOffset(4, customMetadataOffset, 0);
@@ -14588,7 +14783,6 @@ let Message$1 = class Message {
 // KIND, either express or implied.  See the License for the
 // specific language governing permissions and limitations
 // under the License.
-var Long$1 = Long$3;
 /** @ignore */
 class TypeAssembler extends Visitor {
     visit(node, builder) {
@@ -14653,6 +14847,11 @@ class TypeAssembler extends Visitor {
         Interval.addUnit(b, node.unit);
         return Interval.endInterval(b);
     }
+    visitDuration(node, b) {
+        Duration.startDuration(b);
+        Duration.addUnit(b, node.unit);
+        return Duration.endDuration(b);
+    }
     visitList(_node, b) {
         List.startList(b);
         return List.endList(b);
@@ -14672,7 +14871,7 @@ class TypeAssembler extends Visitor {
     visitDictionary(node, b) {
         const indexType = this.visit(node.indices, b);
         DictionaryEncoding.startDictionaryEncoding(b);
-        DictionaryEncoding.addId(b, new Long$1(node.id, 0));
+        DictionaryEncoding.addId(b, BigInt(node.id));
         DictionaryEncoding.addIsOrdered(b, node.isOrdered);
         if (indexType !== undefined) {
             DictionaryEncoding.addIndexType(b, indexType);
@@ -14717,7 +14916,7 @@ const instance = new TypeAssembler();
 /* eslint-disable brace-style */
 /** @ignore */
 function schemaFromJSON(_schema, dictionaries = new Map()) {
-    return new Schema(schemaFieldsFromJSON(_schema, dictionaries), customMetadataFromJSON(_schema['customMetadata']), dictionaries);
+    return new Schema(schemaFieldsFromJSON(_schema, dictionaries), customMetadataFromJSON(_schema['metadata']), dictionaries);
 }
 /** @ignore */
 function recordBatchFromJSON(b) {
@@ -14748,7 +14947,7 @@ function buffersFromJSON(xs, buffers = []) {
     for (let i = -1, n = (xs || []).length; ++i < n;) {
         const column = xs[i];
         column['VALIDITY'] && buffers.push(new BufferRegion(buffers.length, column['VALIDITY'].length));
-        column['TYPE'] && buffers.push(new BufferRegion(buffers.length, column['TYPE'].length));
+        column['TYPE_ID'] && buffers.push(new BufferRegion(buffers.length, column['TYPE_ID'].length));
         column['OFFSET'] && buffers.push(new BufferRegion(buffers.length, column['OFFSET'].length));
         column['DATA'] && buffers.push(new BufferRegion(buffers.length, column['DATA'].length));
         buffers = buffersFromJSON(column['children'], buffers);
@@ -14770,7 +14969,7 @@ function fieldFromJSON(_field, dictionaries) {
     // If no dictionary encoding
     if (!dictionaries || !(dictMeta = _field['dictionary'])) {
         type = typeFromJSON(_field, fieldChildrenFromJSON(_field, dictionaries));
-        field = new Field(_field['name'], type, _field['nullable'], customMetadataFromJSON(_field['customMetadata']));
+        field = new Field(_field['name'], type, _field['nullable'], customMetadataFromJSON(_field['metadata']));
     }
     // If dictionary encoded and the first time we've seen this dictionary id, decode
     // the data type and child fields, then wrap in a Dictionary type and insert the
@@ -14780,7 +14979,7 @@ function fieldFromJSON(_field, dictionaries) {
         keys = (keys = dictMeta['indexType']) ? indexTypeFromJSON(keys) : new Int32();
         dictionaries.set(id, type = typeFromJSON(_field, fieldChildrenFromJSON(_field, dictionaries)));
         dictType = new Dictionary(type, keys, id, dictMeta['isOrdered']);
-        field = new Field(_field['name'], dictType, _field['nullable'], customMetadataFromJSON(_field['customMetadata']));
+        field = new Field(_field['name'], dictType, _field['nullable'], customMetadataFromJSON(_field['metadata']));
     }
     // If dictionary encoded, and have already seen this dictionary Id in the schema, then reuse the
     // data type and wrap in a new Dictionary type and field.
@@ -14788,13 +14987,13 @@ function fieldFromJSON(_field, dictionaries) {
         // a dictionary index defaults to signed 32 bit int if unspecified
         keys = (keys = dictMeta['indexType']) ? indexTypeFromJSON(keys) : new Int32();
         dictType = new Dictionary(dictionaries.get(id), keys, id, dictMeta['isOrdered']);
-        field = new Field(_field['name'], dictType, _field['nullable'], customMetadataFromJSON(_field['customMetadata']));
+        field = new Field(_field['name'], dictType, _field['nullable'], customMetadataFromJSON(_field['metadata']));
     }
     return field || null;
 }
 /** @ignore */
-function customMetadataFromJSON(_metadata) {
-    return new Map(Object.entries(_metadata || {}));
+function customMetadataFromJSON(metadata = []) {
+    return new Map(metadata.map(({ key, value }) => [key, value]));
 }
 /** @ignore */
 function indexTypeFromJSON(_type) {
@@ -14842,9 +15041,15 @@ function typeFromJSON(f, children) {
             const t = f['type'];
             return new Interval_(IntervalUnit$1[t['unit']]);
         }
+        case 'duration': {
+            const t = f['type'];
+            return new Duration$1(TimeUnit$1[t['unit']]);
+        }
         case 'union': {
             const t = f['type'];
-            return new Union_(UnionMode$1[t['mode']], (t['typeIds'] || []), children || []);
+            const [m, ...ms] = (t['mode'] + '').toLowerCase();
+            const mode = (m.toUpperCase() + ms.join(''));
+            return new Union_(UnionMode$1[mode], (t['typeIds'] || []), children || []);
         }
         case 'fixedsizebinary': {
             const t = f['type'];
@@ -14879,7 +15084,6 @@ function typeFromJSON(f, children) {
 // specific language governing permissions and limitations
 // under the License.
 /* eslint-disable brace-style */
-var Long = Long$3;
 var Builder = Builder$2;
 var ByteBuffer = ByteBuffer$2;
 /**
@@ -14887,16 +15091,9 @@ var ByteBuffer = ByteBuffer$2;
  * @private
  **/
 class Message {
-    constructor(bodyLength, version, headerType, header) {
-        this._version = version;
-        this._headerType = headerType;
-        this.body = new Uint8Array(0);
-        header && (this._createHeader = () => header);
-        this._bodyLength = typeof bodyLength === 'number' ? bodyLength : bodyLength.low;
-    }
     /** @nocollapse */
     static fromJSON(msg, headerType) {
-        const message = new Message(0, MetadataVersion$1.V4, headerType);
+        const message = new Message(0, MetadataVersion$1.V5, headerType);
         message._createHeader = messageHeaderFromJSON(msg, headerType);
         return message;
     }
@@ -14925,23 +15122,23 @@ class Message {
             headerOffset = DictionaryBatch.encode(b, message.header());
         }
         Message$1.startMessage(b);
-        Message$1.addVersion(b, MetadataVersion$1.V4);
+        Message$1.addVersion(b, MetadataVersion$1.V5);
         Message$1.addHeader(b, headerOffset);
         Message$1.addHeaderType(b, message.headerType);
-        Message$1.addBodyLength(b, new Long(message.bodyLength, 0));
+        Message$1.addBodyLength(b, BigInt(message.bodyLength));
         Message$1.finishMessageBuffer(b, Message$1.endMessage(b));
         return b.asUint8Array();
     }
     /** @nocollapse */
     static from(header, bodyLength = 0) {
         if (header instanceof Schema) {
-            return new Message(0, MetadataVersion$1.V4, MessageHeader$1.Schema, header);
+            return new Message(0, MetadataVersion$1.V5, MessageHeader$1.Schema, header);
         }
         if (header instanceof RecordBatch) {
-            return new Message(bodyLength, MetadataVersion$1.V4, MessageHeader$1.RecordBatch, header);
+            return new Message(bodyLength, MetadataVersion$1.V5, MessageHeader$1.RecordBatch, header);
         }
         if (header instanceof DictionaryBatch) {
-            return new Message(bodyLength, MetadataVersion$1.V4, MessageHeader$1.DictionaryBatch, header);
+            return new Message(bodyLength, MetadataVersion$1.V5, MessageHeader$1.DictionaryBatch, header);
         }
         throw new Error(`Unrecognized Message header: ${header}`);
     }
@@ -14953,37 +15150,44 @@ class Message {
     isSchema() { return this.headerType === MessageHeader$1.Schema; }
     isRecordBatch() { return this.headerType === MessageHeader$1.RecordBatch; }
     isDictionaryBatch() { return this.headerType === MessageHeader$1.DictionaryBatch; }
+    constructor(bodyLength, version, headerType, header) {
+        this._version = version;
+        this._headerType = headerType;
+        this.body = new Uint8Array(0);
+        header && (this._createHeader = () => header);
+        this._bodyLength = bigIntToNumber(bodyLength);
+    }
 }
 /**
  * @ignore
  * @private
  **/
 class RecordBatch {
-    constructor(length, nodes, buffers) {
-        this._nodes = nodes;
-        this._buffers = buffers;
-        this._length = typeof length === 'number' ? length : length.low;
-    }
     get nodes() { return this._nodes; }
     get length() { return this._length; }
     get buffers() { return this._buffers; }
+    constructor(length, nodes, buffers) {
+        this._nodes = nodes;
+        this._buffers = buffers;
+        this._length = bigIntToNumber(length);
+    }
 }
 /**
  * @ignore
  * @private
  **/
 class DictionaryBatch {
-    constructor(data, id, isDelta = false) {
-        this._data = data;
-        this._isDelta = isDelta;
-        this._id = typeof id === 'number' ? id : id.low;
-    }
     get id() { return this._id; }
     get data() { return this._data; }
     get isDelta() { return this._isDelta; }
     get length() { return this.data.length; }
     get nodes() { return this.data.nodes; }
     get buffers() { return this.data.buffers; }
+    constructor(data, id, isDelta = false) {
+        this._data = data;
+        this._isDelta = isDelta;
+        this._id = bigIntToNumber(id);
+    }
 }
 /**
  * @ignore
@@ -14991,8 +15195,8 @@ class DictionaryBatch {
  **/
 class BufferRegion {
     constructor(offset, length) {
-        this.offset = typeof offset === 'number' ? offset : offset.low;
-        this.length = typeof length === 'number' ? length : length.low;
+        this.offset = bigIntToNumber(offset);
+        this.length = bigIntToNumber(length);
     }
 }
 /**
@@ -15001,8 +15205,8 @@ class BufferRegion {
  **/
 class FieldNode {
     constructor(length, nullCount) {
-        this.length = typeof length === 'number' ? length : length.low;
-        this.nullCount = typeof nullCount === 'number' ? nullCount : nullCount.low;
+        this.length = bigIntToNumber(length);
+        this.nullCount = bigIntToNumber(nullCount);
     }
 }
 /** @ignore */
@@ -15020,7 +15224,7 @@ function messageHeaderFromJSON(message, type) {
 function decodeMessageHeader(message, type) {
     return (() => {
         switch (type) {
-            case MessageHeader$1.Schema: return Schema.decode(message.header(new Schema$1()));
+            case MessageHeader$1.Schema: return Schema.decode(message.header(new Schema$1()), new Map(), message.version());
             case MessageHeader$1.RecordBatch: return RecordBatch.decode(message.header(new RecordBatch$1()), message.version());
             case MessageHeader$1.DictionaryBatch: return DictionaryBatch.decode(message.header(new DictionaryBatch$1()), message.version());
         }
@@ -15044,19 +15248,19 @@ FieldNode['decode'] = decodeFieldNode;
 BufferRegion['encode'] = encodeBufferRegion;
 BufferRegion['decode'] = decodeBufferRegion;
 /** @ignore */
-function decodeSchema(_schema, dictionaries = new Map()) {
+function decodeSchema(_schema, dictionaries = new Map(), version = MetadataVersion$1.V5) {
     const fields = decodeSchemaFields(_schema, dictionaries);
-    return new Schema(fields, decodeCustomMetadata(_schema), dictionaries);
+    return new Schema(fields, decodeCustomMetadata(_schema), dictionaries, version);
 }
 /** @ignore */
-function decodeRecordBatch(batch, version = MetadataVersion$1.V4) {
+function decodeRecordBatch(batch, version = MetadataVersion$1.V5) {
     if (batch.compression() !== null) {
         throw new Error('Record batch compression not implemented');
     }
     return new RecordBatch(batch.length(), decodeFieldNodes(batch), decodeBuffers(batch, version));
 }
 /** @ignore */
-function decodeDictionaryBatch(batch, version = MetadataVersion$1.V4) {
+function decodeDictionaryBatch(batch, version = MetadataVersion$1.V5) {
     return new DictionaryBatch(RecordBatch.decode(batch.data(), version), batch.id(), batch.isDelta());
 }
 /** @ignore */
@@ -15129,7 +15333,7 @@ function decodeField(f, dictionaries) {
     // If dictionary encoded and the first time we've seen this dictionary id, decode
     // the data type and child fields, then wrap in a Dictionary type and insert the
     // data type into the dictionary types map.
-    else if (!dictionaries.has(id = dictMeta.id().low)) {
+    else if (!dictionaries.has(id = bigIntToNumber(dictMeta.id()))) {
         // a dictionary index defaults to signed 32 bit int if unspecified
         keys = (keys = dictMeta.indexType()) ? decodeIndexType(keys) : new Int32();
         dictionaries.set(id, type = decodeFieldType(f, decodeFieldChildren(f, dictionaries)));
@@ -15202,6 +15406,10 @@ function decodeFieldType(f, children) {
         case Type['Interval']: {
             const t = f.type(new Interval());
             return new Interval_(t.unit());
+        }
+        case Type['Duration']: {
+            const t = f.type(new Duration());
+            return new Duration$1(t.unit());
         }
         case Type['Union']: {
             const t = f.type(new Union());
@@ -15302,7 +15510,7 @@ function encodeRecordBatch(b, recordBatch) {
         BufferRegion.encode(b, b_);
     const buffersVectorOffset = b.endVector();
     RecordBatch$1.startRecordBatch(b);
-    RecordBatch$1.addLength(b, new Long(recordBatch.length, 0));
+    RecordBatch$1.addLength(b, BigInt(recordBatch.length));
     RecordBatch$1.addNodes(b, nodesVectorOffset);
     RecordBatch$1.addBuffers(b, buffersVectorOffset);
     return RecordBatch$1.endRecordBatch(b);
@@ -15311,18 +15519,18 @@ function encodeRecordBatch(b, recordBatch) {
 function encodeDictionaryBatch(b, dictionaryBatch) {
     const dataOffset = RecordBatch.encode(b, dictionaryBatch.data);
     DictionaryBatch$1.startDictionaryBatch(b);
-    DictionaryBatch$1.addId(b, new Long(dictionaryBatch.id, 0));
+    DictionaryBatch$1.addId(b, BigInt(dictionaryBatch.id));
     DictionaryBatch$1.addIsDelta(b, dictionaryBatch.isDelta);
     DictionaryBatch$1.addData(b, dataOffset);
     return DictionaryBatch$1.endDictionaryBatch(b);
 }
 /** @ignore */
 function encodeFieldNode(b, node) {
-    return FieldNode$1.createFieldNode(b, new Long(node.length, 0), new Long(node.nullCount, 0));
+    return FieldNode$1.createFieldNode(b, BigInt(node.length), BigInt(node.nullCount));
 }
 /** @ignore */
 function encodeBufferRegion(b, node) {
-    return Buffer.createBuffer(b, new Long(node.offset, 0), new Long(node.length, 0));
+    return Buffer.createBuffer(b, BigInt(node.offset), BigInt(node.length));
 }
 /** @ignore */
 const platformIsLittleEndian = (() => {
@@ -15376,13 +15584,6 @@ MAGIC.length;
 // under the License.
 /** @ignore */
 class VectorAssembler extends Visitor {
-    constructor() {
-        super();
-        this._byteLength = 0;
-        this._nodes = [];
-        this._buffers = [];
-        this._bufferRegions = [];
-    }
     /** @nocollapse */
     static assemble(...args) {
         const unwrap = (nodes) => nodes.flatMap((node) => Array.isArray(node) ? unwrap(node) :
@@ -15391,6 +15592,13 @@ class VectorAssembler extends Visitor {
         assembler.visitMany(unwrap(args));
         return assembler;
     }
+    constructor() {
+        super();
+        this._byteLength = 0;
+        this._nodes = [];
+        this._buffers = [];
+        this._bufferRegions = [];
+    }
     visit(data) {
         if (data instanceof Vector) {
             this.visitMany(data.data);
@@ -15398,17 +15606,23 @@ class VectorAssembler extends Visitor {
         }
         const { type } = data;
         if (!DataType.isDictionary(type)) {
-            const { length, nullCount } = data;
+            const { length } = data;
             if (length > 2147483647) {
                 /* istanbul ignore next */
                 throw new RangeError('Cannot write arrays larger than 2^31 - 1 in length');
             }
-            if (!DataType.isNull(type)) {
-                addBuffer.call(this, nullCount <= 0
-                    ? new Uint8Array(0) // placeholder validity buffer
-                    : truncateBitmap(data.offset, length, data.nullBitmap));
+            if (DataType.isUnion(type)) {
+                this.nodes.push(new FieldNode(length, 0));
             }
-            this.nodes.push(new FieldNode(length, nullCount));
+            else {
+                const { nullCount } = data;
+                if (!DataType.isNull(type)) {
+                    addBuffer.call(this, nullCount <= 0
+                        ? new Uint8Array(0) // placeholder validity buffer
+                        : truncateBitmap(data.offset, length, data.nullBitmap));
+                }
+                this.nodes.push(new FieldNode(length, nullCount));
+            }
         }
         return super.visit(data);
     }
@@ -15434,6 +15648,7 @@ function addBuffer(values) {
 }
 /** @ignore */
 function assembleUnion(data) {
+    var _a;
     const { type, length, typeIds, valueOffsets } = data;
     // All Union Vectors have a typeIds buffer
     addBuffer.call(this, typeIds);
@@ -15453,31 +15668,30 @@ function assembleUnion(data) {
             // A sliced Dense Union is an unpleasant case. Because the offsets are different for
             // each child vector, we need to "rebase" the valueOffsets for each child
             // Union typeIds are not necessary 0-indexed
-            const maxChildTypeId = typeIds.reduce((x, y) => Math.max(x, y), typeIds[0]);
-            const childLengths = new Int32Array(maxChildTypeId + 1);
-            // Set all to -1 to indicate that we haven't observed a first occurrence of a particular child yet
-            const childOffsets = new Int32Array(maxChildTypeId + 1).fill(-1);
             const shiftedOffsets = new Int32Array(length);
+            const childOffsets = Object.create(null);
+            const childLengths = Object.create(null);
             // If we have a non-zero offset, then the value offsets do not start at
             // zero. We must a) create a new offsets array with shifted offsets and
             // b) slice the values array accordingly
-            const unshiftedOffsets = rebaseValueOffsets(-valueOffsets[0], length, valueOffsets);
             for (let typeId, shift, index = -1; ++index < length;) {
-                if ((shift = childOffsets[typeId = typeIds[index]]) === -1) {
-                    shift = childOffsets[typeId] = unshiftedOffsets[typeId];
+                if ((typeId = typeIds[index]) === undefined) {
+                    continue;
                 }
-                shiftedOffsets[index] = unshiftedOffsets[index] - shift;
-                ++childLengths[typeId];
+                if ((shift = childOffsets[typeId]) === undefined) {
+                    shift = childOffsets[typeId] = valueOffsets[index];
+                }
+                shiftedOffsets[index] = valueOffsets[index] - shift;
+                childLengths[typeId] = ((_a = childLengths[typeId]) !== null && _a !== void 0 ? _a : 0) + 1;
             }
             addBuffer.call(this, shiftedOffsets);
             // Slice and visit children accordingly
-            for (let child, childIndex = -1, numChildren = type.children.length; ++childIndex < numChildren;) {
-                if (child = data.children[childIndex]) {
-                    const typeId = type.typeIds[childIndex];
-                    const childLength = Math.min(length, childLengths[typeId]);
-                    this.visit(child.slice(childOffsets[typeId], childLength));
-                }
-            }
+            this.visitMany(data.children.map((child, childIndex) => {
+                const typeId = type.typeIds[childIndex];
+                const childOffset = childOffsets[typeId];
+                const childLength = childLengths[typeId];
+                return child.slice(childOffset, Math.min(length, childLength));
+            }));
         }
     }
     return this;
@@ -15508,12 +15722,11 @@ function assembleFlatVector(data) {
 /** @ignore */
 function assembleFlatListVector(data) {
     const { length, values, valueOffsets } = data;
-    const firstOffset = valueOffsets[0];
-    const lastOffset = valueOffsets[length];
-    const byteLength = Math.min(lastOffset - firstOffset, values.byteLength - firstOffset);
+    const { [0]: begin, [length]: end } = valueOffsets;
+    const byteLength = Math.min(end - begin, values.byteLength - begin);
     // Push in the order FlatList types read their buffers
-    addBuffer.call(this, rebaseValueOffsets(-valueOffsets[0], length, valueOffsets)); // valueOffsets buffer first
-    addBuffer.call(this, values.subarray(firstOffset, firstOffset + byteLength)); // sliced values buffer second
+    addBuffer.call(this, rebaseValueOffsets(-begin, length + 1, valueOffsets)); // valueOffsets buffer first
+    addBuffer.call(this, values.subarray(begin, begin + byteLength)); // sliced values buffer second
     return this;
 }
 /** @ignore */
@@ -15521,7 +15734,10 @@ function assembleListVector(data) {
     const { length, valueOffsets } = data;
     // If we have valueOffsets (MapVector, ListVector), push that buffer first
     if (valueOffsets) {
-        addBuffer.call(this, rebaseValueOffsets(valueOffsets[0], length, valueOffsets));
+        const { [0]: begin, [length]: end } = valueOffsets;
+        addBuffer.call(this, rebaseValueOffsets(-begin, length + 1, valueOffsets));
+        // Then insert the List's values child
+        return this.visit(data.children[0].slice(begin, end - begin));
     }
     // Then insert the List's values child
     return this.visit(data.children[0]);
@@ -15544,6 +15760,7 @@ VectorAssembler.prototype.visitList = assembleListVector;
 VectorAssembler.prototype.visitStruct = assembleNestedVector;
 VectorAssembler.prototype.visitUnion = assembleUnion;
 VectorAssembler.prototype.visitInterval = assembleFlatVector;
+VectorAssembler.prototype.visitDuration = assembleFlatVector;
 VectorAssembler.prototype.visitFixedSizeList = assembleListVector;
 VectorAssembler.prototype.visitMap = assembleListVector;
 
@@ -15564,6 +15781,19 @@ VectorAssembler.prototype.visitMap = assembleListVector;
 // specific language governing permissions and limitations
 // under the License.
 class RecordBatchWriter extends ReadableInterop {
+    /** @nocollapse */
+    // @ts-ignore
+    static throughNode(options) {
+        throw new Error(`"throughNode" not available in this environment`);
+    }
+    /** @nocollapse */
+    static throughDOM(
+    // @ts-ignore
+    writableStrategy, 
+    // @ts-ignore
+    readableStrategy) {
+        throw new Error(`"throughDOM" not available in this environment`);
+    }
     constructor(options) {
         super();
         this._position = 0;
@@ -15577,19 +15807,6 @@ class RecordBatchWriter extends ReadableInterop {
         isObject(options) || (options = { autoDestroy: true, writeLegacyIpcFormat: false });
         this._autoDestroy = (typeof options.autoDestroy === 'boolean') ? options.autoDestroy : true;
         this._writeLegacyIpcFormat = (typeof options.writeLegacyIpcFormat === 'boolean') ? options.writeLegacyIpcFormat : false;
-    }
-    /** @nocollapse */
-    // @ts-ignore
-    static throughNode(options) {
-        throw new Error(`"throughNode" not available in this environment`);
-    }
-    /** @nocollapse */
-    static throughDOM(
-    // @ts-ignore
-    writableStrategy, 
-    // @ts-ignore
-    readableStrategy) {
-        throw new Error(`"throughDOM" not available in this environment`);
     }
     toString(sync = false) {
         return this._sink.toString(sync);
@@ -15818,7 +16035,7 @@ class RecordBatchFileWriter extends RecordBatchWriter {
         return this._writeMagic()._writePadding(2);
     }
     _writeFooter(schema) {
-        const buffer = Footer_.encode(new Footer_(schema, MetadataVersion$1.V4, this._recordBatchBlocks, this._dictionaryBlocks));
+        const buffer = Footer_.encode(new Footer_(schema, MetadataVersion$1.V5, this._recordBatchBlocks, this._dictionaryBlocks));
         return super
             ._writeFooter(schema) // EOS bytes for sequential readers
             ._write(buffer) // Write the flatbuffer
@@ -15840,19 +16057,21 @@ function writeAll(writer, input) {
 }
 /** @ignore */
 function writeAllAsync(writer, batches) {
-    var batches_1, batches_1_1;
-    var e_1, _a;
+    var _a, batches_1, batches_1_1;
+    var _b, e_1, _c, _d;
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            for (batches_1 = __asyncValues(batches); batches_1_1 = yield batches_1.next(), !batches_1_1.done;) {
-                const batch = batches_1_1.value;
+            for (_a = true, batches_1 = __asyncValues(batches); batches_1_1 = yield batches_1.next(), _b = batches_1_1.done, !_b; _a = true) {
+                _d = batches_1_1.value;
+                _a = false;
+                const batch = _d;
                 writer.write(batch);
             }
         }
         catch (e_1_1) { e_1 = { error: e_1_1 }; }
         finally {
             try {
-                if (batches_1_1 && !batches_1_1.done && (_a = batches_1.return)) yield _a.call(batches_1);
+                if (!_a && !_b && (_c = batches_1.return)) yield _c.call(batches_1);
             }
             finally { if (e_1) throw e_1.error; }
         }
@@ -16713,7 +16932,7 @@ function formatValue(v, options = {}) {
   }
 }
 
-function map$2(obj, fn, output = {}) {
+function map$1(obj, fn, output = {}) {
   for (const key in obj) {
     output[key] = fn(obj[key], key);
   }
@@ -16824,7 +17043,7 @@ function toHTML(table, options = {}) {
 }
 
 function styles(options) {
-  return map$2(
+  return map$1(
     options.style,
     value => isFunction$1(value) ? value : () => value
   );
@@ -17105,7 +17324,7 @@ class ColumnTable extends Table$1 {
    * @param {Params} [params] An object mapping parameter names to values.
    */
   constructor(columns, names, filter, group, order, params) {
-    map$2(columns, defaultColumnFactory, columns);
+    map$1(columns, defaultColumnFactory, columns);
     names = names || Object.keys(columns);
     const nrows = names.length ? columns[names[0]].length : 0;
     super(names, nrows, columns, filter, group, order, params);
@@ -17665,15 +17884,18 @@ function parseEscape(ctx, spec, params) {
 var astralIdentifierCodes = [509, 0, 227, 0, 150, 4, 294, 9, 1368, 2, 2, 1, 6, 3, 41, 2, 5, 0, 166, 1, 574, 3, 9, 9, 370, 1, 81, 2, 71, 10, 50, 3, 123, 2, 54, 14, 32, 10, 3, 1, 11, 3, 46, 10, 8, 0, 46, 9, 7, 2, 37, 13, 2, 9, 6, 1, 45, 0, 13, 2, 49, 13, 9, 3, 2, 11, 83, 11, 7, 0, 3, 0, 158, 11, 6, 9, 7, 3, 56, 1, 2, 6, 3, 1, 3, 2, 10, 0, 11, 1, 3, 6, 4, 4, 193, 17, 10, 9, 5, 0, 82, 19, 13, 9, 214, 6, 3, 8, 28, 1, 83, 16, 16, 9, 82, 12, 9, 9, 84, 14, 5, 9, 243, 14, 166, 9, 71, 5, 2, 1, 3, 3, 2, 0, 2, 1, 13, 9, 120, 6, 3, 6, 4, 0, 29, 9, 41, 6, 2, 3, 9, 0, 10, 10, 47, 15, 406, 7, 2, 7, 17, 9, 57, 21, 2, 13, 123, 5, 4, 0, 2, 1, 2, 6, 2, 0, 9, 9, 49, 4, 2, 1, 2, 4, 9, 9, 330, 3, 10, 1, 2, 0, 49, 6, 4, 4, 14, 9, 5351, 0, 7, 14, 13835, 9, 87, 9, 39, 4, 60, 6, 26, 9, 1014, 0, 2, 54, 8, 3, 82, 0, 12, 1, 19628, 1, 4706, 45, 3, 22, 543, 4, 4, 5, 9, 7, 3, 6, 31, 3, 149, 2, 1418, 49, 513, 54, 5, 49, 9, 0, 15, 0, 23, 4, 2, 14, 1361, 6, 2, 16, 3, 6, 2, 1, 2, 4, 101, 0, 161, 6, 10, 9, 357, 0, 62, 13, 499, 13, 983, 6, 110, 6, 6, 9, 4759, 9, 787719, 239];
 
 // This file was generated. Do not modify manually!
-var astralIdentifierStartCodes = [0, 11, 2, 25, 2, 18, 2, 1, 2, 14, 3, 13, 35, 122, 70, 52, 268, 28, 4, 48, 48, 31, 14, 29, 6, 37, 11, 29, 3, 35, 5, 7, 2, 4, 43, 157, 19, 35, 5, 35, 5, 39, 9, 51, 13, 10, 2, 14, 2, 6, 2, 1, 2, 10, 2, 14, 2, 6, 2, 1, 68, 310, 10, 21, 11, 7, 25, 5, 2, 41, 2, 8, 70, 5, 3, 0, 2, 43, 2, 1, 4, 0, 3, 22, 11, 22, 10, 30, 66, 18, 2, 1, 11, 21, 11, 25, 71, 55, 7, 1, 65, 0, 16, 3, 2, 2, 2, 28, 43, 28, 4, 28, 36, 7, 2, 27, 28, 53, 11, 21, 11, 18, 14, 17, 111, 72, 56, 50, 14, 50, 14, 35, 349, 41, 7, 1, 79, 28, 11, 0, 9, 21, 43, 17, 47, 20, 28, 22, 13, 52, 58, 1, 3, 0, 14, 44, 33, 24, 27, 35, 30, 0, 3, 0, 9, 34, 4, 0, 13, 47, 15, 3, 22, 0, 2, 0, 36, 17, 2, 24, 20, 1, 64, 6, 2, 0, 2, 3, 2, 14, 2, 9, 8, 46, 39, 7, 3, 1, 3, 21, 2, 6, 2, 1, 2, 4, 4, 0, 19, 0, 13, 4, 159, 52, 19, 3, 21, 2, 31, 47, 21, 1, 2, 0, 185, 46, 42, 3, 37, 47, 21, 0, 60, 42, 14, 0, 72, 26, 38, 6, 186, 43, 117, 63, 32, 7, 3, 0, 3, 7, 2, 1, 2, 23, 16, 0, 2, 0, 95, 7, 3, 38, 17, 0, 2, 0, 29, 0, 11, 39, 8, 0, 22, 0, 12, 45, 20, 0, 19, 72, 264, 8, 2, 36, 18, 0, 50, 29, 113, 6, 2, 1, 2, 37, 22, 0, 26, 5, 2, 1, 2, 31, 15, 0, 328, 18, 16, 0, 2, 12, 2, 33, 125, 0, 80, 921, 103, 110, 18, 195, 2637, 96, 16, 1071, 18, 5, 4026, 582, 8634, 568, 8, 30, 18, 78, 18, 29, 19, 47, 17, 3, 32, 20, 6, 18, 689, 63, 129, 74, 6, 0, 67, 12, 65, 1, 2, 0, 29, 6135, 9, 1237, 43, 8, 8936, 3, 2, 6, 2, 1, 2, 290, 16, 0, 30, 2, 3, 0, 15, 3, 9, 395, 2309, 106, 6, 12, 4, 8, 8, 9, 5991, 84, 2, 70, 2, 1, 3, 0, 3, 1, 3, 3, 2, 11, 2, 0, 2, 6, 2, 64, 2, 3, 3, 7, 2, 6, 2, 27, 2, 3, 2, 4, 2, 0, 4, 6, 2, 339, 3, 24, 2, 24, 2, 30, 2, 24, 2, 30, 2, 24, 2, 30, 2, 24, 2, 30, 2, 24, 2, 7, 1845, 30, 7, 5, 262, 61, 147, 44, 11, 6, 17, 0, 322, 29, 19, 43, 485, 27, 757, 6, 2, 3, 2, 1, 2, 14, 2, 196, 60, 67, 8, 0, 1205, 3, 2, 26, 2, 1, 2, 0, 3, 0, 2, 9, 2, 3, 2, 0, 2, 0, 7, 0, 5, 0, 2, 0, 2, 0, 2, 2, 2, 1, 2, 0, 3, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 1, 2, 0, 3, 3, 2, 6, 2, 3, 2, 3, 2, 0, 2, 9, 2, 16, 6, 2, 2, 4, 2, 16, 4421, 42719, 33, 4153, 7, 221, 3, 5761, 15, 7472, 3104, 541, 1507, 4938, 6, 4191];
+var astralIdentifierStartCodes = [0, 11, 2, 25, 2, 18, 2, 1, 2, 14, 3, 13, 35, 122, 70, 52, 268, 28, 4, 48, 48, 31, 14, 29, 6, 37, 11, 29, 3, 35, 5, 7, 2, 4, 43, 157, 19, 35, 5, 35, 5, 39, 9, 51, 13, 10, 2, 14, 2, 6, 2, 1, 2, 10, 2, 14, 2, 6, 2, 1, 68, 310, 10, 21, 11, 7, 25, 5, 2, 41, 2, 8, 70, 5, 3, 0, 2, 43, 2, 1, 4, 0, 3, 22, 11, 22, 10, 30, 66, 18, 2, 1, 11, 21, 11, 25, 71, 55, 7, 1, 65, 0, 16, 3, 2, 2, 2, 28, 43, 28, 4, 28, 36, 7, 2, 27, 28, 53, 11, 21, 11, 18, 14, 17, 111, 72, 56, 50, 14, 50, 14, 35, 349, 41, 7, 1, 79, 28, 11, 0, 9, 21, 43, 17, 47, 20, 28, 22, 13, 52, 58, 1, 3, 0, 14, 44, 33, 24, 27, 35, 30, 0, 3, 0, 9, 34, 4, 0, 13, 47, 15, 3, 22, 0, 2, 0, 36, 17, 2, 24, 20, 1, 64, 6, 2, 0, 2, 3, 2, 14, 2, 9, 8, 46, 39, 7, 3, 1, 3, 21, 2, 6, 2, 1, 2, 4, 4, 0, 19, 0, 13, 4, 159, 52, 19, 3, 21, 2, 31, 47, 21, 1, 2, 0, 185, 46, 42, 3, 37, 47, 21, 0, 60, 42, 14, 0, 72, 26, 38, 6, 186, 43, 117, 63, 32, 7, 3, 0, 3, 7, 2, 1, 2, 23, 16, 0, 2, 0, 95, 7, 3, 38, 17, 0, 2, 0, 29, 0, 11, 39, 8, 0, 22, 0, 12, 45, 20, 0, 19, 72, 264, 8, 2, 36, 18, 0, 50, 29, 113, 6, 2, 1, 2, 37, 22, 0, 26, 5, 2, 1, 2, 31, 15, 0, 328, 18, 16, 0, 2, 12, 2, 33, 125, 0, 80, 921, 103, 110, 18, 195, 2637, 96, 16, 1071, 18, 5, 4026, 582, 8634, 568, 8, 30, 18, 78, 18, 29, 19, 47, 17, 3, 32, 20, 6, 18, 689, 63, 129, 74, 6, 0, 67, 12, 65, 1, 2, 0, 29, 6135, 9, 1237, 43, 8, 8936, 3, 2, 6, 2, 1, 2, 290, 16, 0, 30, 2, 3, 0, 15, 3, 9, 395, 2309, 106, 6, 12, 4, 8, 8, 9, 5991, 84, 2, 70, 2, 1, 3, 0, 3, 1, 3, 3, 2, 11, 2, 0, 2, 6, 2, 64, 2, 3, 3, 7, 2, 6, 2, 27, 2, 3, 2, 4, 2, 0, 4, 6, 2, 339, 3, 24, 2, 24, 2, 30, 2, 24, 2, 30, 2, 24, 2, 30, 2, 24, 2, 30, 2, 24, 2, 7, 1845, 30, 7, 5, 262, 61, 147, 44, 11, 6, 17, 0, 322, 29, 19, 43, 485, 27, 757, 6, 2, 3, 2, 1, 2, 14, 2, 196, 60, 67, 8, 0, 1205, 3, 2, 26, 2, 1, 2, 0, 3, 0, 2, 9, 2, 3, 2, 0, 2, 0, 7, 0, 5, 0, 2, 0, 2, 0, 2, 2, 2, 1, 2, 0, 3, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 1, 2, 0, 3, 3, 2, 6, 2, 3, 2, 3, 2, 0, 2, 9, 2, 16, 6, 2, 2, 4, 2, 16, 4421, 42719, 33, 4153, 7, 221, 3, 5761, 15, 7472, 16, 621, 2467, 541, 1507, 4938, 6, 4191];
 
 // This file was generated. Do not modify manually!
-var nonASCIIidentifierChars = "\u200c\u200d\xb7\u0300-\u036f\u0387\u0483-\u0487\u0591-\u05bd\u05bf\u05c1\u05c2\u05c4\u05c5\u05c7\u0610-\u061a\u064b-\u0669\u0670\u06d6-\u06dc\u06df-\u06e4\u06e7\u06e8\u06ea-\u06ed\u06f0-\u06f9\u0711\u0730-\u074a\u07a6-\u07b0\u07c0-\u07c9\u07eb-\u07f3\u07fd\u0816-\u0819\u081b-\u0823\u0825-\u0827\u0829-\u082d\u0859-\u085b\u0898-\u089f\u08ca-\u08e1\u08e3-\u0903\u093a-\u093c\u093e-\u094f\u0951-\u0957\u0962\u0963\u0966-\u096f\u0981-\u0983\u09bc\u09be-\u09c4\u09c7\u09c8\u09cb-\u09cd\u09d7\u09e2\u09e3\u09e6-\u09ef\u09fe\u0a01-\u0a03\u0a3c\u0a3e-\u0a42\u0a47\u0a48\u0a4b-\u0a4d\u0a51\u0a66-\u0a71\u0a75\u0a81-\u0a83\u0abc\u0abe-\u0ac5\u0ac7-\u0ac9\u0acb-\u0acd\u0ae2\u0ae3\u0ae6-\u0aef\u0afa-\u0aff\u0b01-\u0b03\u0b3c\u0b3e-\u0b44\u0b47\u0b48\u0b4b-\u0b4d\u0b55-\u0b57\u0b62\u0b63\u0b66-\u0b6f\u0b82\u0bbe-\u0bc2\u0bc6-\u0bc8\u0bca-\u0bcd\u0bd7\u0be6-\u0bef\u0c00-\u0c04\u0c3c\u0c3e-\u0c44\u0c46-\u0c48\u0c4a-\u0c4d\u0c55\u0c56\u0c62\u0c63\u0c66-\u0c6f\u0c81-\u0c83\u0cbc\u0cbe-\u0cc4\u0cc6-\u0cc8\u0cca-\u0ccd\u0cd5\u0cd6\u0ce2\u0ce3\u0ce6-\u0cef\u0cf3\u0d00-\u0d03\u0d3b\u0d3c\u0d3e-\u0d44\u0d46-\u0d48\u0d4a-\u0d4d\u0d57\u0d62\u0d63\u0d66-\u0d6f\u0d81-\u0d83\u0dca\u0dcf-\u0dd4\u0dd6\u0dd8-\u0ddf\u0de6-\u0def\u0df2\u0df3\u0e31\u0e34-\u0e3a\u0e47-\u0e4e\u0e50-\u0e59\u0eb1\u0eb4-\u0ebc\u0ec8-\u0ece\u0ed0-\u0ed9\u0f18\u0f19\u0f20-\u0f29\u0f35\u0f37\u0f39\u0f3e\u0f3f\u0f71-\u0f84\u0f86\u0f87\u0f8d-\u0f97\u0f99-\u0fbc\u0fc6\u102b-\u103e\u1040-\u1049\u1056-\u1059\u105e-\u1060\u1062-\u1064\u1067-\u106d\u1071-\u1074\u1082-\u108d\u108f-\u109d\u135d-\u135f\u1369-\u1371\u1712-\u1715\u1732-\u1734\u1752\u1753\u1772\u1773\u17b4-\u17d3\u17dd\u17e0-\u17e9\u180b-\u180d\u180f-\u1819\u18a9\u1920-\u192b\u1930-\u193b\u1946-\u194f\u19d0-\u19da\u1a17-\u1a1b\u1a55-\u1a5e\u1a60-\u1a7c\u1a7f-\u1a89\u1a90-\u1a99\u1ab0-\u1abd\u1abf-\u1ace\u1b00-\u1b04\u1b34-\u1b44\u1b50-\u1b59\u1b6b-\u1b73\u1b80-\u1b82\u1ba1-\u1bad\u1bb0-\u1bb9\u1be6-\u1bf3\u1c24-\u1c37\u1c40-\u1c49\u1c50-\u1c59\u1cd0-\u1cd2\u1cd4-\u1ce8\u1ced\u1cf4\u1cf7-\u1cf9\u1dc0-\u1dff\u203f\u2040\u2054\u20d0-\u20dc\u20e1\u20e5-\u20f0\u2cef-\u2cf1\u2d7f\u2de0-\u2dff\u302a-\u302f\u3099\u309a\ua620-\ua629\ua66f\ua674-\ua67d\ua69e\ua69f\ua6f0\ua6f1\ua802\ua806\ua80b\ua823-\ua827\ua82c\ua880\ua881\ua8b4-\ua8c5\ua8d0-\ua8d9\ua8e0-\ua8f1\ua8ff-\ua909\ua926-\ua92d\ua947-\ua953\ua980-\ua983\ua9b3-\ua9c0\ua9d0-\ua9d9\ua9e5\ua9f0-\ua9f9\uaa29-\uaa36\uaa43\uaa4c\uaa4d\uaa50-\uaa59\uaa7b-\uaa7d\uaab0\uaab2-\uaab4\uaab7\uaab8\uaabe\uaabf\uaac1\uaaeb-\uaaef\uaaf5\uaaf6\uabe3-\uabea\uabec\uabed\uabf0-\uabf9\ufb1e\ufe00-\ufe0f\ufe20-\ufe2f\ufe33\ufe34\ufe4d-\ufe4f\uff10-\uff19\uff3f";
+var nonASCIIidentifierChars = "\u200c\u200d\xb7\u0300-\u036f\u0387\u0483-\u0487\u0591-\u05bd\u05bf\u05c1\u05c2\u05c4\u05c5\u05c7\u0610-\u061a\u064b-\u0669\u0670\u06d6-\u06dc\u06df-\u06e4\u06e7\u06e8\u06ea-\u06ed\u06f0-\u06f9\u0711\u0730-\u074a\u07a6-\u07b0\u07c0-\u07c9\u07eb-\u07f3\u07fd\u0816-\u0819\u081b-\u0823\u0825-\u0827\u0829-\u082d\u0859-\u085b\u0898-\u089f\u08ca-\u08e1\u08e3-\u0903\u093a-\u093c\u093e-\u094f\u0951-\u0957\u0962\u0963\u0966-\u096f\u0981-\u0983\u09bc\u09be-\u09c4\u09c7\u09c8\u09cb-\u09cd\u09d7\u09e2\u09e3\u09e6-\u09ef\u09fe\u0a01-\u0a03\u0a3c\u0a3e-\u0a42\u0a47\u0a48\u0a4b-\u0a4d\u0a51\u0a66-\u0a71\u0a75\u0a81-\u0a83\u0abc\u0abe-\u0ac5\u0ac7-\u0ac9\u0acb-\u0acd\u0ae2\u0ae3\u0ae6-\u0aef\u0afa-\u0aff\u0b01-\u0b03\u0b3c\u0b3e-\u0b44\u0b47\u0b48\u0b4b-\u0b4d\u0b55-\u0b57\u0b62\u0b63\u0b66-\u0b6f\u0b82\u0bbe-\u0bc2\u0bc6-\u0bc8\u0bca-\u0bcd\u0bd7\u0be6-\u0bef\u0c00-\u0c04\u0c3c\u0c3e-\u0c44\u0c46-\u0c48\u0c4a-\u0c4d\u0c55\u0c56\u0c62\u0c63\u0c66-\u0c6f\u0c81-\u0c83\u0cbc\u0cbe-\u0cc4\u0cc6-\u0cc8\u0cca-\u0ccd\u0cd5\u0cd6\u0ce2\u0ce3\u0ce6-\u0cef\u0cf3\u0d00-\u0d03\u0d3b\u0d3c\u0d3e-\u0d44\u0d46-\u0d48\u0d4a-\u0d4d\u0d57\u0d62\u0d63\u0d66-\u0d6f\u0d81-\u0d83\u0dca\u0dcf-\u0dd4\u0dd6\u0dd8-\u0ddf\u0de6-\u0def\u0df2\u0df3\u0e31\u0e34-\u0e3a\u0e47-\u0e4e\u0e50-\u0e59\u0eb1\u0eb4-\u0ebc\u0ec8-\u0ece\u0ed0-\u0ed9\u0f18\u0f19\u0f20-\u0f29\u0f35\u0f37\u0f39\u0f3e\u0f3f\u0f71-\u0f84\u0f86\u0f87\u0f8d-\u0f97\u0f99-\u0fbc\u0fc6\u102b-\u103e\u1040-\u1049\u1056-\u1059\u105e-\u1060\u1062-\u1064\u1067-\u106d\u1071-\u1074\u1082-\u108d\u108f-\u109d\u135d-\u135f\u1369-\u1371\u1712-\u1715\u1732-\u1734\u1752\u1753\u1772\u1773\u17b4-\u17d3\u17dd\u17e0-\u17e9\u180b-\u180d\u180f-\u1819\u18a9\u1920-\u192b\u1930-\u193b\u1946-\u194f\u19d0-\u19da\u1a17-\u1a1b\u1a55-\u1a5e\u1a60-\u1a7c\u1a7f-\u1a89\u1a90-\u1a99\u1ab0-\u1abd\u1abf-\u1ace\u1b00-\u1b04\u1b34-\u1b44\u1b50-\u1b59\u1b6b-\u1b73\u1b80-\u1b82\u1ba1-\u1bad\u1bb0-\u1bb9\u1be6-\u1bf3\u1c24-\u1c37\u1c40-\u1c49\u1c50-\u1c59\u1cd0-\u1cd2\u1cd4-\u1ce8\u1ced\u1cf4\u1cf7-\u1cf9\u1dc0-\u1dff\u200c\u200d\u203f\u2040\u2054\u20d0-\u20dc\u20e1\u20e5-\u20f0\u2cef-\u2cf1\u2d7f\u2de0-\u2dff\u302a-\u302f\u3099\u309a\u30fb\ua620-\ua629\ua66f\ua674-\ua67d\ua69e\ua69f\ua6f0\ua6f1\ua802\ua806\ua80b\ua823-\ua827\ua82c\ua880\ua881\ua8b4-\ua8c5\ua8d0-\ua8d9\ua8e0-\ua8f1\ua8ff-\ua909\ua926-\ua92d\ua947-\ua953\ua980-\ua983\ua9b3-\ua9c0\ua9d0-\ua9d9\ua9e5\ua9f0-\ua9f9\uaa29-\uaa36\uaa43\uaa4c\uaa4d\uaa50-\uaa59\uaa7b-\uaa7d\uaab0\uaab2-\uaab4\uaab7\uaab8\uaabe\uaabf\uaac1\uaaeb-\uaaef\uaaf5\uaaf6\uabe3-\uabea\uabec\uabed\uabf0-\uabf9\ufb1e\ufe00-\ufe0f\ufe20-\ufe2f\ufe33\ufe34\ufe4d-\ufe4f\uff10-\uff19\uff3f\uff65";
 
 // This file was generated. Do not modify manually!
 var nonASCIIidentifierStartChars = "\xaa\xb5\xba\xc0-\xd6\xd8-\xf6\xf8-\u02c1\u02c6-\u02d1\u02e0-\u02e4\u02ec\u02ee\u0370-\u0374\u0376\u0377\u037a-\u037d\u037f\u0386\u0388-\u038a\u038c\u038e-\u03a1\u03a3-\u03f5\u03f7-\u0481\u048a-\u052f\u0531-\u0556\u0559\u0560-\u0588\u05d0-\u05ea\u05ef-\u05f2\u0620-\u064a\u066e\u066f\u0671-\u06d3\u06d5\u06e5\u06e6\u06ee\u06ef\u06fa-\u06fc\u06ff\u0710\u0712-\u072f\u074d-\u07a5\u07b1\u07ca-\u07ea\u07f4\u07f5\u07fa\u0800-\u0815\u081a\u0824\u0828\u0840-\u0858\u0860-\u086a\u0870-\u0887\u0889-\u088e\u08a0-\u08c9\u0904-\u0939\u093d\u0950\u0958-\u0961\u0971-\u0980\u0985-\u098c\u098f\u0990\u0993-\u09a8\u09aa-\u09b0\u09b2\u09b6-\u09b9\u09bd\u09ce\u09dc\u09dd\u09df-\u09e1\u09f0\u09f1\u09fc\u0a05-\u0a0a\u0a0f\u0a10\u0a13-\u0a28\u0a2a-\u0a30\u0a32\u0a33\u0a35\u0a36\u0a38\u0a39\u0a59-\u0a5c\u0a5e\u0a72-\u0a74\u0a85-\u0a8d\u0a8f-\u0a91\u0a93-\u0aa8\u0aaa-\u0ab0\u0ab2\u0ab3\u0ab5-\u0ab9\u0abd\u0ad0\u0ae0\u0ae1\u0af9\u0b05-\u0b0c\u0b0f\u0b10\u0b13-\u0b28\u0b2a-\u0b30\u0b32\u0b33\u0b35-\u0b39\u0b3d\u0b5c\u0b5d\u0b5f-\u0b61\u0b71\u0b83\u0b85-\u0b8a\u0b8e-\u0b90\u0b92-\u0b95\u0b99\u0b9a\u0b9c\u0b9e\u0b9f\u0ba3\u0ba4\u0ba8-\u0baa\u0bae-\u0bb9\u0bd0\u0c05-\u0c0c\u0c0e-\u0c10\u0c12-\u0c28\u0c2a-\u0c39\u0c3d\u0c58-\u0c5a\u0c5d\u0c60\u0c61\u0c80\u0c85-\u0c8c\u0c8e-\u0c90\u0c92-\u0ca8\u0caa-\u0cb3\u0cb5-\u0cb9\u0cbd\u0cdd\u0cde\u0ce0\u0ce1\u0cf1\u0cf2\u0d04-\u0d0c\u0d0e-\u0d10\u0d12-\u0d3a\u0d3d\u0d4e\u0d54-\u0d56\u0d5f-\u0d61\u0d7a-\u0d7f\u0d85-\u0d96\u0d9a-\u0db1\u0db3-\u0dbb\u0dbd\u0dc0-\u0dc6\u0e01-\u0e30\u0e32\u0e33\u0e40-\u0e46\u0e81\u0e82\u0e84\u0e86-\u0e8a\u0e8c-\u0ea3\u0ea5\u0ea7-\u0eb0\u0eb2\u0eb3\u0ebd\u0ec0-\u0ec4\u0ec6\u0edc-\u0edf\u0f00\u0f40-\u0f47\u0f49-\u0f6c\u0f88-\u0f8c\u1000-\u102a\u103f\u1050-\u1055\u105a-\u105d\u1061\u1065\u1066\u106e-\u1070\u1075-\u1081\u108e\u10a0-\u10c5\u10c7\u10cd\u10d0-\u10fa\u10fc-\u1248\u124a-\u124d\u1250-\u1256\u1258\u125a-\u125d\u1260-\u1288\u128a-\u128d\u1290-\u12b0\u12b2-\u12b5\u12b8-\u12be\u12c0\u12c2-\u12c5\u12c8-\u12d6\u12d8-\u1310\u1312-\u1315\u1318-\u135a\u1380-\u138f\u13a0-\u13f5\u13f8-\u13fd\u1401-\u166c\u166f-\u167f\u1681-\u169a\u16a0-\u16ea\u16ee-\u16f8\u1700-\u1711\u171f-\u1731\u1740-\u1751\u1760-\u176c\u176e-\u1770\u1780-\u17b3\u17d7\u17dc\u1820-\u1878\u1880-\u18a8\u18aa\u18b0-\u18f5\u1900-\u191e\u1950-\u196d\u1970-\u1974\u1980-\u19ab\u19b0-\u19c9\u1a00-\u1a16\u1a20-\u1a54\u1aa7\u1b05-\u1b33\u1b45-\u1b4c\u1b83-\u1ba0\u1bae\u1baf\u1bba-\u1be5\u1c00-\u1c23\u1c4d-\u1c4f\u1c5a-\u1c7d\u1c80-\u1c88\u1c90-\u1cba\u1cbd-\u1cbf\u1ce9-\u1cec\u1cee-\u1cf3\u1cf5\u1cf6\u1cfa\u1d00-\u1dbf\u1e00-\u1f15\u1f18-\u1f1d\u1f20-\u1f45\u1f48-\u1f4d\u1f50-\u1f57\u1f59\u1f5b\u1f5d\u1f5f-\u1f7d\u1f80-\u1fb4\u1fb6-\u1fbc\u1fbe\u1fc2-\u1fc4\u1fc6-\u1fcc\u1fd0-\u1fd3\u1fd6-\u1fdb\u1fe0-\u1fec\u1ff2-\u1ff4\u1ff6-\u1ffc\u2071\u207f\u2090-\u209c\u2102\u2107\u210a-\u2113\u2115\u2118-\u211d\u2124\u2126\u2128\u212a-\u2139\u213c-\u213f\u2145-\u2149\u214e\u2160-\u2188\u2c00-\u2ce4\u2ceb-\u2cee\u2cf2\u2cf3\u2d00-\u2d25\u2d27\u2d2d\u2d30-\u2d67\u2d6f\u2d80-\u2d96\u2da0-\u2da6\u2da8-\u2dae\u2db0-\u2db6\u2db8-\u2dbe\u2dc0-\u2dc6\u2dc8-\u2dce\u2dd0-\u2dd6\u2dd8-\u2dde\u3005-\u3007\u3021-\u3029\u3031-\u3035\u3038-\u303c\u3041-\u3096\u309b-\u309f\u30a1-\u30fa\u30fc-\u30ff\u3105-\u312f\u3131-\u318e\u31a0-\u31bf\u31f0-\u31ff\u3400-\u4dbf\u4e00-\ua48c\ua4d0-\ua4fd\ua500-\ua60c\ua610-\ua61f\ua62a\ua62b\ua640-\ua66e\ua67f-\ua69d\ua6a0-\ua6ef\ua717-\ua71f\ua722-\ua788\ua78b-\ua7ca\ua7d0\ua7d1\ua7d3\ua7d5-\ua7d9\ua7f2-\ua801\ua803-\ua805\ua807-\ua80a\ua80c-\ua822\ua840-\ua873\ua882-\ua8b3\ua8f2-\ua8f7\ua8fb\ua8fd\ua8fe\ua90a-\ua925\ua930-\ua946\ua960-\ua97c\ua984-\ua9b2\ua9cf\ua9e0-\ua9e4\ua9e6-\ua9ef\ua9fa-\ua9fe\uaa00-\uaa28\uaa40-\uaa42\uaa44-\uaa4b\uaa60-\uaa76\uaa7a\uaa7e-\uaaaf\uaab1\uaab5\uaab6\uaab9-\uaabd\uaac0\uaac2\uaadb-\uaadd\uaae0-\uaaea\uaaf2-\uaaf4\uab01-\uab06\uab09-\uab0e\uab11-\uab16\uab20-\uab26\uab28-\uab2e\uab30-\uab5a\uab5c-\uab69\uab70-\uabe2\uac00-\ud7a3\ud7b0-\ud7c6\ud7cb-\ud7fb\uf900-\ufa6d\ufa70-\ufad9\ufb00-\ufb06\ufb13-\ufb17\ufb1d\ufb1f-\ufb28\ufb2a-\ufb36\ufb38-\ufb3c\ufb3e\ufb40\ufb41\ufb43\ufb44\ufb46-\ufbb1\ufbd3-\ufd3d\ufd50-\ufd8f\ufd92-\ufdc7\ufdf0-\ufdfb\ufe70-\ufe74\ufe76-\ufefc\uff21-\uff3a\uff41-\uff5a\uff66-\uffbe\uffc2-\uffc7\uffca-\uffcf\uffd2-\uffd7\uffda-\uffdc";
 
 // These are a run-length and offset encoded representation of the
+// >0xffff code points that are a valid part of identifiers. The
+// offset starts at 0x10000, and each pair of numbers represents an
+// offset to the next range, and then a size of the range.
 
 // Reserved word lists for various dialects of the language
 
@@ -17933,8 +18155,10 @@ var isArray = Array.isArray || (function (obj) { return (
   toString.call(obj) === "[object Array]"
 ); });
 
+var regexpCache = Object.create(null);
+
 function wordsRegexp(words) {
-  return new RegExp("^(?:" + words.replace(/ /g, "|") + ")$")
+  return regexpCache[words] || (regexpCache[words] = new RegExp("^(?:" + words.replace(/ /g, "|") + ")$"))
 }
 
 function codePointToString(code) {
@@ -17994,11 +18218,11 @@ var defaultOptions = {
   // Can be either `"script"` or `"module"`. This influences global
   // strict mode and parsing of `import` and `export` declarations.
   sourceType: "script",
-  // `onInsertedSemicolon` can be a callback that will be called
-  // when a semicolon is automatically inserted. It will be passed
-  // the position of the comma as an offset, and if `locations` is
-  // enabled, it is given the location as a `{line, column}` object
-  // as second argument.
+  // `onInsertedSemicolon` can be a callback that will be called when
+  // a semicolon is automatically inserted. It will be passed the
+  // position of the inserted semicolon as an offset, and if
+  // `locations` is enabled, it is given the location as a `{line,
+  // column}` object as second argument.
   onInsertedSemicolon: null,
   // `onTrailingComma` is similar to `onInsertedSemicolon`, but for
   // trailing commas.
@@ -18026,6 +18250,10 @@ var defaultOptions = {
   // allowed and treated as a line comment. Enabled by default when
   // `ecmaVersion` >= 2023.
   allowHashBang: false,
+  // By default, the parser will verify that private properties are
+  // only used in places where they are valid and have been declared.
+  // Set this to false to turn such checks off.
+  checkPrivateFields: true,
   // When `locations` is on, `loc` properties holding objects with
   // `start` and `end` properties in `{line, column}` form (with
   // line being 1-based and column 0-based) will be attached to the
@@ -18047,6 +18275,8 @@ var defaultOptions = {
   // passed, the full `{line, column}` locations of the start and
   // end of the comments. Note that you are not allowed to call the
   // parser from the callback—that will corrupt its internal state.
+  // When this option has an array as value, objects representing the
+  // comments are pushed to it.
   onComment: null,
   // Nodes have their start and end characters offsets recorded in
   // `start` and `end` properties (directly on the node, rather than
@@ -18792,6 +19022,16 @@ pp$8.parseThrowStatement = function(node) {
 
 var empty$1 = [];
 
+pp$8.parseCatchClauseParam = function() {
+  var param = this.parseBindingAtom();
+  var simple = param.type === "Identifier";
+  this.enterScope(simple ? SCOPE_SIMPLE_CATCH : 0);
+  this.checkLValPattern(param, simple ? BIND_SIMPLE_CATCH : BIND_LEXICAL);
+  this.expect(types$1.parenR);
+
+  return param
+};
+
 pp$8.parseTryStatement = function(node) {
   this.next();
   node.block = this.parseBlock();
@@ -18800,11 +19040,7 @@ pp$8.parseTryStatement = function(node) {
     var clause = this.startNode();
     this.next();
     if (this.eat(types$1.parenL)) {
-      clause.param = this.parseBindingAtom();
-      var simple = clause.param.type === "Identifier";
-      this.enterScope(simple ? SCOPE_SIMPLE_CATCH : 0);
-      this.checkLValPattern(clause.param, simple ? BIND_SIMPLE_CATCH : BIND_LEXICAL);
-      this.expect(types$1.parenR);
+      clause.param = this.parseCatchClauseParam();
     } else {
       if (this.options.ecmaVersion < 10) { this.unexpected(); }
       clause.param = null;
@@ -18820,9 +19056,9 @@ pp$8.parseTryStatement = function(node) {
   return this.finishNode(node, "TryStatement")
 };
 
-pp$8.parseVarStatement = function(node, kind) {
+pp$8.parseVarStatement = function(node, kind, allowMissingInitializer) {
   this.next();
-  this.parseVar(node, false, kind);
+  this.parseVar(node, false, kind, allowMissingInitializer);
   this.semicolon();
   return this.finishNode(node, "VariableDeclaration")
 };
@@ -18951,7 +19187,7 @@ pp$8.parseForIn = function(node, init) {
 
 // Parse a list of variable declarations.
 
-pp$8.parseVar = function(node, isFor, kind) {
+pp$8.parseVar = function(node, isFor, kind, allowMissingInitializer) {
   node.declarations = [];
   node.kind = kind;
   for (;;) {
@@ -18959,9 +19195,9 @@ pp$8.parseVar = function(node, isFor, kind) {
     this.parseVarId(decl, kind);
     if (this.eat(types$1.eq)) {
       decl.init = this.parseMaybeAssign(isFor);
-    } else if (kind === "const" && !(this.type === types$1._in || (this.options.ecmaVersion >= 6 && this.isContextual("of")))) {
+    } else if (!allowMissingInitializer && kind === "const" && !(this.type === types$1._in || (this.options.ecmaVersion >= 6 && this.isContextual("of")))) {
       this.unexpected();
-    } else if (decl.id.type !== "Identifier" && !(isFor && (this.type === types$1._in || this.isContextual("of")))) {
+    } else if (!allowMissingInitializer && decl.id.type !== "Identifier" && !(isFor && (this.type === types$1._in || this.isContextual("of")))) {
       this.raise(this.lastTokEnd, "Complex binding patterns require an initialization value");
     } else {
       decl.init = null;
@@ -19050,7 +19286,7 @@ pp$8.parseClass = function(node, isStatement) {
     if (element) {
       classBody.body.push(element);
       if (element.type === "MethodDefinition" && element.kind === "constructor") {
-        if (hadConstructor) { this.raise(element.start, "Duplicate constructor in the same class"); }
+        if (hadConstructor) { this.raiseRecoverable(element.start, "Duplicate constructor in the same class"); }
         hadConstructor = true;
       } else if (element.key && element.key.type === "PrivateIdentifier" && isPrivateNameConflicted(privateNameMap, element)) {
         this.raiseRecoverable(element.key.start, ("Identifier '#" + (element.key.name) + "' has already been declared"));
@@ -19248,6 +19484,7 @@ pp$8.exitClassBody = function() {
   var ref = this.privateNameStack.pop();
   var declared = ref.declared;
   var used = ref.used;
+  if (!this.options.checkPrivateFields) { return }
   var len = this.privateNameStack.length;
   var parent = len === 0 ? null : this.privateNameStack[len - 1];
   for (var i = 0; i < used.length; ++i) {
@@ -19299,44 +19536,36 @@ function checkKeyName(node, name) {
 
 // Parses module export declaration.
 
+pp$8.parseExportAllDeclaration = function(node, exports) {
+  if (this.options.ecmaVersion >= 11) {
+    if (this.eatContextual("as")) {
+      node.exported = this.parseModuleExportName();
+      this.checkExport(exports, node.exported, this.lastTokStart);
+    } else {
+      node.exported = null;
+    }
+  }
+  this.expectContextual("from");
+  if (this.type !== types$1.string) { this.unexpected(); }
+  node.source = this.parseExprAtom();
+  this.semicolon();
+  return this.finishNode(node, "ExportAllDeclaration")
+};
+
 pp$8.parseExport = function(node, exports) {
   this.next();
   // export * from '...'
   if (this.eat(types$1.star)) {
-    if (this.options.ecmaVersion >= 11) {
-      if (this.eatContextual("as")) {
-        node.exported = this.parseModuleExportName();
-        this.checkExport(exports, node.exported, this.lastTokStart);
-      } else {
-        node.exported = null;
-      }
-    }
-    this.expectContextual("from");
-    if (this.type !== types$1.string) { this.unexpected(); }
-    node.source = this.parseExprAtom();
-    this.semicolon();
-    return this.finishNode(node, "ExportAllDeclaration")
+    return this.parseExportAllDeclaration(node, exports)
   }
   if (this.eat(types$1._default)) { // export default ...
     this.checkExport(exports, "default", this.lastTokStart);
-    var isAsync;
-    if (this.type === types$1._function || (isAsync = this.isAsyncFunction())) {
-      var fNode = this.startNode();
-      this.next();
-      if (isAsync) { this.next(); }
-      node.declaration = this.parseFunction(fNode, FUNC_STATEMENT | FUNC_NULLABLE_ID, false, isAsync);
-    } else if (this.type === types$1._class) {
-      var cNode = this.startNode();
-      node.declaration = this.parseClass(cNode, "nullableID");
-    } else {
-      node.declaration = this.parseMaybeAssign();
-      this.semicolon();
-    }
+    node.declaration = this.parseExportDefaultDeclaration();
     return this.finishNode(node, "ExportDefaultDeclaration")
   }
   // export var|const|let|function|class ...
   if (this.shouldParseExportStatement()) {
-    node.declaration = this.parseStatement(null);
+    node.declaration = this.parseExportDeclaration(node);
     if (node.declaration.type === "VariableDeclaration")
       { this.checkVariableExport(exports, node.declaration.declarations); }
     else
@@ -19368,6 +19597,27 @@ pp$8.parseExport = function(node, exports) {
     this.semicolon();
   }
   return this.finishNode(node, "ExportNamedDeclaration")
+};
+
+pp$8.parseExportDeclaration = function(node) {
+  return this.parseStatement(null)
+};
+
+pp$8.parseExportDefaultDeclaration = function() {
+  var isAsync;
+  if (this.type === types$1._function || (isAsync = this.isAsyncFunction())) {
+    var fNode = this.startNode();
+    this.next();
+    if (isAsync) { this.next(); }
+    return this.parseFunction(fNode, FUNC_STATEMENT | FUNC_NULLABLE_ID, false, isAsync)
+  } else if (this.type === types$1._class) {
+    var cNode = this.startNode();
+    return this.parseClass(cNode, "nullableID")
+  } else {
+    var declaration = this.parseMaybeAssign();
+    this.semicolon();
+    return declaration
+  }
 };
 
 pp$8.checkExport = function(exports, name, pos) {
@@ -19402,8 +19652,6 @@ pp$8.checkPatternExport = function(exports, pat) {
     { this.checkPatternExport(exports, pat.left); }
   else if (type === "RestElement")
     { this.checkPatternExport(exports, pat.argument); }
-  else if (type === "ParenthesizedExpression")
-    { this.checkPatternExport(exports, pat.expression); }
 };
 
 pp$8.checkVariableExport = function(exports, decls) {
@@ -19427,6 +19675,20 @@ pp$8.shouldParseExportStatement = function() {
 
 // Parses a comma-separated list of module exports.
 
+pp$8.parseExportSpecifier = function(exports) {
+  var node = this.startNode();
+  node.local = this.parseModuleExportName();
+
+  node.exported = this.eatContextual("as") ? this.parseModuleExportName() : node.local;
+  this.checkExport(
+    exports,
+    node.exported,
+    node.exported.start
+  );
+
+  return this.finishNode(node, "ExportSpecifier")
+};
+
 pp$8.parseExportSpecifiers = function(exports) {
   var nodes = [], first = true;
   // export { x, y as z } [from '...']
@@ -19437,15 +19699,7 @@ pp$8.parseExportSpecifiers = function(exports) {
       if (this.afterTrailingComma(types$1.braceR)) { break }
     } else { first = false; }
 
-    var node = this.startNode();
-    node.local = this.parseModuleExportName();
-    node.exported = this.eatContextual("as") ? this.parseModuleExportName() : node.local;
-    this.checkExport(
-      exports,
-      node.exported,
-      node.exported.start
-    );
-    nodes.push(this.finishNode(node, "ExportSpecifier"));
+    nodes.push(this.parseExportSpecifier(exports));
   }
   return nodes
 };
@@ -19454,6 +19708,7 @@ pp$8.parseExportSpecifiers = function(exports) {
 
 pp$8.parseImport = function(node) {
   this.next();
+
   // import '...'
   if (this.type === types$1.string) {
     node.specifiers = empty$1;
@@ -19469,23 +19724,46 @@ pp$8.parseImport = function(node) {
 
 // Parses a comma-separated list of module imports.
 
+pp$8.parseImportSpecifier = function() {
+  var node = this.startNode();
+  node.imported = this.parseModuleExportName();
+
+  if (this.eatContextual("as")) {
+    node.local = this.parseIdent();
+  } else {
+    this.checkUnreserved(node.imported);
+    node.local = node.imported;
+  }
+  this.checkLValSimple(node.local, BIND_LEXICAL);
+
+  return this.finishNode(node, "ImportSpecifier")
+};
+
+pp$8.parseImportDefaultSpecifier = function() {
+  // import defaultObj, { x, y as z } from '...'
+  var node = this.startNode();
+  node.local = this.parseIdent();
+  this.checkLValSimple(node.local, BIND_LEXICAL);
+  return this.finishNode(node, "ImportDefaultSpecifier")
+};
+
+pp$8.parseImportNamespaceSpecifier = function() {
+  var node = this.startNode();
+  this.next();
+  this.expectContextual("as");
+  node.local = this.parseIdent();
+  this.checkLValSimple(node.local, BIND_LEXICAL);
+  return this.finishNode(node, "ImportNamespaceSpecifier")
+};
+
 pp$8.parseImportSpecifiers = function() {
   var nodes = [], first = true;
   if (this.type === types$1.name) {
-    // import defaultObj, { x, y as z } from '...'
-    var node = this.startNode();
-    node.local = this.parseIdent();
-    this.checkLValSimple(node.local, BIND_LEXICAL);
-    nodes.push(this.finishNode(node, "ImportDefaultSpecifier"));
+    nodes.push(this.parseImportDefaultSpecifier());
     if (!this.eat(types$1.comma)) { return nodes }
   }
   if (this.type === types$1.star) {
-    var node$1 = this.startNode();
-    this.next();
-    this.expectContextual("as");
-    node$1.local = this.parseIdent();
-    this.checkLValSimple(node$1.local, BIND_LEXICAL);
-    nodes.push(this.finishNode(node$1, "ImportNamespaceSpecifier"));
+    nodes.push(this.parseImportNamespaceSpecifier());
     return nodes
   }
   this.expect(types$1.braceL);
@@ -19495,16 +19773,7 @@ pp$8.parseImportSpecifiers = function() {
       if (this.afterTrailingComma(types$1.braceR)) { break }
     } else { first = false; }
 
-    var node$2 = this.startNode();
-    node$2.imported = this.parseModuleExportName();
-    if (this.eatContextual("as")) {
-      node$2.local = this.parseIdent();
-    } else {
-      this.checkUnreserved(node$2.imported);
-      node$2.local = node$2.imported;
-    }
-    this.checkLValSimple(node$2.local, BIND_LEXICAL);
-    nodes.push(this.finishNode(node$2, "ImportSpecifier"));
+    nodes.push(this.parseImportSpecifier());
   }
   return nodes
 };
@@ -19677,7 +19946,7 @@ pp$7.parseBindingAtom = function() {
   return this.parseIdent()
 };
 
-pp$7.parseBindingList = function(close, allowEmpty, allowTrailingComma) {
+pp$7.parseBindingList = function(close, allowEmpty, allowTrailingComma, allowModifiers) {
   var elts = [], first = true;
   while (!this.eat(close)) {
     if (first) { first = false; }
@@ -19690,16 +19959,20 @@ pp$7.parseBindingList = function(close, allowEmpty, allowTrailingComma) {
       var rest = this.parseRestBinding();
       this.parseBindingListItem(rest);
       elts.push(rest);
-      if (this.type === types$1.comma) { this.raise(this.start, "Comma is not permitted after the rest element"); }
+      if (this.type === types$1.comma) { this.raiseRecoverable(this.start, "Comma is not permitted after the rest element"); }
       this.expect(close);
       break
     } else {
-      var elem = this.parseMaybeDefault(this.start, this.startLoc);
-      this.parseBindingListItem(elem);
-      elts.push(elem);
+      elts.push(this.parseAssignableListItem(allowModifiers));
     }
   }
   return elts
+};
+
+pp$7.parseAssignableListItem = function(allowModifiers) {
+  var elem = this.parseMaybeDefault(this.start, this.startLoc);
+  this.parseBindingListItem(elem);
+  return elem
 };
 
 pp$7.parseBindingListItem = function(param) {
@@ -19867,6 +20140,9 @@ pp$7.checkLValInnerPattern = function(expr, bindingType, checkClashes) {
 };
 
 // The algorithm used to determine whether a regexp can appear at a
+// given point in the program is loosely based on sweet.js' approach.
+// See https://github.com/mozilla/sweet.js/wiki/design
+
 
 var TokContext = function TokContext(token, isExpr, preserveSpace, override, generator) {
   this.token = token;
@@ -19939,7 +20215,7 @@ pp$6.updateContext = function(prevType) {
     { this.exprAllowed = type.beforeExpr; }
 };
 
-// Used to handle egde cases when token context could not be inferred correctly during tokenization phase
+// Used to handle edge cases when token context could not be inferred correctly during tokenization phase
 
 pp$6.overrideContext = function(tokenCtx) {
   if (this.curContext() !== tokenCtx) {
@@ -19992,6 +20268,11 @@ types$1._function.updateContext = types$1._class.updateContext = function(prevTy
   this.exprAllowed = false;
 };
 
+types$1.colon.updateContext = function() {
+  if (this.curContext().token === "function") { this.context.pop(); }
+  this.exprAllowed = true;
+};
+
 types$1.backQuote.updateContext = function() {
   if (this.curContext() === types.q_tmpl)
     { this.context.pop(); }
@@ -20022,6 +20303,23 @@ types$1.name.updateContext = function(prevType) {
 };
 
 // A recursive descent parser operates by defining functions for all
+// syntactic elements, and recursively calling those, each function
+// advancing the input stream and returning an AST node. Precedence
+// of constructs (for example, the fact that `!x[1]` means `!(x[1])`
+// instead of `(!x)[1]` is handled by the fact that the parser
+// function that parses unary prefix operators is called first, and
+// in turn calls the function that parses `[]` subscripts — that
+// way, it'll receive the node for `x[1]` already parsed, and wraps
+// *that* in the unary operator node.
+//
+// Acorn uses an [operator precedence parser][opp] to handle binary
+// operator precedence, because it is much more compact than using
+// the technique outlined above, which uses different, nesting
+// functions to specify precedence, for all of the ten binary
+// precedence levels that JavaScript defines.
+//
+// [opp]: http://en.wikipedia.org/wiki/Operator-precedence_parser
+
 
 var pp$5 = Parser.prototype;
 
@@ -20251,7 +20549,7 @@ pp$5.parseMaybeUnary = function(refDestructuringErrors, sawUnary, incDec, forIni
     else { sawUnary = true; }
     expr = this.finishNode(node, update ? "UpdateExpression" : "UnaryExpression");
   } else if (!sawUnary && this.type === types$1.privateId) {
-    if (forInit || this.privateNameStack.length === 0) { this.unexpected(); }
+    if ((forInit || this.privateNameStack.length === 0) && this.options.checkPrivateFields) { this.unexpected(); }
     expr = this.parsePrivateIdent();
     // only could be private fields in 'in', such as #x in obj
     if (this.type !== types$1._in) { this.unexpected(); }
@@ -20325,6 +20623,14 @@ pp$5.parseSubscripts = function(base, startPos, startLoc, noCalls, forInit) {
   }
 };
 
+pp$5.shouldParseAsyncArrow = function() {
+  return !this.canInsertSemicolon() && this.eat(types$1.arrow)
+};
+
+pp$5.parseSubscriptAsyncArrow = function(startPos, startLoc, exprList, forInit) {
+  return this.parseArrowExpression(this.startNodeAt(startPos, startLoc), exprList, true, forInit)
+};
+
 pp$5.parseSubscript = function(base, startPos, startLoc, noCalls, maybeAsyncArrow, optionalChained, forInit) {
   var optionalSupported = this.options.ecmaVersion >= 11;
   var optional = optionalSupported && this.eat(types$1.questionDot);
@@ -20353,7 +20659,7 @@ pp$5.parseSubscript = function(base, startPos, startLoc, noCalls, maybeAsyncArro
     this.awaitPos = 0;
     this.awaitIdentPos = 0;
     var exprList = this.parseExprList(types$1.parenR, this.options.ecmaVersion >= 8, false, refDestructuringErrors);
-    if (maybeAsyncArrow && !optional && !this.canInsertSemicolon() && this.eat(types$1.arrow)) {
+    if (maybeAsyncArrow && !optional && this.shouldParseAsyncArrow()) {
       this.checkPatternErrors(refDestructuringErrors, false);
       this.checkYieldAwaitInDefaultParams();
       if (this.awaitIdentPos > 0)
@@ -20361,7 +20667,7 @@ pp$5.parseSubscript = function(base, startPos, startLoc, noCalls, maybeAsyncArro
       this.yieldPos = oldYieldPos;
       this.awaitPos = oldAwaitPos;
       this.awaitIdentPos = oldAwaitIdentPos;
-      return this.parseArrowExpression(this.startNodeAt(startPos, startLoc), exprList, true, forInit)
+      return this.parseSubscriptAsyncArrow(startPos, startLoc, exprList, forInit)
     }
     this.checkExpressionErrors(refDestructuringErrors, true);
     this.yieldPos = oldYieldPos || this.yieldPos;
@@ -20391,7 +20697,7 @@ pp$5.parseSubscript = function(base, startPos, startLoc, noCalls, maybeAsyncArro
 // `new`, or an expression wrapped in punctuation like `()`, `[]`,
 // or `{}`.
 
-pp$5.parseExprAtom = function(refDestructuringErrors, forInit) {
+pp$5.parseExprAtom = function(refDestructuringErrors, forInit, forNew) {
   // If a division operator appears in an expression position, the
   // tokenizer got confused, and we force it to read a regexp instead.
   if (this.type === types$1.slash) { this.readRegexp(); }
@@ -20492,31 +20798,36 @@ pp$5.parseExprAtom = function(refDestructuringErrors, forInit) {
 
   case types$1._import:
     if (this.options.ecmaVersion >= 11) {
-      return this.parseExprImport()
+      return this.parseExprImport(forNew)
     } else {
       return this.unexpected()
     }
 
   default:
-    this.unexpected();
+    return this.parseExprAtomDefault()
   }
 };
 
-pp$5.parseExprImport = function() {
+pp$5.parseExprAtomDefault = function() {
+  this.unexpected();
+};
+
+pp$5.parseExprImport = function(forNew) {
   var node = this.startNode();
 
   // Consume `import` as an identifier for `import.meta`.
   // Because `this.parseIdent(true)` doesn't check escape sequences, it needs the check of `this.containsEsc`.
   if (this.containsEsc) { this.raiseRecoverable(this.start, "Escape sequence in keyword import"); }
-  var meta = this.parseIdent(true);
+  this.next();
 
-  switch (this.type) {
-  case types$1.parenL:
+  if (this.type === types$1.parenL && !forNew) {
     return this.parseDynamicImport(node)
-  case types$1.dot:
-    node.meta = meta;
+  } else if (this.type === types$1.dot) {
+    var meta = this.startNodeAt(node.start, node.loc && node.loc.start);
+    meta.name = "import";
+    node.meta = this.finishNode(meta, "Identifier");
     return this.parseImportMeta(node)
-  default:
+  } else {
     this.unexpected();
   }
 };
@@ -20572,6 +20883,10 @@ pp$5.parseParenExpression = function() {
   return val
 };
 
+pp$5.shouldParseArrow = function(exprList) {
+  return !this.canInsertSemicolon()
+};
+
 pp$5.parseParenAndDistinguishExpression = function(canBeArrow, forInit) {
   var startPos = this.start, startLoc = this.startLoc, val, allowTrailingComma = this.options.ecmaVersion >= 8;
   if (this.options.ecmaVersion >= 6) {
@@ -20591,7 +20906,12 @@ pp$5.parseParenAndDistinguishExpression = function(canBeArrow, forInit) {
       } else if (this.type === types$1.ellipsis) {
         spreadStart = this.start;
         exprList.push(this.parseParenItem(this.parseRestBinding()));
-        if (this.type === types$1.comma) { this.raise(this.start, "Comma is not permitted after the rest element"); }
+        if (this.type === types$1.comma) {
+          this.raiseRecoverable(
+            this.start,
+            "Comma is not permitted after the rest element"
+          );
+        }
         break
       } else {
         exprList.push(this.parseMaybeAssign(false, refDestructuringErrors, this.parseParenItem));
@@ -20600,7 +20920,7 @@ pp$5.parseParenAndDistinguishExpression = function(canBeArrow, forInit) {
     var innerEndPos = this.lastTokEnd, innerEndLoc = this.lastTokEndLoc;
     this.expect(types$1.parenR);
 
-    if (canBeArrow && !this.canInsertSemicolon() && this.eat(types$1.arrow)) {
+    if (canBeArrow && this.shouldParseArrow(exprList) && this.eat(types$1.arrow)) {
       this.checkPatternErrors(refDestructuringErrors, false);
       this.checkYieldAwaitInDefaultParams();
       this.yieldPos = oldYieldPos;
@@ -20653,9 +20973,12 @@ var empty = [];
 pp$5.parseNew = function() {
   if (this.containsEsc) { this.raiseRecoverable(this.start, "Escape sequence in keyword new"); }
   var node = this.startNode();
-  var meta = this.parseIdent(true);
-  if (this.options.ecmaVersion >= 6 && this.eat(types$1.dot)) {
-    node.meta = meta;
+  this.next();
+  if (this.options.ecmaVersion >= 6 && this.type === types$1.dot) {
+    var meta = this.startNodeAt(node.start, node.loc && node.loc.start);
+    meta.name = "new";
+    node.meta = this.finishNode(meta, "Identifier");
+    this.next();
     var containsEsc = this.containsEsc;
     node.property = this.parseIdent(true);
     if (node.property.name !== "target")
@@ -20666,11 +20989,8 @@ pp$5.parseNew = function() {
       { this.raiseRecoverable(node.start, "'new.target' can only be used in functions and class static block"); }
     return this.finishNode(node, "MetaProperty")
   }
-  var startPos = this.start, startLoc = this.startLoc, isImport = this.type === types$1._import;
-  node.callee = this.parseSubscripts(this.parseExprAtom(), startPos, startLoc, true, false);
-  if (isImport && node.callee.type === "ImportExpression") {
-    this.raise(startPos, "Cannot use new with import()");
-  }
+  var startPos = this.start, startLoc = this.startLoc;
+  node.callee = this.parseSubscripts(this.parseExprAtom(null, false, true), startPos, startLoc, true, false);
   if (this.eat(types$1.parenL)) { node.arguments = this.parseExprList(types$1.parenR, this.options.ecmaVersion >= 8, false); }
   else { node.arguments = empty; }
   return this.finishNode(node, "NewExpression")
@@ -20752,7 +21072,7 @@ pp$5.parseProperty = function(isPattern, refDestructuringErrors) {
     if (isPattern) {
       prop.argument = this.parseIdent(false);
       if (this.type === types$1.comma) {
-        this.raise(this.start, "Comma is not permitted after the rest element");
+        this.raiseRecoverable(this.start, "Comma is not permitted after the rest element");
       }
       return this.finishNode(prop, "RestElement")
     }
@@ -20788,6 +21108,23 @@ pp$5.parseProperty = function(isPattern, refDestructuringErrors) {
   return this.finishNode(prop, "Property")
 };
 
+pp$5.parseGetterSetter = function(prop) {
+  prop.kind = prop.key.name;
+  this.parsePropertyName(prop);
+  prop.value = this.parseMethod(false);
+  var paramCount = prop.kind === "get" ? 0 : 1;
+  if (prop.value.params.length !== paramCount) {
+    var start = prop.value.start;
+    if (prop.kind === "get")
+      { this.raiseRecoverable(start, "getter should have no params"); }
+    else
+      { this.raiseRecoverable(start, "setter should have exactly one param"); }
+  } else {
+    if (prop.kind === "set" && prop.value.params[0].type === "RestElement")
+      { this.raiseRecoverable(prop.value.params[0].start, "Setter cannot use rest params"); }
+  }
+};
+
 pp$5.parsePropertyValue = function(prop, isPattern, isGenerator, isAsync, startPos, startLoc, refDestructuringErrors, containsEsc) {
   if ((isGenerator || isAsync) && this.type === types$1.colon)
     { this.unexpected(); }
@@ -20805,20 +21142,7 @@ pp$5.parsePropertyValue = function(prop, isPattern, isGenerator, isAsync, startP
              (prop.key.name === "get" || prop.key.name === "set") &&
              (this.type !== types$1.comma && this.type !== types$1.braceR && this.type !== types$1.eq)) {
     if (isGenerator || isAsync) { this.unexpected(); }
-    prop.kind = prop.key.name;
-    this.parsePropertyName(prop);
-    prop.value = this.parseMethod(false);
-    var paramCount = prop.kind === "get" ? 0 : 1;
-    if (prop.value.params.length !== paramCount) {
-      var start = prop.value.start;
-      if (prop.kind === "get")
-        { this.raiseRecoverable(start, "getter should have no params"); }
-      else
-        { this.raiseRecoverable(start, "setter should have exactly one param"); }
-    } else {
-      if (prop.kind === "set" && prop.value.params[0].type === "RestElement")
-        { this.raiseRecoverable(prop.value.params[0].start, "Setter cannot use rest params"); }
-    }
+    this.parseGetterSetter(prop);
   } else if (this.options.ecmaVersion >= 6 && !prop.computed && prop.key.type === "Identifier") {
     if (isGenerator || isAsync) { this.unexpected(); }
     this.checkUnreserved(prop.key);
@@ -21030,6 +21354,18 @@ pp$5.checkUnreserved = function(ref) {
 // identifiers.
 
 pp$5.parseIdent = function(liberal) {
+  var node = this.parseIdentNode();
+  this.next(!!liberal);
+  this.finishNode(node, "Identifier");
+  if (!liberal) {
+    this.checkUnreserved(node);
+    if (node.name === "await" && !this.awaitIdentPos)
+      { this.awaitIdentPos = node.start; }
+  }
+  return node
+};
+
+pp$5.parseIdentNode = function() {
   var node = this.startNode();
   if (this.type === types$1.name) {
     node.name = this.value;
@@ -21041,18 +21377,12 @@ pp$5.parseIdent = function(liberal) {
     // But there is no chance to pop the context if the keyword is consumed as an identifier such as a property name.
     // If the previous token is a dot, this does not apply because the context-managing code already ignored the keyword
     if ((node.name === "class" || node.name === "function") &&
-        (this.lastTokEnd !== this.lastTokStart + 1 || this.input.charCodeAt(this.lastTokStart) !== 46)) {
+      (this.lastTokEnd !== this.lastTokStart + 1 || this.input.charCodeAt(this.lastTokStart) !== 46)) {
       this.context.pop();
     }
+    this.type = types$1.name;
   } else {
     this.unexpected();
-  }
-  this.next(!!liberal);
-  this.finishNode(node, "Identifier");
-  if (!liberal) {
-    this.checkUnreserved(node);
-    if (node.name === "await" && !this.awaitIdentPos)
-      { this.awaitIdentPos = node.start; }
   }
   return node
 };
@@ -21068,10 +21398,12 @@ pp$5.parsePrivateIdent = function() {
   this.finishNode(node, "PrivateIdentifier");
 
   // For validating existence
-  if (this.privateNameStack.length === 0) {
-    this.raise(node.start, ("Private field '#" + (node.name) + "' must be declared in an enclosing class"));
-  } else {
-    this.privateNameStack[this.privateNameStack.length - 1].used.push(node);
+  if (this.options.checkPrivateFields) {
+    if (this.privateNameStack.length === 0) {
+      this.raise(node.start, ("Private field '#" + (node.name) + "' must be declared in an enclosing class"));
+    } else {
+      this.privateNameStack[this.privateNameStack.length - 1].used.push(node);
+    }
   }
 
   return node
@@ -21293,6 +21625,18 @@ var unicodeBinaryProperties = {
   14: ecma14BinaryProperties
 };
 
+// #table-binary-unicode-properties-of-strings
+var ecma14BinaryPropertiesOfStrings = "Basic_Emoji Emoji_Keycap_Sequence RGI_Emoji_Modifier_Sequence RGI_Emoji_Flag_Sequence RGI_Emoji_Tag_Sequence RGI_Emoji_ZWJ_Sequence RGI_Emoji";
+
+var unicodeBinaryPropertiesOfStrings = {
+  9: "",
+  10: "",
+  11: "",
+  12: "",
+  13: "",
+  14: ecma14BinaryPropertiesOfStrings
+};
+
 // #table-unicode-general-category-values
 var unicodeGeneralCategoryValues = "Cased_Letter LC Close_Punctuation Pe Connector_Punctuation Pc Control Cc cntrl Currency_Symbol Sc Dash_Punctuation Pd Decimal_Number Nd digit Enclosing_Mark Me Final_Punctuation Pf Format Cf Initial_Punctuation Pi Letter L Letter_Number Nl Line_Separator Zl Lowercase_Letter Ll Mark M Combining_Mark Math_Symbol Sm Modifier_Letter Lm Modifier_Symbol Sk Nonspacing_Mark Mn Number N Open_Punctuation Ps Other C Other_Letter Lo Other_Number No Other_Punctuation Po Other_Symbol So Paragraph_Separator Zp Private_Use Co Punctuation P punct Separator Z Space_Separator Zs Spacing_Mark Mc Surrogate Cs Symbol S Titlecase_Letter Lt Unassigned Cn Uppercase_Letter Lu";
 
@@ -21302,7 +21646,7 @@ var ecma10ScriptValues = ecma9ScriptValues + " Dogra Dogr Gunjala_Gondi Gong Han
 var ecma11ScriptValues = ecma10ScriptValues + " Elymaic Elym Nandinagari Nand Nyiakeng_Puachue_Hmong Hmnp Wancho Wcho";
 var ecma12ScriptValues = ecma11ScriptValues + " Chorasmian Chrs Diak Dives_Akuru Khitan_Small_Script Kits Yezi Yezidi";
 var ecma13ScriptValues = ecma12ScriptValues + " Cypro_Minoan Cpmn Old_Uyghur Ougr Tangsa Tnsa Toto Vithkuqi Vith";
-var ecma14ScriptValues = ecma13ScriptValues + " Kawi Nag_Mundari Nagm";
+var ecma14ScriptValues = ecma13ScriptValues + " Hrkt Katakana_Or_Hiragana Kawi Nag_Mundari Nagm Unknown Zzzz";
 
 var unicodeScriptValues = {
   9: ecma9ScriptValues,
@@ -21317,6 +21661,7 @@ var data = {};
 function buildUnicodeData(ecmaVersion) {
   var d = data[ecmaVersion] = {
     binary: wordsRegexp(unicodeBinaryProperties[ecmaVersion] + " " + unicodeGeneralCategoryValues),
+    binaryOfStrings: wordsRegexp(unicodeBinaryPropertiesOfStrings[ecmaVersion]),
     nonBinary: {
       General_Category: wordsRegexp(unicodeGeneralCategoryValues),
       Script: wordsRegexp(unicodeScriptValues[ecmaVersion])
@@ -21339,12 +21684,13 @@ var pp$1 = Parser.prototype;
 
 var RegExpValidationState = function RegExpValidationState(parser) {
   this.parser = parser;
-  this.validFlags = "gim" + (parser.options.ecmaVersion >= 6 ? "uy" : "") + (parser.options.ecmaVersion >= 9 ? "s" : "") + (parser.options.ecmaVersion >= 13 ? "d" : "");
+  this.validFlags = "gim" + (parser.options.ecmaVersion >= 6 ? "uy" : "") + (parser.options.ecmaVersion >= 9 ? "s" : "") + (parser.options.ecmaVersion >= 13 ? "d" : "") + (parser.options.ecmaVersion >= 15 ? "v" : "");
   this.unicodeProperties = data[parser.options.ecmaVersion >= 14 ? 14 : parser.options.ecmaVersion];
   this.source = "";
   this.flags = "";
   this.start = 0;
   this.switchU = false;
+  this.switchV = false;
   this.switchN = false;
   this.pos = 0;
   this.lastIntValue = 0;
@@ -21357,12 +21703,20 @@ var RegExpValidationState = function RegExpValidationState(parser) {
 };
 
 RegExpValidationState.prototype.reset = function reset (start, pattern, flags) {
+  var unicodeSets = flags.indexOf("v") !== -1;
   var unicode = flags.indexOf("u") !== -1;
   this.start = start | 0;
   this.source = pattern + "";
   this.flags = flags;
-  this.switchU = unicode && this.parser.options.ecmaVersion >= 6;
-  this.switchN = unicode && this.parser.options.ecmaVersion >= 9;
+  if (unicodeSets && this.parser.options.ecmaVersion >= 15) {
+    this.switchU = true;
+    this.switchV = true;
+    this.switchN = true;
+  } else {
+    this.switchU = unicode && this.parser.options.ecmaVersion >= 6;
+    this.switchV = false;
+    this.switchN = unicode && this.parser.options.ecmaVersion >= 9;
+  }
 };
 
 RegExpValidationState.prototype.raise = function raise (message) {
@@ -21431,6 +21785,23 @@ RegExpValidationState.prototype.eat = function eat (ch, forceU) {
   return false
 };
 
+RegExpValidationState.prototype.eatChars = function eatChars (chs, forceU) {
+    if ( forceU === void 0 ) forceU = false;
+
+  var pos = this.pos;
+  for (var i = 0, list = chs; i < list.length; i += 1) {
+    var ch = list[i];
+
+      var current = this.at(pos, forceU);
+    if (current === -1 || current !== ch) {
+      return false
+    }
+    pos = this.nextIndex(pos, forceU);
+  }
+  this.pos = pos;
+  return true
+};
+
 /**
  * Validate the flags part of a given RegExpLiteral.
  *
@@ -21441,6 +21812,9 @@ pp$1.validateRegExpFlags = function(state) {
   var validFlags = state.validFlags;
   var flags = state.flags;
 
+  var u = false;
+  var v = false;
+
   for (var i = 0; i < flags.length; i++) {
     var flag = flags.charAt(i);
     if (validFlags.indexOf(flag) === -1) {
@@ -21449,6 +21823,11 @@ pp$1.validateRegExpFlags = function(state) {
     if (flags.indexOf(flag, i + 1) > -1) {
       this.raise(state.start, "Duplicate regular expression flag");
     }
+    if (flag === "u") { u = true; }
+    if (flag === "v") { v = true; }
+  }
+  if (this.options.ecmaVersion >= 15 && u && v) {
+    this.raise(state.start, "Invalid regular expression flag");
   }
 };
 
@@ -22067,6 +22446,12 @@ pp$1.regexp_eatDecimalEscape = function(state) {
   return false
 };
 
+// Return values used by character set parsing methods, needed to
+// forbid negation of sets that can match strings.
+var CharSetNone = 0; // Nothing parsed
+var CharSetOk = 1; // Construct parsed, cannot contain strings
+var CharSetString = 2; // Construct parsed, can contain strings
+
 // https://www.ecma-international.org/ecma-262/8.0/#prod-CharacterClassEscape
 pp$1.regexp_eatCharacterClassEscape = function(state) {
   var ch = state.current();
@@ -22074,28 +22459,32 @@ pp$1.regexp_eatCharacterClassEscape = function(state) {
   if (isCharacterClassEscape(ch)) {
     state.lastIntValue = -1;
     state.advance();
-    return true
+    return CharSetOk
   }
 
+  var negate = false;
   if (
     state.switchU &&
     this.options.ecmaVersion >= 9 &&
-    (ch === 0x50 /* P */ || ch === 0x70 /* p */)
+    ((negate = ch === 0x50 /* P */) || ch === 0x70 /* p */)
   ) {
     state.lastIntValue = -1;
     state.advance();
+    var result;
     if (
       state.eat(0x7B /* { */) &&
-      this.regexp_eatUnicodePropertyValueExpression(state) &&
+      (result = this.regexp_eatUnicodePropertyValueExpression(state)) &&
       state.eat(0x7D /* } */)
     ) {
-      return true
+      if (negate && result === CharSetString) { state.raise("Invalid property name"); }
+      return result
     }
     state.raise("Invalid property name");
   }
 
-  return false
+  return CharSetNone
 };
+
 function isCharacterClassEscape(ch) {
   return (
     ch === 0x64 /* d */ ||
@@ -22119,7 +22508,7 @@ pp$1.regexp_eatUnicodePropertyValueExpression = function(state) {
     if (this.regexp_eatUnicodePropertyValue(state)) {
       var value = state.lastStringValue;
       this.regexp_validateUnicodePropertyNameAndValue(state, name, value);
-      return true
+      return CharSetOk
     }
   }
   state.pos = start;
@@ -22127,20 +22516,22 @@ pp$1.regexp_eatUnicodePropertyValueExpression = function(state) {
   // LoneUnicodePropertyNameOrValue
   if (this.regexp_eatLoneUnicodePropertyNameOrValue(state)) {
     var nameOrValue = state.lastStringValue;
-    this.regexp_validateUnicodePropertyNameOrValue(state, nameOrValue);
-    return true
+    return this.regexp_validateUnicodePropertyNameOrValue(state, nameOrValue)
   }
-  return false
+  return CharSetNone
 };
+
 pp$1.regexp_validateUnicodePropertyNameAndValue = function(state, name, value) {
   if (!hasOwn(state.unicodeProperties.nonBinary, name))
     { state.raise("Invalid property name"); }
   if (!state.unicodeProperties.nonBinary[name].test(value))
     { state.raise("Invalid property value"); }
 };
+
 pp$1.regexp_validateUnicodePropertyNameOrValue = function(state, nameOrValue) {
-  if (!state.unicodeProperties.binary.test(nameOrValue))
-    { state.raise("Invalid property name"); }
+  if (state.unicodeProperties.binary.test(nameOrValue)) { return CharSetOk }
+  if (state.switchV && state.unicodeProperties.binaryOfStrings.test(nameOrValue)) { return CharSetString }
+  state.raise("Invalid property name");
 };
 
 // UnicodePropertyName ::
@@ -22154,6 +22545,7 @@ pp$1.regexp_eatUnicodePropertyName = function(state) {
   }
   return state.lastStringValue !== ""
 };
+
 function isUnicodePropertyNameCharacter(ch) {
   return isControlLetter(ch) || ch === 0x5F /* _ */
 }
@@ -22182,21 +22574,29 @@ pp$1.regexp_eatLoneUnicodePropertyNameOrValue = function(state) {
 // https://www.ecma-international.org/ecma-262/8.0/#prod-CharacterClass
 pp$1.regexp_eatCharacterClass = function(state) {
   if (state.eat(0x5B /* [ */)) {
-    state.eat(0x5E /* ^ */);
-    this.regexp_classRanges(state);
-    if (state.eat(0x5D /* ] */)) {
-      return true
-    }
-    // Unreachable since it threw "unterminated regular expression" error before.
-    state.raise("Unterminated character class");
+    var negate = state.eat(0x5E /* ^ */);
+    var result = this.regexp_classContents(state);
+    if (!state.eat(0x5D /* ] */))
+      { state.raise("Unterminated character class"); }
+    if (negate && result === CharSetString)
+      { state.raise("Negated character class may contain strings"); }
+    return true
   }
   return false
 };
 
+// https://tc39.es/ecma262/#prod-ClassContents
 // https://www.ecma-international.org/ecma-262/8.0/#prod-ClassRanges
+pp$1.regexp_classContents = function(state) {
+  if (state.current() === 0x5D /* ] */) { return CharSetOk }
+  if (state.switchV) { return this.regexp_classSetExpression(state) }
+  this.regexp_nonEmptyClassRanges(state);
+  return CharSetOk
+};
+
 // https://www.ecma-international.org/ecma-262/8.0/#prod-NonemptyClassRanges
 // https://www.ecma-international.org/ecma-262/8.0/#prod-NonemptyClassRangesNoDash
-pp$1.regexp_classRanges = function(state) {
+pp$1.regexp_nonEmptyClassRanges = function(state) {
   while (this.regexp_eatClassAtom(state)) {
     var left = state.lastIntValue;
     if (state.eat(0x2D /* - */) && this.regexp_eatClassAtom(state)) {
@@ -22267,6 +22667,205 @@ pp$1.regexp_eatClassEscape = function(state) {
     this.regexp_eatCharacterEscape(state)
   )
 };
+
+// https://tc39.es/ecma262/#prod-ClassSetExpression
+// https://tc39.es/ecma262/#prod-ClassUnion
+// https://tc39.es/ecma262/#prod-ClassIntersection
+// https://tc39.es/ecma262/#prod-ClassSubtraction
+pp$1.regexp_classSetExpression = function(state) {
+  var result = CharSetOk, subResult;
+  if (this.regexp_eatClassSetRange(state)) ; else if (subResult = this.regexp_eatClassSetOperand(state)) {
+    if (subResult === CharSetString) { result = CharSetString; }
+    // https://tc39.es/ecma262/#prod-ClassIntersection
+    var start = state.pos;
+    while (state.eatChars([0x26, 0x26] /* && */)) {
+      if (
+        state.current() !== 0x26 /* & */ &&
+        (subResult = this.regexp_eatClassSetOperand(state))
+      ) {
+        if (subResult !== CharSetString) { result = CharSetOk; }
+        continue
+      }
+      state.raise("Invalid character in character class");
+    }
+    if (start !== state.pos) { return result }
+    // https://tc39.es/ecma262/#prod-ClassSubtraction
+    while (state.eatChars([0x2D, 0x2D] /* -- */)) {
+      if (this.regexp_eatClassSetOperand(state)) { continue }
+      state.raise("Invalid character in character class");
+    }
+    if (start !== state.pos) { return result }
+  } else {
+    state.raise("Invalid character in character class");
+  }
+  // https://tc39.es/ecma262/#prod-ClassUnion
+  for (;;) {
+    if (this.regexp_eatClassSetRange(state)) { continue }
+    subResult = this.regexp_eatClassSetOperand(state);
+    if (!subResult) { return result }
+    if (subResult === CharSetString) { result = CharSetString; }
+  }
+};
+
+// https://tc39.es/ecma262/#prod-ClassSetRange
+pp$1.regexp_eatClassSetRange = function(state) {
+  var start = state.pos;
+  if (this.regexp_eatClassSetCharacter(state)) {
+    var left = state.lastIntValue;
+    if (state.eat(0x2D /* - */) && this.regexp_eatClassSetCharacter(state)) {
+      var right = state.lastIntValue;
+      if (left !== -1 && right !== -1 && left > right) {
+        state.raise("Range out of order in character class");
+      }
+      return true
+    }
+    state.pos = start;
+  }
+  return false
+};
+
+// https://tc39.es/ecma262/#prod-ClassSetOperand
+pp$1.regexp_eatClassSetOperand = function(state) {
+  if (this.regexp_eatClassSetCharacter(state)) { return CharSetOk }
+  return this.regexp_eatClassStringDisjunction(state) || this.regexp_eatNestedClass(state)
+};
+
+// https://tc39.es/ecma262/#prod-NestedClass
+pp$1.regexp_eatNestedClass = function(state) {
+  var start = state.pos;
+  if (state.eat(0x5B /* [ */)) {
+    var negate = state.eat(0x5E /* ^ */);
+    var result = this.regexp_classContents(state);
+    if (state.eat(0x5D /* ] */)) {
+      if (negate && result === CharSetString) {
+        state.raise("Negated character class may contain strings");
+      }
+      return result
+    }
+    state.pos = start;
+  }
+  if (state.eat(0x5C /* \ */)) {
+    var result$1 = this.regexp_eatCharacterClassEscape(state);
+    if (result$1) {
+      return result$1
+    }
+    state.pos = start;
+  }
+  return null
+};
+
+// https://tc39.es/ecma262/#prod-ClassStringDisjunction
+pp$1.regexp_eatClassStringDisjunction = function(state) {
+  var start = state.pos;
+  if (state.eatChars([0x5C, 0x71] /* \q */)) {
+    if (state.eat(0x7B /* { */)) {
+      var result = this.regexp_classStringDisjunctionContents(state);
+      if (state.eat(0x7D /* } */)) {
+        return result
+      }
+    } else {
+      // Make the same message as V8.
+      state.raise("Invalid escape");
+    }
+    state.pos = start;
+  }
+  return null
+};
+
+// https://tc39.es/ecma262/#prod-ClassStringDisjunctionContents
+pp$1.regexp_classStringDisjunctionContents = function(state) {
+  var result = this.regexp_classString(state);
+  while (state.eat(0x7C /* | */)) {
+    if (this.regexp_classString(state) === CharSetString) { result = CharSetString; }
+  }
+  return result
+};
+
+// https://tc39.es/ecma262/#prod-ClassString
+// https://tc39.es/ecma262/#prod-NonEmptyClassString
+pp$1.regexp_classString = function(state) {
+  var count = 0;
+  while (this.regexp_eatClassSetCharacter(state)) { count++; }
+  return count === 1 ? CharSetOk : CharSetString
+};
+
+// https://tc39.es/ecma262/#prod-ClassSetCharacter
+pp$1.regexp_eatClassSetCharacter = function(state) {
+  var start = state.pos;
+  if (state.eat(0x5C /* \ */)) {
+    if (
+      this.regexp_eatCharacterEscape(state) ||
+      this.regexp_eatClassSetReservedPunctuator(state)
+    ) {
+      return true
+    }
+    if (state.eat(0x62 /* b */)) {
+      state.lastIntValue = 0x08; /* <BS> */
+      return true
+    }
+    state.pos = start;
+    return false
+  }
+  var ch = state.current();
+  if (ch < 0 || ch === state.lookahead() && isClassSetReservedDoublePunctuatorCharacter(ch)) { return false }
+  if (isClassSetSyntaxCharacter(ch)) { return false }
+  state.advance();
+  state.lastIntValue = ch;
+  return true
+};
+
+// https://tc39.es/ecma262/#prod-ClassSetReservedDoublePunctuator
+function isClassSetReservedDoublePunctuatorCharacter(ch) {
+  return (
+    ch === 0x21 /* ! */ ||
+    ch >= 0x23 /* # */ && ch <= 0x26 /* & */ ||
+    ch >= 0x2A /* * */ && ch <= 0x2C /* , */ ||
+    ch === 0x2E /* . */ ||
+    ch >= 0x3A /* : */ && ch <= 0x40 /* @ */ ||
+    ch === 0x5E /* ^ */ ||
+    ch === 0x60 /* ` */ ||
+    ch === 0x7E /* ~ */
+  )
+}
+
+// https://tc39.es/ecma262/#prod-ClassSetSyntaxCharacter
+function isClassSetSyntaxCharacter(ch) {
+  return (
+    ch === 0x28 /* ( */ ||
+    ch === 0x29 /* ) */ ||
+    ch === 0x2D /* - */ ||
+    ch === 0x2F /* / */ ||
+    ch >= 0x5B /* [ */ && ch <= 0x5D /* ] */ ||
+    ch >= 0x7B /* { */ && ch <= 0x7D /* } */
+  )
+}
+
+// https://tc39.es/ecma262/#prod-ClassSetReservedPunctuator
+pp$1.regexp_eatClassSetReservedPunctuator = function(state) {
+  var ch = state.current();
+  if (isClassSetReservedPunctuator(ch)) {
+    state.lastIntValue = ch;
+    state.advance();
+    return true
+  }
+  return false
+};
+
+// https://tc39.es/ecma262/#prod-ClassSetReservedPunctuator
+function isClassSetReservedPunctuator(ch) {
+  return (
+    ch === 0x21 /* ! */ ||
+    ch === 0x23 /* # */ ||
+    ch === 0x25 /* % */ ||
+    ch === 0x26 /* & */ ||
+    ch === 0x2C /* , */ ||
+    ch === 0x2D /* - */ ||
+    ch >= 0x3A /* : */ && ch <= 0x3E /* > */ ||
+    ch === 0x40 /* @ */ ||
+    ch === 0x60 /* ` */ ||
+    ch === 0x7E /* ~ */
+  )
+}
 
 // https://www.ecma-international.org/ecma-262/8.0/#prod-annexB-ClassControlLetter
 pp$1.regexp_eatClassControlLetter = function(state) {
@@ -23188,8 +23787,23 @@ pp.readWord = function() {
 };
 
 // Acorn is a tiny, fast JavaScript parser written in JavaScript.
+//
+// Acorn was written by Marijn Haverbeke, Ingvar Stepanyan, and
+// various contributors and released under an MIT license.
+//
+// Git repositories for Acorn are available at
+//
+//     http://marijnhaverbeke.nl/git/acorn
+//     https://github.com/acornjs/acorn.git
+//
+// Please use the [github bug tracker][ghbt] to report issues.
+//
+// [ghbt]: https://github.com/acornjs/acorn/issues
+//
+// [walk]: util/walk.js
 
-var version = "8.8.2";
+
+var version = "8.11.3";
 
 Parser.acorn = {
   Parser: Parser,
@@ -23214,11 +23828,10 @@ Parser.acorn = {
 };
 
 // The main exported interface (under `self.acorn` when in the
-// browser) is a `parse` function that takes a code string and
-// returns an abstract syntax tree as specified by [Mozilla parser
-// API][api].
+// browser) is a `parse` function that takes a code string and returns
+// an abstract syntax tree as specified by the [ESTree spec][estree].
 //
-// [api]: https://developer.mozilla.org/en-US/docs/SpiderMonkey/Parser_API
+// [estree]: https://github.com/estree/estree
 
 function parse$3(input, options) {
   return Parser.parse(input, options)
@@ -23850,7 +24463,7 @@ function toObject(value) {
   return value && isFunction$1(value.toObject) ? value.toObject()
     : isFunction$1(value) ? { expr: String(value), func: true }
     : isArray$1(value) ? value.map(toObject)
-    : isObject$1(value) ? map$2(value, _ => toObject(_))
+    : isObject$1(value) ? map$1(value, _ => toObject(_))
     : value;
 }
 
@@ -23887,7 +24500,7 @@ function fromExprObject(value) {
   }
 
   return value === output
-    ? map$2(value, _ => fromObject(_))
+    ? map$1(value, _ => fromObject(_))
     : output;
 }
 
@@ -25282,7 +25895,7 @@ function bisector$1(compare) {
   };
 }
 
-const bisect$1 = bisector$1(ascending$1);
+const bisect = bisector$1(ascending$1);
 
 function windowState(data, frame, adjust, ops, aggrs) {
   let rows, peer, cells, result, key;
@@ -25340,10 +25953,10 @@ function windowState(data, frame, adjust, ops, aggrs) {
 
       if (adjust) {
         if (w.i0 > 0 && isPeer(w.i0)) {
-          w.i0 = bisect$1.left(peer, peer[w.i0]);
+          w.i0 = bisect.left(peer, peer[w.i0]);
         }
         if (w.i1 < n && isPeer(w.i1)) {
-          w.i1 = bisect$1.right(peer, peer[w.i1 - 1]);
+          w.i1 = bisect.right(peer, peer[w.i1 - 1]);
         }
       }
 
@@ -26355,8 +26968,8 @@ function parseValues$1(tableL, tableR, values, optParse, suffix = []) {
       }
     });
     if (rename.size) {
-      rekey(vL.names, rename, suffix[0] || '_1');
-      rekey(vR.names, rename, suffix[1] || '_2');
+      suffix[0] !== '' && rekey(vL.names, rename, suffix[0] || '_1');
+      suffix[1] !== '' && rekey(vR.names, rename, suffix[1] || '_2');
     }
 
     return {
@@ -27379,7 +27992,6 @@ function number$3(x) {
 const ascendingBisect = bisector(ascending);
 const bisectRight = ascendingBisect.right;
 bisector(number$3).center;
-var bisect = bisectRight;
 
 class InternMap extends Map {
   constructor(entries, key = keyof) {
@@ -27558,11 +28170,774 @@ function range(start, stop, step) {
   return range;
 }
 
-function map$1(values, mapper) {
-  if (typeof values[Symbol.iterator] !== "function") throw new TypeError("values is not iterable");
-  if (typeof mapper !== "function") throw new TypeError("mapper is not a function");
-  return Array.from(values, (value, index) => mapper(value, index, values));
+const SELECT_TYPE = {
+    POINT: 0,
+    RANGE: 1
+};
+
+function generateQuery(predicates) {
+    const queries = [];
+    for (const predicate of predicates) {
+        const field = Object.keys(predicate)[0];
+        const { value, cond, type } = predicate[field];
+        let q;
+
+        if (type === SELECT_TYPE.POINT) {
+            q = query().filter(escape(d => d[field] === value)).reify();
+        } else if (type === SELECT_TYPE.RANGE) {
+            q = query().filter(escape(d => {
+                return (cond === '>=' ? d[field] >= value : d[field] <= value);
+            })).reify();
+        }
+        queries.push(q);
+    }
+    return queries;
 }
+
+function generatePredicates(field, object, type) {
+    if (type === SELECT_TYPE.POINT) {
+        return [{ [field]: { value: object[field], type } }];
+    } else {
+        console.log('TODO');
+    }
+}
+
+function generateBrushPredicates(field1, field2, xR, yR) {
+    return [
+        { [field1]: { value: xR[0], cond: '>=', type: SELECT_TYPE.RANGE } },
+        { [field1]: { value: xR[1], cond: '<=', type: SELECT_TYPE.RANGE } },
+        { [field2]: { value: yR[0], cond: '<=', type: SELECT_TYPE.RANGE } },
+        { [field2]: { value: yR[1], cond: '>=', type: SELECT_TYPE.RANGE } }
+    ];
+}
+
+// Interactions
+
+// Interaction defaults
+const SelectOpacity = 1;
+const UnselectOpacity = 0.1;
+const OpacityField = '__opacity__';
+const Tick = 'tick';
+const Background = 'background';
+const Foreground = 'foreground';
+
+// Chart marks / defaults
+const DefaultSvgId = 'svgPlot';
+const SvgContainer = 'svg';
+const SvgGroup = 'g';
+const Circle = 'circle';
+const Ellipse = 'ellipse';
+const Line = 'line';
+const Polygon = 'polygon';
+const Polyline = 'polyline';
+const Rect = 'rect';
+const Path = 'path';
+const Text = 'text';
+const TextRef = '#text';
+const Style = 'style';
+const Use = 'use';
+
+// View fields
+const Left = 'left';
+const Right = 'right';
+const Top = 'top';
+const Bottom = 'bottom';
+const CenterX = 'centerX';
+const CenterY = 'centerY';
+const Width = 'width';
+const Height = 'height';
+
+// Legend and title constants
+const SizeLegend = 'size';
+const CategoricalColorLegend = 'colorCat';
+
+const FillAttr = 'fill';
+const ColorAttr = 'color';
+const StrokeAttr = 'stroke';
+const DataAttr = '__inferred__data__';
+
+const RoleProperty = '__role__';
+const LegendRole = 'legend';
+const AxisDomainRole = 'axis-domain';
+const TitleRole = 'title';
+const OrphanTickRole = 'orphan-tick';
+const ViewportRole = 'viewport';
+const MarkRole = 'mark';
+
+const tableMarkField = '_mark_';
+const tableIndexField = '_I_';
+const tableGroupIndexField = '_gI_';
+
+const epsilon$1 = 2;
+const AGGREGATIONS = {
+    COUNT: 'count',
+    MIN: 'min',
+    MAX: 'max',
+    MEAN: 'mean',
+    SUM: 'sum',
+    STDEV: 'stdev',
+    MEDIAN: 'median'
+};
+
+const LINK_TYPES = {
+    NONE: 0,
+    DIRECT: 1,
+    SUBSET: 2,
+    AGGREGATE: 3
+};
+
+function isEqual(val1, val2, ep = epsilon$1) {
+    return typeof val1 === 'string' && typeof val2 === 'string'
+        ? val1.toLowerCase() === val2.toLowerCase()
+        : Math.abs(val1 - val2) <= ep;
+}
+
+// function isDirectLink(source, target, ep = epsilon) {
+//     if (!source.length || !target.length || source.length !== target.length) return false;
+//     return range(source.length).filter(i => isEqual(source[i], target[i], ep)).length === source.length;
+// }
+
+function getSubset(source, sourceMap, target, ep = epsilon$1) {
+    const sourceIndices = []; const targetIndices = [];
+    let i = 0; let j = 0;
+
+    while (i < source.length && j < target.length) {
+        if (isEqual(source[i], target[j], ep)) {
+            while (i < source.length && j < target.length && isEqual(source[i], target[j], ep)) {
+                sourceIndices.push(sourceMap[i++]);
+                targetIndices.push(j++);
+            }
+            while (i < source.length && j < target.length && isEqual(source[i], target[j - 1], ep)) { // Include all candidates from target
+                sourceIndices.push(sourceMap[i++]);
+            }
+        } else {
+            ++i;
+        }
+    }
+
+    if (i < source.length) {
+        while (i < source.length && isEqual(source[i], target[j - 1], ep)) {
+            sourceIndices.push(sourceMap[i++]);
+        }
+    }
+
+    if (j < target.length) {
+        while (j < target.length && isEqual(source[i - 1], target[j], ep)) {
+            targetIndices.push(j++);
+        }
+    }
+
+    return [sourceIndices, targetIndices];
+}
+
+function getFields(table, useMeta = false) {
+    const metaFields = [tableMarkField, tableIndexField, tableGroupIndexField];
+    return useMeta ? table.columnNames() : table.columnNames(d => !metaFields.includes(d));
+}
+
+function LinkIterator(sourceTable, targetTable, candidateBins, epsilons, useAggregate = true) {
+    function linker() { }
+
+    linker.exists = function(link) {
+        return link && Object.keys(link).length;
+    };
+
+    linker.direct = function() {
+        const link = getDirectLinks(sourceTable, targetTable, false);
+        return { link, type: linker.exists(link) ? LINK_TYPES.DIRECT : LINK_TYPES.NONE };
+    };
+
+    linker.subset = function() {
+        const link = getDirectLinks(sourceTable, targetTable, true);
+        return { link, type: linker.exists(link) ? LINK_TYPES.SUBSET : LINK_TYPES.NONE };
+    };
+
+    linker.aggregate = function() {
+        // return { type: LINK_TYPES.NONE }
+        const link = getAggregateLinks(sourceTable, targetTable, [], []);
+        return { link, type: linker.exists(link) ? LINK_TYPES.AGGREGATE : LINK_TYPES.NONE };
+    };
+
+    linker.getLink = function() {
+        const direct = linker.direct();
+        if (direct.type === LINK_TYPES.DIRECT) return direct;
+
+        if (useAggregate) {
+            const aggregate = linker.aggregate();
+            if (aggregate.type === LINK_TYPES.AGGREGATE) return aggregate;
+        }
+
+        const subset = linker.subset();
+        if (subset.type === LINK_TYPES.SUBSET) return subset;
+
+        return { type: LINK_TYPES.NONE };
+    };
+
+    function getIndexMap(tableA, tableB, sortA, sortB) {
+        const A = tableA.orderby(sortA).array(tableIndexField);
+        const B = tableB.orderby(sortB).array(tableIndexField);
+
+        const _fromToMap = Object.fromEntries(A.map((a, i) => [a, B[i]]));
+        const _toFromMap = Object.fromEntries(B.map((b, i) => [b, A[i]]));
+
+        const newCols = getFields(tableA).filter(d => !sortA.includes(d));
+        let mergedTable;
+        if (newCols.length) {
+            const _table = tableA.orderby(sortA).select(newCols);
+            mergedTable = tableB.orderby(sortB).assign(_table).orderby(tableIndexField).reify();
+        }
+
+        return {
+            map: {
+                fromToMap: _fromToMap,
+                toFromMap: _toFromMap,
+                mergedTable
+            }
+        };
+    }
+
+    function getAggregateQueries(groupBy, groupKeys, rollupObj) {
+        const fromToQ = query().groupby([...groupBy, tableIndexField]).rollup(rollupObj);
+        const toFromQ = query().groupby(groupBy).derive(rollupObj);
+
+        return { fromToQuery: fromToQ, toFromQuery: toFromQ, assignTable: table({ [tableGroupIndexField]: groupKeys }) };
+    }
+
+    function getDirectLinks(tableA, tableB, allowProjections = false) {
+        const fieldsA = getFields(tableA);
+        const fieldsB = getFields(tableB);
+
+        if (!fieldsA.length || !fieldsB.length || tableB.numRows() > tableA.numRows()) return null;
+        if (fieldsA.length === 2 && fieldsA.includes('precipitation') && fieldsA.includes('MEAN-maximum daily temperature (c)') &&
+            fieldsB.length === 2 && fieldsB.includes('precipitation (binned)') && fieldsB.includes('mean of temp_max')) ;
+        // var out = false;
+        // if (tableA.numRows() === 1461) var out = true;
+
+        const directLinks = { };
+        const foundIndices = [];
+        const sortA = []; const sortB = [];
+        // console.log(tableA, tableB)
+        // if (fieldsA.includes('COUNT-date') && fieldsB.includes('weather') && fieldsB.includes('count')) var out = true;
+
+        for (let j = 0; j < fieldsB.length && Object.keys(directLinks).length < fieldsA.length &&
+            Object.keys(directLinks).length < fieldsB.length; ++j) {
+            tableB = tableB.orderby(sortB.length ? [...sortB, fieldsB[j]] : fieldsB[j]);
+
+            for (let i = 0; i < fieldsA.length && Object.keys(directLinks).length < fieldsA.length &&
+                    Object.keys(directLinks).length < fieldsB.length; ++i) {
+                if (foundIndices.includes(i)) continue;
+
+                tableA = tableA.orderby(sortA.length ? [...sortA, fieldsA[i]] : fieldsA[i]);
+                const dataA = tableA.array(fieldsA[i]); 
+                const A_I = tableA.array(tableIndexField);
+                const dataB = tableB.array(fieldsB[j]);
+
+                const [sourceI, targetI] = getSubset(dataA, A_I, dataB, epsilons[fieldsB[j]] ? epsilons[fieldsB[j]] : epsilon$1);
+                // console.log(tableA, tableB, fieldsA[i], fieldsB[j], dataA, dataB, sourceI, targetI, epsilons[fieldsB[j]])
+
+                if (targetI.length === dataB.length && sourceI.length >= targetI.length) {
+                    // console.log(sourceI, targetI, tableA, tableB)
+                    tableA = tableA.filter(escape(d => sourceI.includes(d[tableIndexField]))).reify();
+                    directLinks[fieldsA[i]] = fieldsB[j];
+
+                    foundIndices.push(i);
+                    sortA.push(fieldsA[i]);
+                    sortB.push(fieldsB[j]);
+                    break;
+                }
+            }
+        }
+
+        const matched = Object.keys(directLinks).length; const projected = Object.keys(directLinks).length !== fieldsB.length;
+        if (matched && tableA.numRows() > tableB.numRows()) {
+            tableA = tableA.slice(0, tableB.numRows());
+        }
+        // if (out) console.log(tableA.array('MEAN-maximum daily temperature (c)'), tableB.array('mean of temp_max'), directLinks, epsilons['mean of temp_max']);
+        // console.log(directLinks)
+        return ((allowProjections && matched) || (!allowProjections && matched && !projected)) // matched && !projected
+            ? { fields: directLinks, ...getIndexMap(tableA, tableB, sortA, sortB) }
+            : { };
+    }
+
+    // function getSubsetLinks(tableA, tableB, usedFieldsA, usedFieldsB, indices, sortA, sortB) {
+    //     const fieldsA = getFields(tableA).filter(d => !usedFieldsA.includes(d));
+    //     const fieldsB = getFields(tableB).filter(d => !usedFieldsB.includes(d));
+
+    //     if (!fieldsA.length || !fieldsB.length || fieldsA.length < fieldsB.length) {
+    //         return !indices.length ? { } : getIndexMap(tableA, tableB, sortA, sortB, indices[0]);
+    //     }
+
+    //     for (let j = 0; j < fieldsB.length; ++j) {
+    //         tableB = tableB.orderby([...sortB, fieldsB[j]]);
+
+    //         for (let i = 0; i < fieldsA.length; ++i) {
+    //             tableA = tableA.orderby([...sortA, fieldsA[i]]);
+
+    //             const dataA = tableA.array(fieldsA[i]);
+    //             const dataB = tableB.array(fieldsB[j]);
+
+    //             const [sourceI, targetI] = getSubset(dataA, dataB, epsilons[fieldsB[j]] ? epsilons[fieldsB[j]] : epsilon);
+    //             const [prevSourceI, prevTargetI] = indices.length ? indices : [sourceI, targetI];
+
+    //             if (targetI.length !== tableB.numRows() || !isDirectLink(prevSourceI, sourceI) ||
+    //                 !isDirectLink(prevTargetI, targetI)) continue;
+
+    //             const subsets = getSubsetLinks(
+    //                 tableA, tableB,
+    //                 [...usedFieldsA, fieldsA[i]], [...usedFieldsB, fieldsB[j]],
+    //                 [prevSourceI, prevTargetI],
+    //                 [...sortA, fieldsA[i]], [...sortB, fieldsB[j]]
+    //             );
+    //             if (subsets) return { ...subsets, fields: { ...subsets.fields, [fieldsA[i]]: fieldsB[j] } };
+    //         }
+    //     }
+
+    //     return null;
+    // }
+
+    function getAggregateLinks(tableA, tableB, groupBy, processedFields) {
+        const fieldsA = getFields(tableA);
+        const fieldsB = getFields(tableB);
+
+        if (fieldsA.length < fieldsB.length || tableA.numRows() <= tableB.numRows() || groupBy.length > 2) return null;
+
+        for (let i = 0; i < fieldsA.length; ++i) {
+            if (processedFields.includes(fieldsA[i])) continue;
+            const q = query().groupby(groupBy);
+
+            for (const [aggName, aggFn] of Object.entries(AGGREGATIONS)) {
+                const rollupObj = { [aggName + '-' + fieldsA[i]]: op[aggFn](fieldsA[i]) };
+                const groupByTable = q.evaluate(tableA);
+                let rollupTable = groupByTable.rollup(rollupObj);
+                rollupTable = rollupTable.assign(table({ [tableIndexField]: range(rollupTable.numRows()) }));
+
+                const directLinks = getDirectLinks(rollupTable, tableB);
+                if (directLinks && Object.keys(directLinks).length) {
+                    const groupKeys = Array.from(groupByTable._group.keys); // .map(d => Object.keys(fromToMap).includes(d) ? d : null);
+                    // console.log(groupKeys, groupByTable, rollupTable)
+                    return { aggregation: getAggregateQueries(groupBy, groupKeys, rollupObj), ...directLinks };
+                }
+            }
+
+            // const newGroups = [fieldsA[i]]
+            const newGroups = typeof tableA.column(fieldsA[i]).get(0) === 'string'
+                ? [fieldsA[i]]
+                : candidateBins.map(function(b) {
+                    return { [fieldsA[i]]: escape(d => String((op.bin(d[fieldsA[i]], ...b) + b[2] / 2))) };
+                });
+
+            for (const newGroup of newGroups) {
+                const link = getAggregateLinks(tableA, tableB, [...groupBy, newGroup], [...processedFields, fieldsA[i]]);
+                if (link) return link;
+            }
+        }
+    }
+
+    return linker;
+}
+
+function getBins(state) {
+    function bin(scale, ticks) {
+        const domain = scale.domain();
+        const stepSize = Math.abs(domain[0] - domain[1]) / (ticks.length - 1);
+
+        return [...domain, stepSize];
+    }
+
+    const { yAxis } = state;
+    // const { scale: xScale, ticks: xTicks, ordinal: xOrdinal } = xAxis;
+    const { scale: yScale, ticks: yTicks, ordinal: yOrdinal } = yAxis;
+
+    // const xBins = xOrdinal.length ? [] : bin(xScale, xTicks);
+    const yBins = yOrdinal.length ? [] : bin(yScale, yTicks);
+    return [yBins];
+}
+
+function getEpsilons(state) {
+    const epsilons = { }; const epsilon = 0.01;
+    const { xAxis, yAxis, legends } = state;
+    const { domain: xDomain } = xAxis;
+    const { domain: yDomain } = yAxis;
+
+    if (!xAxis.ordinal.length) {
+        // let tmp = Math.abs(xDomain[1] - xDomain[0]) * epsilon;
+        // if (xAxis.formatter) tmp = {epsilon: tmp, format: xAxis.formatter.format };
+
+        epsilons[xAxis.title.innerHTML.toLowerCase()] = Math.abs(xDomain[1] - xDomain[0]) * epsilon;
+    }
+    if (!yAxis.ordinal.length) {
+        // let tmp = Math.abs(yDomain[1] - yDomain[0]) * epsilon;
+        // if (yAxis.formatter) tmp = {epsilon: tmp, format: yAxis.formatter.format };
+
+        epsilons[yAxis.title.innerHTML.toLowerCase()] = Math.abs(yDomain[1] - yDomain[0]) * epsilon;
+    }
+
+    for (const legend of legends) {
+        if (legend.type === SizeLegend) {
+            const { scale } = legend;
+            const sDomain = scale.domain();
+            epsilons[legend.title.innerHTML.toLowerCase()] = Math.abs(sDomain[0] - sDomain[sDomain.length - 1]) * epsilon;
+        }
+    }
+
+    return epsilons;
+}
+
+function storeLink(type, link, to, from, storeTable = false) {
+    const { aggregation, fields, map } = link;
+    const { fromToMap, toFromMap, mergedTable } = map;
+    let fromToQuery, toFromQuery, assignTable;
+    if (aggregation) {
+        ({ fromToQuery, toFromQuery, assignTable } = aggregation);
+    }
+
+    const fromToLink = { type, next: to, map: fromToMap, fields };
+    const toFromLink = { type, next: from, map: toFromMap, fields: invertFields(fields) };
+
+    if (type === LINK_TYPES.DIRECT || type === LINK_TYPES.SUBSET) {
+        from.children.push(fromToLink);
+        to.children.push(toFromLink);
+
+        if (storeTable && type === LINK_TYPES.SUBSET) to.table = mergedTable;
+    } else {
+        from.children.push({ ...fromToLink, aggregation: { query: fromToQuery, assignTable } });
+        to.parents.push({ ...toFromLink, aggregation: { query: toFromQuery, assignTable } });
+    }
+}
+
+function linkExternalDatasets(states, extState, aggregated) {
+    const { table: extTable } = extState;
+    if (!extTable) return;
+    const stored = new Map();
+
+    for (const state of states) {
+        const { data } = state;
+        if (!data.table) continue;
+
+        const linker = LinkIterator(extTable, data.table, null, getEpsilons(state));
+        const { type: dType, link } = linker.direct();
+        const candidates = [];
+        if (dType === LINK_TYPES.DIRECT) {
+            if (!link.map.mergedTable) return; // No new fields to match, return
+
+            // data.table = link.map.mergedTable;
+            // if (extTable.numRows() === data.table.numRows()) return; // Relegate newly formed direct linkings to views
+
+            stored.set(state, true);
+            candidates.push([dType, link, data]);
+        }
+
+        candidates.forEach(d => storeLink(...d, extState));
+    }
+
+    for (const state of states) {
+        const { data } = state;
+        if (stored.has(state)) continue;
+        if (!data.table) continue; // Skip subset views
+
+        const { type, link } = LinkIterator(extTable, data.table, getBins(state), getEpsilons(state), true).aggregate();
+        if (type === LINK_TYPES.AGGREGATE) {
+            storeLink(type, link, data, extState);
+            aggregated.set(state, true);
+        }
+    }
+}
+
+function linkCharts(states, aggregated) {
+    for (let i = 0; i < states.length; ++i) {
+        const { data: _d1 } = states[i];
+        if (!_d1.table) continue;
+
+        for (let j = i + 1; j < states.length; ++j) {
+            const { data: _d2 } = states[j];
+            if (!_d2.table) continue;
+
+            const { type: fType, link: fLink } = LinkIterator(
+                _d1.table, _d2.table, getBins(states[j]), getEpsilons(states[j]), !aggregated.has(states[j])
+            ).getLink();
+            if (fType !== LINK_TYPES.NONE) {
+                if (fType === LINK_TYPES.SUBSET) continue;
+                storeLink(fType, fLink, _d2, _d1, true);
+                if (fType === LINK_TYPES.AGGREGATE) aggregated.set(states[j], true);
+            } else {
+                const { type: bType, link: bLink } = LinkIterator(
+                    _d2.table, _d1.table, getBins(states[i]), getEpsilons(states[i]), !aggregated.has(states[i])
+                ).getLink();
+                if (bType !== LINK_TYPES.NONE) {
+                    storeLink(bType, bLink, _d1, _d2, true);
+                    if (bType === LINK_TYPES.AGGREGATE) aggregated.set(states[i], true);
+                }
+            }
+        }
+    }
+}
+
+function link(states, extState) {
+    const aggregated = new Map();
+    linkExternalDatasets(states, extState, aggregated);
+    linkCharts(states, aggregated);
+}
+
+function invertFields(fields) {
+    return Object.fromEntries(Object.keys(fields).map(k => [fields[k], k]));
+}
+
+function applyMap(_map, values) {
+    return values.map(v => _map[v]);
+}
+
+function propagateFields(fieldMap, newFields) {
+    return Object.fromEntries(
+        Object.keys(fieldMap).filter(k => k in newFields).map(k => [newFields[k], fieldMap[k]])
+    );
+}
+
+function propagateFieldValues(fieldMap, fields) {
+    return Object.fromEntries(Object.keys(fieldMap).map(k => k in fields ? [k, fields[k]] : [k, fieldMap[k]]));
+}
+
+function propagateAggregation(node, aggregations) {
+    let { table: _table } = node;
+    for (const [aggregation, map] of aggregations) {
+        const { query } = aggregation;
+        _table = query.evaluate(_table);
+
+        const groupKeys = applyMap(invertFields(map), Array.from(_table._group.keys)).map(d => Number(d));
+        _table = _table.assign(table({ [tableGroupIndexField]: groupKeys }));
+    }
+
+    return _table.ungroup();
+}
+
+function removeDuplicateRows(_table) {
+    return _table;
+}
+
+function propagateMapSelection(source, target, _map) {
+    const indices = source.array(tableIndexField).map(i => _map[i]);
+    return [source.assign({ [tableIndexField]: indices }), target.filter(escape(d => indices.includes(d[tableIndexField]))).reify()]
+        .map(t => t.filter(escape(d => d[tableIndexField] != null)));
+}
+
+function walkQueryPath(roots, rootPredicates, append = false) {
+    const visited = new Map();
+
+    function walkDownPath(node, data) {
+        if (visited.has(node)) return;
+        visited.set(node, true);
+
+        const { active, table: TABLE } = node;
+        active.selected = data;
+
+        const { children } = node;
+        for (const child of children) {
+            const { next, map, aggregation, fields, type } = child;
+            let NEXT_TABLE = next.table; let _data;
+            next.active.type = type;
+
+            if (aggregation) {
+                const { query, assignTable } = aggregation;
+                const idMap = Object.fromEntries(TABLE.array(tableIndexField).map(d => [d, d]));
+
+                [, _data] = propagateMapSelection(data, TABLE.assign(assignTable), idMap);
+                _data = query.evaluate(_data.rename({ [tableGroupIndexField]: tableIndexField }));
+
+                [_data, NEXT_TABLE] = propagateMapSelection(_data, NEXT_TABLE, map);
+                NEXT_TABLE = NEXT_TABLE.orderby(tableIndexField).assign(
+                    _data.rename(fields).orderby(tableIndexField)
+                ).unorder();
+            } else {
+                [, NEXT_TABLE] = propagateMapSelection(data, NEXT_TABLE, map);
+            }
+
+            walkDownPath(next, NEXT_TABLE);
+        }
+    }
+
+    function clearPath(node) {
+        if (visited.has(node)) return;
+        visited.set(node, true);
+
+        const { active, children } = node;
+        active.selected = active.table;
+
+        for (const child of children) {
+            const { next } = child;
+            next.active.type = LINK_TYPES.NONE;
+            clearPath(next);
+        }
+    }
+
+    for (const root of roots) {
+        const [node, startTable, fieldMap] = root;
+        const { active } = node;
+        if (rootPredicates) {
+            rootPredicates = rootPredicates.map(r => {
+                r = propagateFields(r, fieldMap);
+
+                if (getFields(startTable, true).includes(tableGroupIndexField) && tableIndexField in r) {
+                    r[tableGroupIndexField] = r[tableIndexField];
+                    delete r[tableIndexField];
+                }
+
+                return r;
+            });
+
+            let _table = active.selected.numRows() < active.table.numRows() && !append ? active.selected : null;
+            generateQuery(rootPredicates).forEach(q => { _table = q.evaluate(_table || startTable); });
+
+            if (append) _table = removeDuplicateRows(node.active.selected.concat(_table));
+            walkDownPath(node, _table);
+        } else {
+            clearPath(node);
+        }
+    }
+}
+
+function getRootNodes(startNode) {
+    function walkUpPath(node, aggregations, fieldMap) {
+        if (visited.has(node)) return [];
+        visited.set(node, true);
+
+        const { parents } = node;
+        if (!parents.length) {
+            return [[node, aggregations, fieldMap]];
+        }
+
+        let paths = [];
+        for (const parent of parents) {
+            const { next, aggregation, map, fields } = parent;
+            paths = [...paths, ...walkUpPath(next, [...aggregations, [aggregation, map]], propagateFieldValues(fieldMap, fields))];
+        }
+
+        return paths;
+    }
+
+    const visited = new Map(); const startFields = Object.fromEntries(getFields(startNode.table, true).map(c => [c, c]));
+    const roots = walkUpPath(startNode, [], startFields);
+    return roots.map(([root, aggregations, fieldMap]) => [root, propagateAggregation(root, aggregations), fieldMap]);
+}
+
+function setOpacity(marks, opacity) {
+    selectAll(marks).attr('opacity', opacity);
+}
+
+function setSelection(marks, opacity) {
+    setOpacity(marks, opacity);
+}
+
+function selectAllMarks(marks) {
+    setSelection(marks, marks[0][OpacityField] || SelectOpacity);
+}
+
+function unselectAllMarks(marks) {
+    setSelection(marks, UnselectOpacity);
+}
+
+function selectMarks(allMarks, marks) {
+    unselectAllMarks(allMarks);
+    setSelection(marks, SelectOpacity);
+}
+
+function selectLegends(legends, data) {
+    for (const legend of legends) {
+        if (!legend.title) continue;
+        const attr = legend.title.innerHTML.toLowerCase();
+        const attrData = data.array(attr);
+        if (attr === 'precipitation') continue;
+        const _marks = legend.marks
+            .filter(d => attrData.includes(d.mark[DataAttr][attr]))
+            .map(d => d.mark);
+
+        selectMarks(legend.marks.map(d => d.mark), _marks);
+    }
+}
+
+function drawAggregates(id, selected, xAxis) {
+    const marks = selected.array(tableMarkField);
+    selectAll('.' + id + '.AGGREGATE_LAYER').remove();
+    const newMarks = [];
+
+    for (let i = 0; i < marks.length; ++i) {
+        const markRect = marks[i]._getBBox();
+        const newMark = select(marks[i].parentElement).append('path').classed(id, true)
+            .classed('AGGREGATE_LAYER', true)
+            .attr('fill', window.getComputedStyle(marks[i]).fill);
+
+        if (marks[i].tagName === Path) {
+            const x = marks[i].contour[0].x; //, y = marks[i].contour[0].y;
+            // if (marks[i].globalPosition.translate.y) {
+            // var y = marks[i].globalPosition.translate.y - marks[i].globalPosition.translate.y / 2;
+            // console.log(x, y)
+            // } else {
+            const y = marks[i].contour[0].y - marks[i]._getBBox().height;
+            // const lx = marks[i].globalPosition.translate.x - marks[i].globalPosition.translate.x / 2,
+            //     ly = marks[i].globalPosition.translate.y - marks[i].globalPosition.translate.y / 2;
+            // const t = marks[i].localTransform;
+            // const x =
+            // }
+            const h = markRect.height;
+            const w = xAxis.scale(selected.array(xAxis.title.innerHTML.toLowerCase())[i]) - xAxis.range[0];
+
+            const p = path();
+            p.rect(x, y, w, h);
+            newMark.attr('d', p.toString());
+            newMarks.push(newMark);
+        }
+    }
+
+    selectAll([...marks, ...newMarks]).raise();
+}
+
+function applySelections(states) {
+    for (const state of states) {
+        const { data, legends, xAxis } = state;
+        const { table, active } = data;
+        const { selected, type } = active;
+
+        let selectedMarks = selected.array(tableMarkField);
+
+        if (type === LINK_TYPES.AGGREGATE) {
+            selectedMarks = drawAggregates(state.svg.id, selected, xAxis);
+        } else {
+            selectAll('.' + state.svg.id + 'AGGREGATE_LAYER').remove();
+        }
+        selectMarks(table.array(tableMarkField), selectedMarks);
+        selectLegends(legends, selected);
+    }
+}
+
+function selectPoint(state, target) {
+    if (target[RoleProperty] === MarkRole) {
+        return generatePredicates(tableIndexField, target, SELECT_TYPE.POINT);
+    } else if (target[RoleProperty] === LegendRole) {
+        return generatePredicates(Object.keys(target[DataAttr])[0], target[DataAttr], SELECT_TYPE.POINT);
+    } else {
+        selectAllMarks(state.svgMarks);
+        state.legends.forEach(d => selectAllMarks(d.marks.map(e => e.mark)));
+        return null;
+    }
+}
+
+// function getLegendFields(state, mark) {
+//     const legend = mark.legend;
+
+//     if (legend.type === CategoricalColorLegend) {
+//         const val = legend.scale.domain()[legend.scale.range().indexOf(window.getComputedStyle(mark)[legend.matchingAttr])];
+//         var condition = [val];
+//     } else {
+//         const val = legend.scale.invert(mark._getBBox().width);
+//         var condition = [val, val];
+//     }
+
+//     const candidateMarks = state.svgMarks.filter(function(d) {
+//         const data = d.__inferred__data__[legend.title.innerHTML];
+//         return typeof condition[0] === 'string' ? condition.includes(data) : data >= condition[0] && data <= condition[1];
+//     });
+
+//     selectMarks(legend.marks.map(d => d.mark), [mark]);
+//     selectMarks(state.svgMarks, candidateMarks);
+// }
 
 function initRange(domain, range) {
   switch (arguments.length) {
@@ -28353,7 +29728,7 @@ function polymap(domain, range, interpolate) {
   }
 
   return function(x) {
-    var i = bisect(domain, x, 1, j) - 1;
+    var i = bisectRight(domain, x, 1, j) - 1;
     return r[i](d[i](x));
   };
 }
@@ -30008,6 +31383,1232 @@ function calendar(ticks, tickInterval, year, month, week, day, hour, minute, sec
 
 function time() {
   return initRange.apply(calendar(timeTicks, timeTickInterval, timeYear, timeMonth, timeSunday, timeDay, timeHour, timeMinute, second, timeFormat).domain([new Date(2000, 0, 1), new Date(2000, 0, 2)]), arguments);
+}
+
+function identity(x) {
+    return x;
+}
+
+function isMetaKey(event) {
+    return event.metaKey || event.ctrlKey || event.altKey || event.shiftKey;
+}
+
+function copyElement(element) {
+    const newElement = element.cloneNode(true);
+    for (const [key, value] of Object.entries(element)) {
+        newElement[key] = value;
+    }
+
+    return newElement;
+}
+
+function computeCenterPos(element, orient) {
+    const clientRect = element._getBBox();
+    const offset = orient === Right || orient === Left ? clientRect.width / 2 : clientRect.height / 2;
+    return clientRect[orient] + (orient === Left || orient === Top ? offset : -offset);
+}
+
+function convertPtToPx(pt) {
+    if (!pt || !pt.includes('pt')) return pt;
+    return +pt.split('pt')[0] * 4 / 3;
+}
+
+function SVGToScreen(svg, element, svgX, svgY) {
+    const p = svg.createSVGPoint();
+    p.x = svgX;
+    p.y = svgY;
+    return p.matrixTransform(element.getScreenCTM());
+}
+
+function sortByViewPos(field, objects, useField = false) {
+    const comparator = (dim) => (a, b) => field == null
+        ? (a._getBBox()[dim] - b._getBBox()[dim])
+        : useField
+            ? a[field] - b[field]
+            : ((a[field] ? a[field] : a.marks[0])._getBBox()[dim] - (b[field] ? b[field] : b.marks[0])._getBBox()[dim]);
+    objects.sort(comparator(CenterX));
+    objects.sort(comparator(CenterY));
+}
+
+class Transform {
+    constructor(...args) {
+        if (args[0] instanceof Transform) {
+            const [other] = args;
+            this.translate = { ...other.translate };
+            this.scale = { ...other.scale };
+            this.rotate = other.rotate;
+        } else {
+            const [tx, ty, sx, sy, r] = args;
+            this.translate = { x: tx || 0, y: ty || 0 };
+            this.scale = { x: sx || 1, y: sy || 1 };
+            this.rotate = r || 0;
+        }
+    }
+
+    addTransform(appendTransform) {
+        this.translate.x += appendTransform.translate.x;
+        this.translate.y += appendTransform.translate.y;
+        this.scale.x *= appendTransform.scale.x;
+        this.scale.y *= appendTransform.scale.y;
+        this.rotate += appendTransform.rotate;
+
+        return this;
+    }
+
+    getTransform(appendTransform = new Transform()) {
+        return 'translate(' + (this.translate.x + appendTransform.translate.x) + ',' +
+            (this.translate.y + appendTransform.translate.y) + ') scale(' +
+            (this.scale.x * appendTransform.scale.x) + ',' +
+            (this.scale.y * appendTransform.scale.y) + ') rotate(' +
+            (this.rotate + appendTransform.rotate) + ')';
+    }
+}
+
+const top = 1;
+const right = 2;
+const bottom = 3;
+const left = 4;
+
+function number(scale) {
+    return d => +scale(d);
+}
+
+function center(scale, offset) {
+    offset = Math.max(0, scale.bandwidth() - offset * 2) / 2;
+    if (scale.round()) offset = Math.round(offset);
+    return d => +scale(d) + offset;
+}
+
+function axis(orient, scale, state) {
+    let tickArguments = [];
+    let tickValues = null;
+    let tickFormat = null;
+    let tickSizeInner = 6;
+    let tickSizeOuter = 6;
+    let tickPadding = 3;
+    let offset = typeof window !== 'undefined' && window.devicePixelRatio > 1 ? 0 : 0.5;
+    const svgAxis = orient === top || orient === bottom ? state.xAxis : state.yAxis;
+    const ticks = svgAxis.ticks;
+
+    function axis() {
+        let values = tickValues == null ? (scale.ticks ? scale.ticks.apply(scale, tickArguments) : scale.domain()) : tickValues;
+        const format = tickFormat == null ? (scale.tickFormat ? scale.tickFormat.apply(scale, tickArguments) : identity) : tickFormat;
+        const position = (scale.bandwidth ? center : number)(scale.copy(), offset);
+        values = orient === left || orient === right ? values.reverse() : values;
+
+        function updateTick(tick, value) {
+            tick.value = value;
+            const label = tick.label; const tickMarks = tick.marks;
+            label.innerHTML = svgAxis.ordinal.length || label.value === format(value) ? label.value : format(value);
+
+            const lx = label.globalPosition.translate.x; const ly = label.globalPosition.translate.y;
+            const translateX = orient === bottom ? position(value) - lx : 0;
+            const translateY = orient === left ? position(value) - ly : 0;
+            label.setAttribute('transform', label.localTransform.getTransform(new Transform(translateX, translateY)));
+
+            for (const mark of tickMarks) {
+                const tx = mark.globalPosition.translate.x; const ty = mark.globalPosition.translate.y;
+                const translateX = orient === bottom ? position(value) - tx : 0;
+                const translateY = orient === left ? position(value) - ty : 0;
+
+                mark.setAttribute('transform', mark.localTransform.getTransform(new Transform(translateX, translateY)));
+            }
+        }
+
+        let counter;
+        for (counter = 0; counter < values.length && counter < ticks.length; ++counter) {
+            updateTick(ticks[counter], svgAxis.ordinal.length ? svgAxis.ordinal[counter] : values[counter]);
+        }
+
+        for (; counter < values.length; ++counter) {
+            const newTick = {
+                label: copyElement(ticks[0].label),
+                marks: ticks[0].marks.map(tick => copyElement(tick)),
+                value: 0
+            };
+
+            updateTick(newTick, values[counter]);
+            ticks[0].label.parentElement.appendChild(newTick.label);
+            ticks[0].marks.forEach((d, i) => d.parentElement.insertBefore(newTick.marks[i], d));
+            ticks.push(newTick);
+        }
+
+        const length = ticks.length;
+        for (; counter < length; ++counter) {
+            const pos = ticks.length - 1;
+            if (ticks[pos].label) ticks[pos].label.remove();
+            ticks[pos].marks.forEach(d => d.remove());
+            ticks.pop();
+        }
+    }
+
+    axis.applyTransform = function(_) {
+        return arguments.length ? (scale_transform = _, axis) : axis;
+    };
+
+    axis.scale = function(_) {
+        return arguments.length ? (scale = _, axis) : scale;
+    };
+
+    axis.ticks = function() {
+        return tickArguments = Array.from(arguments), axis;
+    };
+
+    axis.tickArguments = function(_) {
+        return arguments.length ? (tickArguments = _ == null ? [] : Array.from(_), axis) : tickArguments.slice();
+    };
+
+    axis.tickValues = function(_) {
+        return arguments.length ? (tickValues = _ == null ? null : Array.from(_), axis) : tickValues && tickValues.slice();
+    };
+
+    axis.tickFormat = function(_) {
+        return arguments.length ? (tickFormat = _, axis) : tickFormat;
+    };
+
+    axis.tickSize = function(_) {
+        return arguments.length ? (tickSizeInner = tickSizeOuter = +_, axis) : tickSizeInner;
+    };
+
+    axis.tickSizeInner = function(_) {
+        return arguments.length ? (tickSizeInner = +_, axis) : tickSizeInner;
+    };
+
+    axis.tickSizeOuter = function(_) {
+        return arguments.length ? (tickSizeOuter = +_, axis) : tickSizeOuter;
+    };
+
+    axis.tickPadding = function(_) {
+        return arguments.length ? (tickPadding = +_, axis) : tickPadding;
+    };
+
+    axis.offset = function(_) {
+        return arguments.length ? (offset = +_, axis) : offset;
+    };
+
+    return axis;
+}
+
+function axisBottom(scale, SVG) {
+    return axis(bottom, scale, SVG);
+}
+
+function axisLeft(scale, SVG) {
+    return axis(left, scale, SVG);
+}
+
+function invertBand(scale, value) {
+    const step = scale.step();
+    const start = scale(scale.domain()[0]) + scale.paddingOuter() * step;
+    const bandwidth = scale.bandwidth();
+
+    let index = Math.round(Math.abs((value - start - bandwidth / 2)) / step);
+    index = max([0, min([scale.domain().length - 1, index])]);
+    return scale.domain()[scale.domain().length - 1 - index];
+}
+
+function invertOrdinal(scale, value) {
+    return scale.domain()[scale.range().indexOf(value)];
+}
+
+function bindLegendData(legend) {
+    const { scale, title, type, matchingAttr } = legend;
+    for (const { mark } of legend.marks) {
+        const style = type === CategoricalColorLegend
+            ? window.getComputedStyle(mark)[matchingAttr]
+            : mark._getBBox().width ** 2;
+
+        const data = invertOrdinal(scale, style);
+        mark[DataAttr] = { [title ? title.innerHTML.toLowerCase() : 'legend-0']: data };
+    }
+}
+
+function parseLegends(state, legends) {
+    let scale;
+    function inferScale(legend) {
+        if (legend.type === CategoricalColorLegend) { // Ordinal legends
+            const domain = legend.marks.map(d => d.label.innerHTML);
+            const range = legend.marks.map(d => window.getComputedStyle(d.mark)[legend.matchingAttr]);
+            scale = ordinal().domain(domain).range(range);
+        } else { // Size legend
+            const domain = legend.marks.map(d => +d.label.innerHTML);
+            const range = legend.marks.map(d => d.mark._getBBox().width ** 2);
+            scale = linear().domain(domain).range(range);
+        }
+
+        legend.scale = scale;
+    }
+
+    function formatLegend(legend) {
+        const group = Array.from(legend.group[0][0]);
+        return {
+            title: null,
+            marks: group.map(([text, mark]) => {
+                return { label: text, mark };
+            })
+        };
+    }
+
+    for (let legend of legends) {
+        legend = formatLegend(legend);
+        const mark1Style = window.getComputedStyle(legend.marks[0].mark);
+        const mark2Style = window.getComputedStyle(legend.marks[1].mark);
+        let matchingAttr = null;
+
+        if (mark1Style.stroke !== mark2Style.stroke) {
+            matchingAttr = StrokeAttr;
+        } else if (mark1Style.color !== mark2Style.color) {
+            matchingAttr = ColorAttr;
+        } else if (mark1Style.fill !== mark2Style.fill) {
+            matchingAttr = FillAttr;
+        }
+
+        if (matchingAttr) {
+            legend.type = CategoricalColorLegend;
+            legend.matchingAttr = matchingAttr;
+        } else {
+            const widths = []; const heights = [];
+            for (let i = 1; i < legend.marks.length; ++i) {
+                const bbox1 = legend.marks[i - 1].mark._getBBox();
+                const bbox2 = legend.marks[i].mark._getBBox();
+                widths.push(Math.abs(bbox1.width - bbox2.width));
+                heights.push(Math.abs(bbox1.height - bbox2.height));
+            }
+
+            if (mean(widths) > 2 || mean(heights) > 2) {
+                legend.type = SizeLegend;
+            } else {
+                legends.splice(legends.indexOf(legend), 1);
+                return;
+            }
+        }
+
+        for (const { label, mark } of legend.marks) {
+            label[RoleProperty] = mark[RoleProperty] = LegendRole;
+            mark.style['pointer-events'] = 'fill';
+            mark.legend = legend;
+            mark[OpacityField] = mark.hasAttribute('opacity')
+                ? +mark.getAttribute('opacity')
+                : window.getComputedStyle(mark).opacity || SelectOpacity;
+        }
+
+        inferScale(legend);
+        sortByViewPos('label', legend.marks, legend.type === SizeLegend);
+        state.legends.push(legend);
+    }
+}
+
+function parseTransform(element, transforms = new Transform()) {
+    if (!element.transform) return;
+    const transformList = element.transform.baseVal;
+
+    for (let i = 0; i < transformList.numberOfItems; ++i) {
+        const transform = transformList.getItem(i);
+        const matrix = transform.matrix;
+
+        transforms.translate.x += matrix.e;
+        transforms.translate.y += matrix.f;
+        transforms.scale.x *= matrix.a;
+        transforms.scale.y *= matrix.d;
+        transforms.rotate += transform.angle;
+    }
+
+    return transforms;
+}
+
+function inferMarkAttributes(state) {
+    // function getData() {
+
+    // }
+
+    state.svgMarks = state.svgMarks.filter(d => d.type !== Line);
+    // console.log(state.xAxis.scale.domain(), state.yAxis.scale.domain())
+    for (let i = 0; i < state.svgMarks.length; ++i) {
+        const mark = state.svgMarks[i]; const svgRect = state.svg._getBBox();
+        const markRect = mark._getBBox();
+
+        if (mark.type === Line) continue;
+        if (mark.type === Polyline) {
+            const points = mark.getAttribute('points').split(' ').map(d => d.split(',').map(e => Number(e)));
+            mark[DataAttr] = [];
+
+            for (const point of points) {
+                let [x, y] = point;
+                x = x - svgRect.left;
+                y = y - svgRect.top;
+
+                const iterable = { };
+                iterable[state.xAxis.title ? state.xAxis.title.innerHTML.toLowerCase() : 'x'] = state.xAxis.scale.invert(x);
+                iterable[state.yAxis.title ? state.yAxis.title.innerHTML.toLowerCase() : 'y'] = state.yAxis.scale.invert(y);
+
+                for (let j = 0; j < state.legends.length; ++j) {
+                    const legend = state.legends[j];
+                    const val = legend.type === CategoricalColorLegend
+                        ? legend.scale.domain()[legend.scale.range().indexOf(window.getComputedStyle(mark)[legend.matchingAttr])]
+                        : legend.scale.invert(markRect.width ** 2);
+
+                    iterable[legend.title ? legend.title.innerHTML.toLowerCase() : 'legend-' + j] = val;
+                }
+
+                mark[DataAttr].push(iterable);
+            }
+
+            continue;
+        }
+        const markX = state.xAxis.ordinal.length
+            ? i
+            : state.yAxis.ordinal.length || mark.type === Rect
+                ? markRect.right - svgRect.left
+                : markRect.centerX - svgRect.left;
+        const markY = state.yAxis.ordinal.length
+            ? i
+            : state.xAxis.ordinal.length
+                ? markRect.top - svgRect.top
+                : markRect.centerY - svgRect.top;
+
+        // console.log(state.xAxis.scale.domain()[markX])
+        const iterable = { };
+        // console.log(markX, markY)
+        // console.log(state.xAxis.scale.invert(markX), state.yAxis.scale.invert(markY))
+        iterable[state.xAxis.title ? state.xAxis.title.innerHTML.toLowerCase() : 'x'] = state.xAxis.ordinal.length ? invertBand(state.xAxis.scale, markRect.centerX - svgRect.left) : state.xAxis.scale.invert(markX);
+        iterable[state.yAxis.title ? state.yAxis.title.innerHTML.toLowerCase() : 'y'] = state.yAxis.ordinal.length
+            ? invertBand(state.yAxis.scale, markRect.centerY - svgRect.top)
+            : mark.type === 'rect'
+                ? String(Math.round(state.yAxis.scale.invert(markY)))
+                : state.yAxis.scale.invert(markY);
+        // if (!state.yAxis.ordinal.length && state.yAxis.scale.invert(markY) <= 1 && state.yAxis.scale.invert(markY) >= 0) {
+        //     console.log(mark, mark.getBBox(), mark.getBoundingClientRect(), markY)
+        // }
+        for (let j = 0; j < state.legends.length; ++j) {
+            const legend = state.legends[j];
+            const val = legend.type === CategoricalColorLegend
+                ? legend.scale.domain()[legend.scale.range().indexOf(window.getComputedStyle(mark)[legend.matchingAttr])]
+                : legend.scale.invert(markRect.width ** 2);
+
+            iterable[legend.title ? legend.title.innerHTML.toLowerCase() : 'legend-' + j] = val;
+        }
+
+        mark.style['pointer-events'] = 'fill';
+        mark[DataAttr] = iterable;
+        mark[OpacityField] = mark.hasAttribute('opacity')
+            ? +mark.getAttribute('opacity')
+            : window.getComputedStyle(mark).opacity || SelectOpacity;
+    }
+}
+
+function getDate(d) {
+    // function levelLookup(value) {
+    //     value = value.toLowerCase();
+
+    //     if (value.includes('%y')) {
+    //         return '%Y %m %d %H:%M:%S';
+    //     }
+
+    //     if (value.includes('%m') || value.includes('%b')) {
+    //         return '%m %d %H:%M:%S';
+    //     }
+
+    //     if (value.includes('%a') || value.includes('%d')) {
+    //         return '%d %H:%M:%S';
+    //     }
+
+    //     if (value.includes('%h')) {
+    //         return '%H:%M:%S';
+    //     }
+    // }
+
+    // function toFormattedDate(date, specifier) {
+    //     return timeParse(specifier)(timeFormat(specifier)(date));
+    // }
+
+    function checkSubsets(subsets) {
+        function checkSubset(formats, priorFormat) {
+            if (!formats || !formats.length) return null;
+
+            for (const format of formats[0]) {
+                const f = priorFormat.length ? priorFormat + ' ' + format : format;
+                const parsedVal = timeParse(f)(d);
+
+                if (f !== '%m' && f !== '%d' && parsedVal) { // Skip conflicts with ints
+                    console.log(f, d, parsedVal);
+                    return { format: timeFormat(f), value: parsedVal };
+                }
+
+                const others = checkSubset(formats.slice(1), f);
+                if (others) return others;
+            }
+
+            return null;
+        }
+
+        for (const subset of subsets) {
+            const format = checkSubset(subset, '');
+            if (format) return format;
+        }
+    }
+
+    const dayFormats = ['%d'];
+    const weekFormats = ['%a', '%A'];
+    const monthFormats = ['%b', '%B', '%m'];
+    const yearFormats = ['%Y', '\'%y'];
+    const subsets = [
+        [yearFormats, monthFormats, dayFormats],
+        [monthFormats, dayFormats, yearFormats],
+        [monthFormats, yearFormats],
+        [dayFormats, monthFormats, yearFormats],
+        [weekFormats, monthFormats, dayFormats, yearFormats],
+        [weekFormats, dayFormats, monthFormats, yearFormats]
+    ];
+
+    const fullFormats = ['%Y-%m-%d', '%Y %m %d %H:%M:%S', '%Y-%m-%d% %H:%M:%S', '%Y %m %d %H:%M', '%Y-%m-%d% %H:%M',
+        '%H:%M:%S', '%H:%M'];
+
+    for (const format of fullFormats) {
+        const parsedVal = timeParse(format)(d);
+        if (parsedVal) return { format: timeFormat(format), value: parsedVal };
+    }
+
+    return checkSubsets(subsets);
+}
+
+// function getIntType() {
+//     const transformations = {
+//         Y: 1e24,
+//         Z: 1e21,
+//         E: 1e18,
+//         P: 1e15,
+//         T: 1e12,
+//         G: 1e9,
+//         M: 1e6,
+//         k: 1e3,
+//         h: 1e2,
+//         da: 1e1,
+//         d: 1e-1,
+//         c: 1e-2,
+//         m: 1e-3,
+//         μ: 1e-6,
+//         n: 1e-9,
+//         p: 1e-12,
+//         f: 1e-15,
+//         a: 1e-18,
+//         z: 1e-21,
+//         y: 1e-24,
+//         '%': 1e-2
+//     };
+
+//     const regexVals = {
+//         $: /£|\$/g,
+//         '+': /\+/g,
+//         ',': /,/g,
+//         '.': /./g
+//     };
+//     const formats = ['.0%', '.2%'];
+//     const currencies = /£|\$/g;
+// }
+
+function getFormatVal(element, isDate) {
+    if (!element) return null;
+
+    const elData = element.innerHTML.replace(/–/g, '-').replace(/−/g, '-') // Replace with hyphen for parsing
+        .replace(/,/g, ''); // Replace commas
+    // if (format) return format(element.innerHTML);
+
+    const int = parseFloat(elData);
+    const date = getDate(elData);
+
+    return isNaN(int) || (elData.includes('-') && elData.charAt(0) !== '-') || elData.includes('/')
+        ? (date && isDate
+            ? date
+            : elData)
+        : int;
+}
+
+// import { selectAll } from 'd3-selection';
+
+const epsilon = 3;
+let viewEpsilon = 25;
+
+function parseChart(state) {
+    let [candidateTextGroups, candidateTickGroups, candidateLegendGroups] = collectCandidateGroups(state.textMarks, state.svgMarks);
+    let axes = pruneGroups(candidateTextGroups, candidateTickGroups);
+    axes = axes.sort((a, b) => {
+        const t1 = a.text[0]._getBBox()[CenterX];
+        const t2 = b.text[0]._getBBox()[CenterY];
+        return t1 - t2;
+    });
+
+    if (axes.length >= 2) {
+        axes = [axes[0], axes[1]];
+        groupAxes(axes);
+        candidateTextGroups = candidateTextGroups.filter(d => !axes.map(a => a.text).includes(d.marks));
+    }
+    // console.log(candidateLegendGroups)
+    const legends = pruneGroups(candidateTextGroups, candidateLegendGroups, false).filter(d => d.dist < viewEpsilon * 5);
+    if (legends.length) {
+        parseLegends(state, legends);
+        candidateTextGroups = candidateTextGroups.filter(d => !legends.map(l => l.text).includes(d.marks));
+    }
+    assignTitles(candidateTextGroups.map(d => d.marks).flat());
+    state.legends.forEach(d => bindLegendData(d));
+
+    function assignTitles(titles) {
+        const titleAssignment = new Map();
+
+        function calculatePos(el) {
+            const elBBox = el._getBBox();
+            return [elBBox.centerX, elBBox.centerY];
+        }
+
+        function getClosestTitle(x, y) {
+            let closestTitle = { title: null, dist: Number.MAX_SAFE_INTEGER };
+            for (const title of titles) {
+                const [titleX, titleY] = calculatePos(title);
+                const posDiff = Math.abs(titleX - x) + Math.abs(titleY - y);
+
+                if (posDiff < closestTitle.dist) {
+                    closestTitle = { title, dist: posDiff };
+                }
+            }
+
+            return closestTitle;
+        }
+
+        const groups = [state.xAxis, state.yAxis, ...state.legends];
+        for (const group of groups) {
+            const _g = 'ticks' in group ? group.ticks : group.marks;
+            const pos = _g.filter(d => d.label).map(mark => calculatePos(mark.label));
+            const x = mean(pos.map(d => d[0])); const y = mean(pos.map(d => d[1]));
+
+            const titleGroup = getClosestTitle(x, y);
+            const { title, dist } = titleGroup;
+            if (!title) continue;
+
+            if (!titleAssignment.has(title) || dist < titleAssignment.get(title).dist) {
+                group.title = title;
+                title[RoleProperty] = TitleRole;
+                titleAssignment.set(title, titleGroup);
+            }
+        }
+
+        state.title = titles.filter(d => !d[RoleProperty])[0];
+    }
+
+    function groupAxes(axes) {
+        const axisMap = new Map();
+        const orphanTicks = [];
+
+        function addTicks(text, alignment, ticks) {
+            if (alignment === Top || alignment === Bottom) {
+                state.xAxis.ticks.push({ label: text, marks: ticks });
+            } else {
+                state.yAxis.ticks.push({ label: text, marks: ticks });
+            }
+            ticks.forEach(tick => { text ? tick[RoleProperty] = Tick : tick[RoleProperty] = OrphanTickRole; });
+        }
+
+        for (const { alignment, group } of axes) {
+            for (const g of group) {
+                const [axis, allTicks] = g;
+                const seen = new Map();
+
+                for (const [text, tick] of axis) {
+                    seen.set(tick, true);
+                    axisMap.has(text)
+                        ? axisMap.get(text).ticks.push(tick)
+                        : axisMap.set(text, { alignment, ticks: [tick] });
+                }
+
+                allTicks.filter(d => !seen.has(d)).forEach(d => {
+                    orphanTicks.push({ alignment, tick: d });
+                });
+            }
+        }
+
+        for (const [text, { alignment, ticks }] of axisMap) {
+            addTicks(text, alignment, ticks);
+        }
+
+        for (const { alignment, tick } of orphanTicks) {
+            addTicks(null, alignment, [tick]);
+        }
+
+        [state.xAxis, state.yAxis].forEach(axis => sortByViewPos('label', axis.ticks));
+    }
+
+    function mergeArray(array) { // Assumes [key, mark] structure
+        array.sort((a, b) => a[0] - b[0]);
+        const groups = [[array[0][0], [array[0][1]]]];
+
+        for (let i = 1; i < array.length; ++i) {
+            const index = groups[groups.length - 1][0];
+
+            if (Math.abs(index - array[i][0]) < epsilon) {
+                groups[groups.length - 1][1].push(array[i][1]);
+            } else {
+                groups.push([array[i][0], [array[i][1]]]);
+            }
+        }
+
+        return groups.map(d => d[1]);
+    }
+
+    function pruneGroups(candidateTextGroups, candidateMarkGroups, append = true) {
+        // const t = selectAll('#test').nodes();
+        // console.log(t)
+        // for (const g of candidateMarkGroups) {
+        //     for (const _t of t) {
+        //         if (g.marks.includes(_t)) {
+        //             console.log(g)
+        //         }
+        //     }
+        // }
+        function _sort(alignment, group) {
+            group.sort((a, b) => {
+                const aBox = a._getBBox(); const bBox = b._getBBox();
+                return hs.includes(alignment) ? aBox[CenterX] - bBox[CenterX] : aBox[CenterY] - bBox[CenterY];
+            });
+        }
+
+        function getGroupDistance(groupA, groupB, alignment) {
+            const distsA = [0, 0, 0]; const distsB = [0, 0, 0];
+
+            function addVal(obj, mark, length) {
+                const bbox = mark._getBBox();
+                const keys = vs.includes(alignment) ? vs : hs;
+                for (let i = 0; i < keys.length; ++i) {
+                    obj[i] = obj[i] + (bbox[keys[i]] / length);
+                }
+            }
+
+            groupA.forEach(d => addVal(distsA, d, groupA.length));
+            groupB.forEach(d => addVal(distsB, d, groupB.length));
+
+            return min([
+                min(distsA) - min(distsB),
+                min(distsA) - max(distsB),
+                max(distsA) - min(distsB),
+                max(distsA) - max(distsB)
+            ].map(d => Math.abs(d)));
+        }
+
+        function matchGroup(alignment, textGroup, tickGroup) {
+            let i = 0; let distance = 0; const textMap = new Map();
+
+            for (const text of textGroup) {
+                const textBB = text._getBBox();
+                let prevDist = Number.MAX_SAFE_INTEGER;
+
+                if (i === tickGroup.length) return [Number.MAX_SAFE_INTEGER, null];
+
+                while (i <= tickGroup.length) {
+                    const tickBB = tickGroup[min([i, tickGroup.length - 1])]._getBBox();
+                    const key = hs.includes(alignment) ? CenterX : CenterY;
+                    const dist = Math.abs(tickBB[key] - textBB[key]);
+
+                    if (dist >= prevDist) {
+                        textMap.set(text, tickGroup[i - 1]);
+                        distance += prevDist;
+                        break;
+                    }
+
+                    prevDist = dist;
+                    ++i;
+                }
+            }
+
+            return [distance / textGroup.length, textMap];
+        }
+
+        const groups = []; const vs = [Left, Right, CenterX]; const hs = [Top, Bottom, CenterY];
+        for (const { alignment, marks: textGroup } of candidateTextGroups) {
+            if (textGroup.length === 1) {
+                continue;
+            }
+
+            let minGroup = { dist: Number.MAX_SAFE_INTEGER, group: null };
+            _sort(alignment, textGroup);
+
+            for (const { alignment: markAlignment, marks: markGroup } of candidateMarkGroups) {
+                if (markGroup.length < textGroup.length) continue;
+                if ((vs.includes(alignment) && !vs.includes(markAlignment)) ||
+                    (hs.includes(alignment) && !hs.includes(markAlignment))) continue;
+                if (getGroupDistance(textGroup, markGroup, alignment) > viewEpsilon) continue;
+
+                _sort(alignment, markGroup);
+                const [_dist, textMap] = matchGroup(alignment, textGroup, markGroup);
+                if (_dist === Number.MAX_SAFE_INTEGER) continue;
+
+                const withinEp = Math.abs(_dist - minGroup.dist) < epsilon;
+                if (append && withinEp) {
+                    minGroup.group.push([textMap, markGroup]);
+                } else if ((!append && withinEp && markGroup.length < minGroup.group[0][1].length) || _dist < minGroup.dist) {
+                    minGroup = { alignment, dist: _dist, group: [[textMap, markGroup]], text: textGroup };
+                }
+            }
+
+            if (minGroup.group) groups.push(minGroup);
+        }
+
+        groups.sort((a, b) => a.dist - b.dist);
+        return groups;
+    }
+
+    function collectCandidateGroups(textMarks, svgMarks) {
+        function getPositions(allMarks, useCenters = true) {
+            const positions = { [Left]: [], [Right]: [], [Top]: [], [Bottom]: [] };
+            if (useCenters) {
+                positions[CenterX] = [];
+                positions[CenterY] = [];
+            }
+
+            // Detect text groups
+            for (const mark of allMarks) {
+                const bbox = mark._getBBox();
+                for (const [position, array] of Object.entries(positions)) {
+                    const offset = bbox[position];
+                    array.push([offset, mark]);
+                }
+            }
+
+            return positions;
+        }
+
+        function mergePositions(positions, useStyle = false) {
+            const _positions = [];
+            if (useStyle) {
+                const keys = [CenterX, CenterY];
+                for (const key of keys) {
+                    const array = positions[key];
+                    const styles = { };
+                    array.forEach(([key, d]) => {
+                        const bbox = d._getBBox();
+                        const style = window.getComputedStyle(d);
+                        const styleKey = [bbox.width, bbox.height, style.fill, style.color, style.stroke].join(',');
+                        styleKey in styles ? styles[styleKey].push([key, d]) : styles[styleKey] = [[key, d]];
+                    });
+
+                    Object.values(styles).forEach(d => _positions.push([key, mergeArray(d)]));
+                }
+            } else {
+                for (const [key, array] of Object.entries(positions)) {
+                    _positions.push([key, mergeArray(array)]);
+                }
+            }
+
+            return _positions;
+        }
+
+        function assignGroups(allMarks, positions) {
+            // Assign each text element to its largest found group
+            const markAssignment = new Map();
+            const alignmentMap = new Map();
+            for (const [alignment, candidateGroups] of positions) {
+                for (const group of candidateGroups) {
+                    for (const mark of group) {
+                        const assignment = markAssignment.get(mark);
+
+                        if (!assignment || group.length > assignment.length) {
+                            markAssignment.set(mark, group);
+                            alignmentMap.set(group, alignment);
+                        }
+                    }
+                }
+            }
+
+            // Compute all candidate groups
+            const candidateGroups = [];
+            for (let i = 0; i < allMarks.length; ++i) {
+                const mark = allMarks[i];
+                const marks = markAssignment.get(mark);
+
+                if (!candidateGroups.includes(marks)) {
+                    candidateGroups.push(marks);
+                }
+            }
+
+            // Remove duplicates
+            for (let i = 0; i < candidateGroups.length; ++i) {
+                for (const mark of [...candidateGroups[i]]) {
+                    if (markAssignment.get(mark) !== candidateGroups[i]) {
+                        // Array.filter(...)
+                        candidateGroups[i].splice(candidateGroups[i].indexOf(mark), 1);
+                    }
+                }
+            }
+
+            return candidateGroups.map(d => {
+                return { alignment: alignmentMap.get(d), marks: d };
+            });
+        }
+
+        const textGroups = assignGroups(textMarks, mergePositions(getPositions(textMarks, false)));
+        const markPositions = getPositions(svgMarks);
+        const tickGroups = assignGroups(svgMarks, mergePositions(markPositions, true));
+        const legendGroups = mergePositions(markPositions).map(([k, v]) => v.map(d => { return { alignment: k, marks: d }; })).flat();
+
+        return [textGroups, tickGroups, legendGroups];
+    }
+}
+
+function cleanMarks(state) {
+    for (const mark of state.svgMarks) {
+        const clientRect = mark._getBBox();
+        if (clientRect.width >= state.xAxis.range[1] - state.xAxis.range[0] &&
+            clientRect.height >= state.yAxis.range[0] - state.yAxis.range[1]) {
+            mark[RoleProperty] = ViewportRole;
+            continue;
+        }
+        const svgR = state.svg._getBBox();
+        const [xLeft, xRight] = state.xAxis.range;
+        const [yBottom, yTop] = state.yAxis.range.map(d => d + svgR.top);
+        // if ((clientRect.left <= xLeft && clientRect.right >= xRight && clientRect.bottom <= yTop) ||
+        //     (clientRect.left <= xLeft && clientRect.right >= xRight && clientRect.top >= yBottom) )
+        if ((clientRect.top <= yTop && clientRect.bottom >= yBottom && clientRect.left <= xLeft) ||
+            (clientRect.top <= yTop && clientRect.bottom >= yBottom && clientRect.right >= xRight) ||
+            !(clientRect.right >= xLeft && clientRect.left <= xRight && clientRect.bottom >= yTop && clientRect.top <= yBottom)) {
+            mark[RoleProperty] = AxisDomainRole;
+        }
+        for (const legend of state.legends) {
+            for (const { mark } of legend.marks) {
+                mark[RoleProperty] = LegendRole;
+            }
+        }
+    }
+
+    state.svgMarks = state.svgMarks.filter(d => !d[RoleProperty]);
+    state.svgMarks.forEach(d => { d[RoleProperty] = MarkRole; });
+    sortByViewPos(null, state.svgMarks, false);
+}
+
+function computeDomain(axis) {
+    let isDate = true;
+    for (const [, value] of Object.entries(axis.ticks)) {
+        if (value.label == null) continue;
+        if (Object.prototype.toString.call(getFormatVal(value.label, true).value) !== '[object Date]') {
+            isDate = false;
+            break;
+        }
+    }
+
+    for (const [, value] of Object.entries(axis.ticks)) {
+        if (!value.label) continue;
+
+        let formatVal = getFormatVal(value.label, isDate);
+        if (formatVal.value) {
+            axis.formatter = { format: formatVal.format };
+            formatVal = formatVal.value;
+        }
+        value.value = formatVal;
+
+        if (typeof formatVal === 'string') {
+            axis.ordinal.push(formatVal);
+        } else {
+            axis.domain[0] = axis.domain[0] === null ? formatVal : min([axis.domain[0], formatVal]);
+            axis.domain[1] = axis.domain[1] === null ? formatVal : max([axis.domain[1], formatVal]);
+        }
+    }
+}
+
+function configureAxes(state) {
+    const svgClientRect = state.svg._getBBox();
+
+    if (state.xAxis.scale && !state.xAxis.ordinal.length) {
+        // Infer original X-axis domains
+
+        const tickLeft = computeCenterPos(
+            state.xAxis.ticks.filter(d => d.value === state.xAxis.domain[0])[0].marks[0], Left
+        );
+        const tickRight = computeCenterPos(
+            state.xAxis.ticks.filter(d => d.value === state.xAxis.domain[1])[0].marks[0], Left
+        );
+
+        const ticks = [tickLeft, tickRight].map(d => d - svgClientRect.left);
+        const newDomainX = state.xAxis.range.map(
+            state.xAxis.scale.copy().range(ticks).invert, state.xAxis.scale
+        );
+
+        state.xAxis.scale.domain(newDomainX);
+    }
+
+    if (state.yAxis.scale && !state.yAxis.ordinal.length) {
+        // Infer original Y-axis domain
+        const tickTop = computeCenterPos(
+            state.yAxis.ticks.filter(d => d.value === state.yAxis.domain[0])[0].marks[0], Top
+        );
+        const tickBottom = computeCenterPos(
+            state.yAxis.ticks.filter(d => d.value === state.yAxis.domain[1])[0].marks[0], Top
+        );
+
+        const ticks = [tickTop, tickBottom].map(d => d - svgClientRect.top);
+        const newDomainY = state.yAxis.range.map(
+            state.yAxis.scale.copy().range(ticks).invert, state.yAxis.scale
+        );
+
+        state.yAxis.scale.domain(newDomainY);
+    }
+}
+
+function deconstructChart(state) {
+    viewEpsilon = 1e-1 * max([state.svg._getBBox().width, state.svg._getBBox().height]);
+    parseChart(state);
+    computeDomain(state.xAxis);
+    computeDomain(state.yAxis);
+
+    let width = +convertPtToPx(state.svg.getAttribute('width'));
+    let height = +convertPtToPx(state.svg.getAttribute('height'));
+    if (!width) width = state.svg._getBBox().width;
+    if (!height) height = state.svg._getBBox().height;
+    const svgBBox = state.svg._getBBox();
+
+    if (!state.xAxis.ticks.length && !state.yAxis.ticks.length) {
+        state.xAxis.range = [0, width];
+        state.yAxis.range = [height, 0];
+        cleanMarks(state);
+        return;
+    }
+
+    /* TODO: More robust axis ranges */
+    const yTick = state.yAxis.ticks[0].marks[0];
+    const yTickBB = yTick._getBBox();
+    const xTick = state.xAxis.ticks[0].marks[0];
+    const xTickBB = xTick._getBBox();
+
+    const yTickRange = [yTickBB.left, yTickBB.left + yTickBB.width];
+    const xTickRange = [xTickBB.top + xTickBB.height, xTickBB.top];
+
+    const xMin = max([(yTickBB.width < 10 ? yTickRange[1] : yTickRange[0]) - svgBBox.left, 0]);
+    const xMax = max([min([yTickRange[1] - svgBBox.left, width]), state.xAxis.ticks[state.xAxis.ticks.length - 1].marks[0]._getBBox().right - svgBBox.left]);
+    const yMin = max([(xTickBB.height < 10 ? state.yAxis.ticks[state.yAxis.ticks.length - 1].marks[0]._getBBox().top : xTickRange[1]) - svgBBox.top, 0]);
+    const yMax = min([xTickRange[0] - svgBBox.top, height]);
+
+    state.xAxis.range = [xMin, xMax];
+    state.yAxis.range = [yMax, yMin];
+
+    state.xAxis.scale = (state.xAxis.domain[0] instanceof Date ? time() : (state.xAxis.ordinal.length ? band() : linear()))
+        .domain(state.xAxis.ordinal.length ? state.xAxis.ordinal : state.xAxis.domain)
+        .range(state.xAxis.range);
+    state.xAxis.axis = axisBottom(state.xAxis.scale, state)
+        .ticks(state.xAxis.ticks.length);
+    if (state.xAxis.domain[0] instanceof Date) state.xAxis.axis = state.xAxis.axis.tickFormat(state.xAxis.formatter.format);
+
+    state.yAxis.scale = (state.yAxis.domain[0] instanceof Date ? time() : (state.yAxis.ordinal.length ? band() : linear()))
+        .domain(state.yAxis.ordinal.length ? state.yAxis.ordinal : state.yAxis.domain)
+        .range(state.yAxis.range);
+    state.yAxis.axis = axisLeft(state.yAxis.scale, state)
+        .ticks(state.yAxis.ticks.length);
+    // .tickFormat(d => {
+    // let s = state.y_axis.ticks[0]['label'].innerHTML;
+    //     return s.includes("M") || s.includes("k") ? d3.format(".2s")(d) : d3.format(",")(d);
+    // });
+
+    configureAxes(state);
+    cleanMarks(state);
+
+    // TO-DO: Domain path 0.5 difference.
+    // if (state.hasDomain) {
+    //     let axes = [].slice.call(state.svg.querySelectorAll(".domain")).map((d) => { return d.getBoundingClientRect() });
+    //     let y_axis = axes[0].width < axes[1].width ? axes[0] : axes[1];
+    //     let x_axis = axes[0].height < axes[1].height ? axes[0] : axes[1];
+
+    //     var x_min = x_axis.left - state.svg.getBoundingClientRect().left;
+    //     var x_max = x_axis.right - state.svg.getBoundingClientRect().left;
+
+    //     var y_max = y_axis.bottom - state.svg.getBoundingClientRect().top;
+    //     var y_min = y_axis.top - state.svg.getBoundingClientRect().top;
+    // } else {
+
+    // if (yTick.clientRect.right < xTick.clientRect.left) {
+    //     var x_min = y_tick.right - state.svg.getBoundingClientRect().left;
+    //     var x_max = width;
+    // } else {
+    //     var x_min = y_tick.left - state.svg.getBoundingClientRect().left;
+    //     var x_max = d3.min([y_tick.width + x_min, width]);
+    // }
+
+    // if (x_tick.top > y_tick.bottom) {
+    //     var y_max = x_tick.top - state.svg.getBoundingClientRect().top;
+    //     var y_min = 0;
+    // } else {
+    //     var y_max = x_tick.bottom - state.svg.getBoundingClientRect().top;
+    //     var y_min = d3.max([y_max - x_tick.height, 0]);
+    // }
+    // }
+
+    // state.xAxis.scale = (state.xAxis.domain[0] instanceof Date ? d3.scaleTime() : (state.xAxis.ordinal.length ? d3.scaleBand() : d3.scaleLinear()))
+    // .domain(state.xAxis.ordinal.length ? state.xAxis.ordinal : state.xAxis.domain)
+    // .range(state.xAxis.range)
+    // state.x_axis.scale = (state.x_axis.domain[0] instanceof Date ? d3.scaleTime() : d3.scaleLinear())
+    //     .domain(state.x_axis.ordinal.length ? state.x_axis.range : state.x_axis.domain)
+    //     .range(state.x_axis.range);
+    // state.xAxis.axis = axisBottom(state.x_axis.scale, SVG).ticks(state.x_axis.ticks.length);
+    // state.x_axis.axis(state.x_axis.ticks);
+    // .tickSize(state.x_axis.ticks[1].children[0].getAttribute("y2"))
+    // .ticks(typeof x_axis.ticks[0].__data__ === "string" ? state.x_axis.ordinal.length : state.x_axis.ticks.length);
+
+    // configureAxes();
+
+    // let diff_1_y = +state.y_axis.ticks[1]['label'].innerHTML - +state.y_axis.ticks[0]['label'].innerHTML;
+    // let diff_2_y = +state.y_axis.ticks[2]['label'].innerHTML - +state.y_axis.ticks[1]['label'].innerHTML;
+
+    // let diff_1_x = +state.x_axis.ticks[1]['label'].innerHTML - +state.x_axis.ticks[0]['label'].innerHTML;
+    // if (state.x_axis.ticks.length < 3) {
+    //     var diff_2_x = 0;
+    // } else {
+    //     var diff_2_x = +state.x_axis.ticks[2]['label'].innerHTML - +state.x_axis.ticks[1]['label'].innerHTML;
+    // }
+
+    // let diff_tick_a = state.x_axis.ticks[1]['ticks'][0].getBoundingClientRect().left -
+    //     state.x_axis.ticks[0]['ticks'][0].getBoundingClientRect().left;
+
+    // if (state.x_axis.ticks.length < 3) {
+    //     var diff_tick_b = 0;
+    // } else {
+    //     var diff_tick_b = state.x_axis.ticks[2]['ticks'][0].getBoundingClientRect().left -
+    //         state.x_axis.ticks[1]['ticks'][0].getBoundingClientRect().left;
+    // }
+
+    // if (Math.abs(diff_1_x - diff_2_x) > 5e-1 || Math.abs(diff_tick_a - diff_tick_b) > 5e-1) {
+    //     // let tick_diff_1 = state.x_axis.ticks['ticks'][1].getBoundingClientRect().left -
+    //     //     state.x_axis.ticks['ticks'][0].getBoundingClientRect().left;
+    //     // let tick_diff_2 = state.x_axis.ticks['ticks'][2].getBoundingClientRect().left -
+    //     //     state.x_axis.ticks['ticks'][1].getBoundingClientRect().left;
+
+    //     if (Math.abs(diff_tick_a - diff_tick_b) < 5e-1) {
+    //         let format = state.x_axis.ticks['ticks'][0].childNodes[1].innerHTML;
+    //         if (format != state.x_axis.ticks[0].__data__ && typeof format === "string") {
+    //             var exponent = format.match(/^(e|\d+)\^(e|\d+)$/);
+    //             var superscript = format.match(/^(e|d+)([\u2070-\u209F\u00B2\u00B3\u00B9])$/);
+    //             if (exponent) {
+    //                 var base = exponent[1];
+    //                 base = (base === 'e' ? Math.E : parseInt(base));
+    //             } else if (superscript) {
+    //                 var base = superscript[1];
+    //                 base = (base === 'e' ? Math.E : parseInt(base));
+    //             }
+    //         }
+    //     }
+
+    //     function format(d) {
+    //         function digitToSuperscript(superChar) {
+    //             let table = "⁰¹²³⁴⁵⁶⁷⁸⁹";
+    //             return table[superChar];
+    //         }
+
+    //         let exp = Math.log(d) / Math.log(base);
+    //         return superscript ? 'e' + String(exp).replace(/\d/g, digitToSuperscript) : d + '^' + exp;
+    //     }
+
+    //     state.x_axis.scale = d3.scaleLog()
+    //         .domain(state.x_axis.domain)
+    //         .range(state.x_axis.range);
+    //     state.x_axis.axis = axisBottom(state.x_axis.scale, SVG)
+    //         // .tickSize(state.x_axis.ticks[1].children[0].getAttribute("y2"))
+    //         .ticks(state.x_axis.ticks.filter(d => d['label'].innerHTML).length)
+    //     if (base) {
+    //         state.x_axis.scale = state.x_axis.scale.base(base);
+    //         state.x_axis.axis = state.x_axis.axis.tickFormat(d => exponent || superscript ? format(d) : d);
+    //     }
+    // } else {
+    //     state.x_axis.scale = (state.x_axis.domain[0] instanceof Date ? d3.scaleTime() : (state.x_axis.ordinal.length ? d3.scaleBand() : d3.scaleLinear()))
+    //         .domain(state.x_axis.ordinal.length ? state.x_axis.ordinal : state.x_axis.domain)
+    //         .range(state.x_axis.range)
+    //     // state.x_axis.scale = (state.x_axis.domain[0] instanceof Date ? d3.scaleTime() : d3.scaleLinear())
+    //     //     .domain(state.x_axis.ordinal.length ? state.x_axis.range : state.x_axis.domain)
+    //     //     .range(state.x_axis.range);
+    //     state.x_axis.axis = axisBottom(state.x_axis.scale, SVG)
+    //         .ticks(state.x_axis.ticks.length);
+    //     // state.x_axis.axis(state.x_axis.ticks);
+    //         // .tickSize(state.x_axis.ticks[1].children[0].getAttribute("y2"))
+    //         // .ticks(typeof x_axis.ticks[0].__data__ === "string" ? state.x_axis.ordinal.length : state.x_axis.ticks.length);
+    // }
+
+    // if (Math.abs(diff_1_y - diff_2_y) > 5e-1) {
+    //     state.y_axis.scale = d3.scaleLog()
+    //         .domain(state.y_axis.domain)
+    //         .range(state.y_axis.range);
+    //     state.y_axis.axis = d3.axisLeft(state.y_axis.scale)
+    //         .tickSize(-state.y_axis.ticks[1].children[0].getAttribute("x2"))
+    //         .ticks(state.y_axis.ticks.length);
+    // } else {
+    //     state.y_axis.scale = (state.y_axis.domain[0] instanceof Date ? d3.scaleTime() : (state.y_axis.ordinal.length ? d3.scaleBand() : d3.scaleLinear()))
+    //         .domain(state.y_axis.ordinal.length ? state.y_axis.ordinal : state.y_axis.domain)
+    //         .range(state.y_axis.range);
+    //     state.y_axis.axis = axisLeft(state.y_axis.scale, SVG)
+    //         .ticks(state.y_axis.ticks.length)
+    //         .tickFormat(d => {
+    //             let s = state.y_axis.ticks[0]['label'].innerHTML;
+    //             return s.includes("M") || s.includes("k") ? d3.format(".2s")(d) : d3.format(",")(d);
+    //         });
+    //     // state.y_axis.axis(state.y_axis.ticks);
+    //         // .tickSize(-state.y_axis.ticks[1].children[0].getAttribute("x2"))
+    //         // .ticks(typeof state.y_axis.ticks[0].__data__ === "string" ? state.y_axis.ordinal.length : state.y_axis.ticks.length);
+    // }
+}
+
+class DataState {
+    constructor(table) {
+        this.table = table;
+        this.active = {
+            table,
+            selected: table,
+            filtered: null,
+            type: LINK_TYPES.NONE
+        };
+        this.children = [];
+        this.parents = [];
+    }
+}
+
+async function parseDataset(options) {
+    if (!options || !Object.keys(options).length) return { };
+    const { url } = options;
+    const type = url.split('.').pop();
+    const _table = await (type === 'json' ? loadJSON(url) : loadCSV(url));
+
+    return new DataState(_table.assign(table({ [tableIndexField]: range(_table.numRows()) })));
+}
+
+// import { DataState } from './data-state';
+
+class ViewState {
+    constructor() {
+        this.hasDomain = false;
+        this.svg = null;
+        this.svgMarks = [];
+        this.textMarks = [];
+        this.data = null;
+
+        this.xAxis = {
+            domain: [null, null],
+            ordinal: [],
+            range: [null, null],
+            ticks: [],
+            scale: null,
+            axis: null,
+            title: null
+        };
+        this.yAxis = {
+            domain: [null, null],
+            ordinal: [],
+            range: [null, null],
+            ticks: [],
+            scale: null,
+            axis: null,
+            title: null
+        };
+
+        this.legends = [];
+        this.title = null;
+
+        this.interactions = {
+            selection: true,
+            brush: true,
+            navigate: false,
+            filter: false,
+            sort: false,
+            annotate: false
+        };
+    }
 }
 
 /*
@@ -32031,2014 +34632,6 @@ function makeSVGPathCommandsAbsolute(commands) {
 	return commands;
 }
 
-const SELECT_TYPE = {
-    POINT: 0,
-    RANGE: 1
-};
-
-function generateQuery(predicates) {
-    const queries = [];
-    for (const predicate of predicates) {
-        const field = Object.keys(predicate)[0];
-        const { value, cond, type } = predicate[field];
-        let q;
-
-        if (type === SELECT_TYPE.POINT) {
-            q = query().filter(escape(d => d[field] === value)).reify();
-        } else if (type === SELECT_TYPE.RANGE) {
-            q = query().filter(escape(d => {
-                return (cond === '>=' ? d[field] >= value : d[field] <= value);
-            })).reify();
-        }
-        queries.push(q);
-    }
-    return queries;
-}
-
-function generatePredicates(field, object, type) {
-    if (type === SELECT_TYPE.POINT) {
-        return [{ [field]: { value: object[field], type } }];
-    } else {
-        console.log('TODO');
-    }
-}
-
-function generateBrushPredicates(field1, field2, xR, yR) {
-    return [
-        { [field1]: { value: xR[0], cond: '>=', type: SELECT_TYPE.RANGE } },
-        { [field1]: { value: xR[1], cond: '<=', type: SELECT_TYPE.RANGE } },
-        { [field2]: { value: yR[0], cond: '<=', type: SELECT_TYPE.RANGE } },
-        { [field2]: { value: yR[1], cond: '>=', type: SELECT_TYPE.RANGE } }
-    ];
-}
-
-// Interactions
-
-// Interaction defaults
-const SelectOpacity = 1;
-const UnselectOpacity = 0.1;
-const OpacityField = '__opacity__';
-const Tick = 'tick';
-const Background = 'background';
-const Foreground = 'foreground';
-
-// Chart marks / defaults
-const DefaultSvgId = 'svgPlot';
-const SvgContainer = 'svg';
-const SvgGroup = 'g';
-const Circle = 'circle';
-const Ellipse = 'ellipse';
-const Line = 'line';
-const Polygon = 'polygon';
-const Polyline = 'polyline';
-const Rect = 'rect';
-const Path = 'path';
-const Text = 'text';
-const TextRef = '#text';
-const Style = 'style';
-const Use = 'use';
-
-// View fields
-const Left = 'left';
-const Right = 'right';
-const Top = 'top';
-const Bottom = 'bottom';
-const CenterX = 'centerX';
-const CenterY = 'centerY';
-const Width = 'width';
-const Height = 'height';
-
-// Legend and title constants
-const SizeLegend = 'size';
-const CategoricalColorLegend = 'colorCat';
-
-const FillAttr = 'fill';
-const ColorAttr = 'color';
-const StrokeAttr = 'stroke';
-const DataAttr = '__inferred__data__';
-
-const RoleProperty = '__role__';
-const LegendRole = 'legend';
-const AxisDomainRole = 'axis-domain';
-const TitleRole = 'title';
-const OrphanTickRole = 'orphan-tick';
-const ViewportRole = 'viewport';
-const MarkRole = 'mark';
-
-const tableMarkField = '_mark_';
-const tableIndexField = '_I_';
-const tableGroupIndexField = '_gI_';
-
-const epsilon$1 = 2;
-const AGGREGATIONS = {
-    COUNT: 'count',
-    MIN: 'min',
-    MAX: 'max',
-    MEAN: 'mean',
-    SUM: 'sum',
-    STDEV: 'stdev',
-    MEDIAN: 'median'
-};
-
-const LINK_TYPES = {
-    NONE: 0,
-    DIRECT: 1,
-    SUBSET: 2,
-    AGGREGATE: 3
-};
-
-function isEqual(val1, val2, ep = epsilon$1) {
-    return typeof val1 === 'string' && typeof val2 === 'string'
-        ? val1.toLowerCase() === val2.toLowerCase()
-        : Math.abs(val1 - val2) <= ep;
-}
-
-// function isDirectLink(source, target, ep = epsilon) {
-//     if (!source.length || !target.length || source.length !== target.length) return false;
-//     return range(source.length).filter(i => isEqual(source[i], target[i], ep)).length === source.length;
-// }
-
-function getSubset(source, sourceMap, target, ep = epsilon$1) {
-    const sourceIndices = []; const targetIndices = [];
-    let i = 0; let j = 0;
-
-    while (i < source.length && j < target.length) {
-        if (isEqual(source[i], target[j], ep)) {
-            while (i < source.length && j < target.length && isEqual(source[i], target[j], ep)) {
-                sourceIndices.push(sourceMap[i++]);
-                targetIndices.push(j++);
-            }
-            while (i < source.length && j < target.length && isEqual(source[i], target[j - 1], ep)) { // Include all candidates from target
-                sourceIndices.push(sourceMap[i++]);
-            }
-        } else {
-            ++i;
-        }
-    }
-
-    if (i < source.length) {
-        while (i < source.length && isEqual(source[i], target[j - 1], ep)) {
-            sourceIndices.push(sourceMap[i++]);
-        }
-    }
-
-    if (j < target.length) {
-        while (j < target.length && isEqual(source[i - 1], target[j], ep)) {
-            targetIndices.push(j++);
-        }
-    }
-
-    return [sourceIndices, targetIndices];
-}
-
-function getFields(table, useMeta = false) {
-    const metaFields = [tableMarkField, tableIndexField, tableGroupIndexField];
-    return useMeta ? table.columnNames() : table.columnNames(d => !metaFields.includes(d));
-}
-
-function LinkIterator(sourceTable, targetTable, candidateBins, epsilons, useAggregate = true) {
-    function linker() { }
-
-    linker.exists = function(link) {
-        return link && Object.keys(link).length;
-    };
-
-    linker.direct = function() {
-        const link = getDirectLinks(sourceTable, targetTable, false);
-        return { link, type: linker.exists(link) ? LINK_TYPES.DIRECT : LINK_TYPES.NONE };
-    };
-
-    linker.subset = function() {
-        const link = getDirectLinks(sourceTable, targetTable, true);
-        return { link, type: linker.exists(link) ? LINK_TYPES.SUBSET : LINK_TYPES.NONE };
-    };
-
-    linker.aggregate = function() {
-        // return { type: LINK_TYPES.NONE }
-        const link = getAggregateLinks(sourceTable, targetTable, [], []);
-        return { link, type: linker.exists(link) ? LINK_TYPES.AGGREGATE : LINK_TYPES.NONE };
-    };
-
-    linker.getLink = function() {
-        const direct = linker.direct();
-        if (direct.type === LINK_TYPES.DIRECT) return direct;
-
-        if (useAggregate) {
-            const aggregate = linker.aggregate();
-            if (aggregate.type === LINK_TYPES.AGGREGATE) return aggregate;
-        }
-
-        const subset = linker.subset();
-        if (subset.type === LINK_TYPES.SUBSET) return subset;
-
-        return { type: LINK_TYPES.NONE };
-    };
-
-    function getIndexMap(tableA, tableB, sortA, sortB) {
-        const A = tableA.orderby(sortA).array(tableIndexField);
-        const B = tableB.orderby(sortB).array(tableIndexField);
-
-        const _fromToMap = Object.fromEntries(A.map((a, i) => [a, B[i]]));
-        const _toFromMap = Object.fromEntries(B.map((b, i) => [b, A[i]]));
-
-        const newCols = getFields(tableA).filter(d => !sortA.includes(d));
-        let mergedTable;
-        if (newCols.length) {
-            const _table = tableA.orderby(sortA).select(newCols);
-            mergedTable = tableB.orderby(sortB).assign(_table).orderby(tableIndexField).reify();
-        }
-
-        return {
-            map: {
-                fromToMap: _fromToMap,
-                toFromMap: _toFromMap,
-                mergedTable
-            }
-        };
-    }
-
-    function getAggregateQueries(groupBy, groupKeys, rollupObj) {
-        const fromToQ = query().groupby([...groupBy, tableIndexField]).rollup(rollupObj);
-        const toFromQ = query().groupby(groupBy).derive(rollupObj);
-
-        return { fromToQuery: fromToQ, toFromQuery: toFromQ, assignTable: table({ [tableGroupIndexField]: groupKeys }) };
-    }
-
-    function getDirectLinks(tableA, tableB, allowProjections = false) {
-        const fieldsA = getFields(tableA);
-        const fieldsB = getFields(tableB);
-
-        if (!fieldsA.length || !fieldsB.length || tableB.numRows() > tableA.numRows()) return null;
-        if (fieldsA.length === 2 && fieldsA.includes('precipitation') && fieldsA.includes('MEAN-maximum daily temperature (c)') &&
-            fieldsB.length === 2 && fieldsB.includes('precipitation (binned)') && fieldsB.includes('mean of temp_max')) ;
-        // var out = false;
-        // if (tableA.numRows() === 1461) var out = true;
-
-        const directLinks = { };
-        const foundIndices = [];
-        const sortA = []; const sortB = [];
-        // console.log(tableA, tableB)
-        // if (fieldsA.includes('COUNT-date') && fieldsB.includes('weather') && fieldsB.includes('count')) var out = true;
-
-        for (let j = 0; j < fieldsB.length && Object.keys(directLinks).length < fieldsA.length &&
-            Object.keys(directLinks).length < fieldsB.length; ++j) {
-            tableB = tableB.orderby(sortB.length ? [...sortB, fieldsB[j]] : fieldsB[j]);
-
-            for (let i = 0; i < fieldsA.length && Object.keys(directLinks).length < fieldsA.length &&
-                    Object.keys(directLinks).length < fieldsB.length; ++i) {
-                if (foundIndices.includes(i)) continue;
-
-                tableA = tableA.orderby(sortA.length ? [...sortA, fieldsA[i]] : fieldsA[i]);
-                const dataA = tableA.array(fieldsA[i]); const A_I = tableA.array(tableIndexField);
-                const dataB = tableB.array(fieldsB[j]);
-
-                const [sourceI, targetI] = getSubset(dataA, A_I, dataB, epsilons[fieldsB[j]] ? epsilons[fieldsB[j]] : epsilon$1);
-                // console.log(tableA, tableB, fieldsA[i], fieldsB[j], dataA, dataB, sourceI, targetI, epsilons[fieldsB[j]])
-
-                if (targetI.length === dataB.length && sourceI.length >= targetI.length) {
-                    // console.log(sourceI, targetI, tableA, tableB)
-                    tableA = tableA.filter(escape(d => sourceI.includes(d[tableIndexField]))).reify();
-                    directLinks[fieldsA[i]] = fieldsB[j];
-
-                    foundIndices.push(i);
-                    sortA.push(fieldsA[i]);
-                    sortB.push(fieldsB[j]);
-                    break;
-                }
-            }
-        }
-
-        const matched = Object.keys(directLinks).length; const projected = Object.keys(directLinks).length !== fieldsB.length;
-        if (matched && tableA.numRows() > tableB.numRows()) {
-            tableA = tableA.slice(0, tableB.numRows());
-        }
-        // if (out) console.log(tableA.array('MEAN-maximum daily temperature (c)'), tableB.array('mean of temp_max'), directLinks, epsilons['mean of temp_max']);
-        // console.log(directLinks)
-        return ((allowProjections && matched) || (!allowProjections && matched && !projected)) // matched && !projected
-            ? { fields: directLinks, ...getIndexMap(tableA, tableB, sortA, sortB) }
-            : { };
-    }
-
-    // function getSubsetLinks(tableA, tableB, usedFieldsA, usedFieldsB, indices, sortA, sortB) {
-    //     const fieldsA = getFields(tableA).filter(d => !usedFieldsA.includes(d));
-    //     const fieldsB = getFields(tableB).filter(d => !usedFieldsB.includes(d));
-
-    //     if (!fieldsA.length || !fieldsB.length || fieldsA.length < fieldsB.length) {
-    //         return !indices.length ? { } : getIndexMap(tableA, tableB, sortA, sortB, indices[0]);
-    //     }
-
-    //     for (let j = 0; j < fieldsB.length; ++j) {
-    //         tableB = tableB.orderby([...sortB, fieldsB[j]]);
-
-    //         for (let i = 0; i < fieldsA.length; ++i) {
-    //             tableA = tableA.orderby([...sortA, fieldsA[i]]);
-
-    //             const dataA = tableA.array(fieldsA[i]);
-    //             const dataB = tableB.array(fieldsB[j]);
-
-    //             const [sourceI, targetI] = getSubset(dataA, dataB, epsilons[fieldsB[j]] ? epsilons[fieldsB[j]] : epsilon);
-    //             const [prevSourceI, prevTargetI] = indices.length ? indices : [sourceI, targetI];
-
-    //             if (targetI.length !== tableB.numRows() || !isDirectLink(prevSourceI, sourceI) ||
-    //                 !isDirectLink(prevTargetI, targetI)) continue;
-
-    //             const subsets = getSubsetLinks(
-    //                 tableA, tableB,
-    //                 [...usedFieldsA, fieldsA[i]], [...usedFieldsB, fieldsB[j]],
-    //                 [prevSourceI, prevTargetI],
-    //                 [...sortA, fieldsA[i]], [...sortB, fieldsB[j]]
-    //             );
-    //             if (subsets) return { ...subsets, fields: { ...subsets.fields, [fieldsA[i]]: fieldsB[j] } };
-    //         }
-    //     }
-
-    //     return null;
-    // }
-
-    function getAggregateLinks(tableA, tableB, groupBy, processedFields) {
-        const fieldsA = getFields(tableA);
-        const fieldsB = getFields(tableB);
-
-        if (fieldsA.length < fieldsB.length || tableA.numRows() <= tableB.numRows() || groupBy.length > 2) return null;
-
-        for (let i = 0; i < fieldsA.length; ++i) {
-            if (processedFields.includes(fieldsA[i])) continue;
-            const q = query().groupby(groupBy);
-
-            for (const [aggName, aggFn] of Object.entries(AGGREGATIONS)) {
-                const rollupObj = { [aggName + '-' + fieldsA[i]]: op[aggFn](fieldsA[i]) };
-                const groupByTable = q.evaluate(tableA);
-                let rollupTable = groupByTable.rollup(rollupObj);
-                rollupTable = rollupTable.assign(table({ [tableIndexField]: range(rollupTable.numRows()) }));
-
-                const directLinks = getDirectLinks(rollupTable, tableB);
-                if (directLinks && Object.keys(directLinks).length) {
-                    const groupKeys = Array.from(groupByTable._group.keys); // .map(d => Object.keys(fromToMap).includes(d) ? d : null);
-                    // console.log(groupKeys, groupByTable, rollupTable)
-                    return { aggregation: getAggregateQueries(groupBy, groupKeys, rollupObj), ...directLinks };
-                }
-            }
-
-            // const newGroups = [fieldsA[i]]
-            const newGroups = typeof tableA.column(fieldsA[i]).get(0) === 'string'
-                ? [fieldsA[i]]
-                : candidateBins.map(function(b) {
-                    return { [fieldsA[i]]: escape(d => String((op.bin(d[fieldsA[i]], ...b) + b[2] / 2))) };
-                });
-
-            for (const newGroup of newGroups) {
-                const link = getAggregateLinks(tableA, tableB, [...groupBy, newGroup], [...processedFields, fieldsA[i]]);
-                if (link) return link;
-            }
-        }
-    }
-
-    return linker;
-}
-
-function getBins(state) {
-    function bin(scale, ticks) {
-        const domain = scale.domain();
-        const stepSize = Math.abs(domain[0] - domain[1]) / (ticks.length - 1);
-
-        return [...domain, stepSize];
-    }
-
-    const { yAxis } = state;
-    // const { scale: xScale, ticks: xTicks, ordinal: xOrdinal } = xAxis;
-    const { scale: yScale, ticks: yTicks, ordinal: yOrdinal } = yAxis;
-
-    // const xBins = xOrdinal.length ? [] : bin(xScale, xTicks);
-    const yBins = yOrdinal.length ? [] : bin(yScale, yTicks);
-    return [yBins];
-}
-
-function getEpsilons(state) {
-    const epsilons = { }; const epsilon = 0.01;
-    const { xAxis, yAxis, legends } = state;
-    const { domain: xDomain } = xAxis;
-    const { domain: yDomain } = yAxis;
-
-    if (!xAxis.ordinal.length) {
-        // let tmp = Math.abs(xDomain[1] - xDomain[0]) * epsilon;
-        // if (xAxis.formatter) tmp = {epsilon: tmp, format: xAxis.formatter.format };
-
-        epsilons[xAxis.title.innerHTML.toLowerCase()] = Math.abs(xDomain[1] - xDomain[0]) * epsilon;
-    }
-    if (!yAxis.ordinal.length) {
-        // let tmp = Math.abs(yDomain[1] - yDomain[0]) * epsilon;
-        // if (yAxis.formatter) tmp = {epsilon: tmp, format: yAxis.formatter.format };
-
-        epsilons[yAxis.title.innerHTML.toLowerCase()] = Math.abs(yDomain[1] - yDomain[0]) * epsilon;
-    }
-
-    for (const legend of legends) {
-        if (legend.type === SizeLegend) {
-            const { scale } = legend;
-            const sDomain = scale.domain();
-            epsilons[legend.title.innerHTML.toLowerCase()] = Math.abs(sDomain[0] - sDomain[sDomain.length - 1]) * epsilon;
-        }
-    }
-
-    return epsilons;
-}
-
-function storeLink(type, link, to, from, storeTable = false) {
-    const { aggregation, fields, map } = link;
-    const { fromToMap, toFromMap, mergedTable } = map;
-    let fromToQuery, toFromQuery, assignTable;
-    if (aggregation) {
-        ({ fromToQuery, toFromQuery, assignTable } = aggregation);
-    }
-
-    const fromToLink = { type, next: to, map: fromToMap, fields };
-    const toFromLink = { type, next: from, map: toFromMap, fields: invertFields(fields) };
-
-    if (type === LINK_TYPES.DIRECT || type === LINK_TYPES.SUBSET) {
-        from.children.push(fromToLink);
-        to.children.push(toFromLink);
-
-        if (storeTable && type === LINK_TYPES.SUBSET) to.table = mergedTable;
-    } else {
-        from.children.push({ ...fromToLink, aggregation: { query: fromToQuery, assignTable } });
-        to.parents.push({ ...toFromLink, aggregation: { query: toFromQuery, assignTable } });
-    }
-}
-
-function linkExternalDatasets(states, extState, aggregated) {
-    const { table: extTable } = extState;
-    if (!extTable) return;
-    const stored = new Map();
-
-    for (const state of states) {
-        const { data } = state;
-        if (!data.table) continue;
-
-        const linker = LinkIterator(extTable, data.table, null, getEpsilons(state));
-        const { type: dType, link } = linker.direct();
-        const candidates = [];
-        if (dType === LINK_TYPES.DIRECT) {
-            if (!link.map.mergedTable) return; // No new fields to match, return
-
-            // data.table = link.map.mergedTable;
-            // if (extTable.numRows() === data.table.numRows()) return; // Relegate newly formed direct linkings to views
-
-            stored.set(state, true);
-            candidates.push([dType, link, data]);
-        }
-
-        candidates.forEach(d => storeLink(...d, extState));
-    }
-
-    for (const state of states) {
-        const { data } = state;
-        if (stored.has(state)) continue;
-        if (!data.table) continue; // Skip subset views
-
-        const { type, link } = LinkIterator(extTable, data.table, getBins(state), getEpsilons(state), true).aggregate();
-        if (type === LINK_TYPES.AGGREGATE) {
-            storeLink(type, link, data, extState);
-            aggregated.set(state, true);
-        }
-    }
-}
-
-function linkCharts(states, aggregated) {
-    for (let i = 0; i < states.length; ++i) {
-        const { data: _d1 } = states[i];
-        if (!_d1.table) continue;
-
-        for (let j = i + 1; j < states.length; ++j) {
-            const { data: _d2 } = states[j];
-            if (!_d2.table) continue;
-
-            const { type: fType, link: fLink } = LinkIterator(
-                _d1.table, _d2.table, getBins(states[j]), getEpsilons(states[j]), !aggregated.has(states[j])
-            ).getLink();
-            if (fType !== LINK_TYPES.NONE) {
-                if (fType === LINK_TYPES.SUBSET) continue;
-                storeLink(fType, fLink, _d2, _d1, true);
-                if (fType === LINK_TYPES.AGGREGATE) aggregated.set(states[j], true);
-            } else {
-                const { type: bType, link: bLink } = LinkIterator(
-                    _d2.table, _d1.table, getBins(states[i]), getEpsilons(states[i]), !aggregated.has(states[i])
-                ).getLink();
-                if (bType !== LINK_TYPES.NONE) {
-                    storeLink(bType, bLink, _d1, _d2, true);
-                    if (bType === LINK_TYPES.AGGREGATE) aggregated.set(states[i], true);
-                }
-            }
-        }
-    }
-}
-
-function link(states, extState) {
-    const aggregated = new Map();
-    linkExternalDatasets(states, extState, aggregated);
-    linkCharts(states, aggregated);
-}
-
-function invertFields(fields) {
-    return Object.fromEntries(Object.keys(fields).map(k => [fields[k], k]));
-}
-
-function applyMap(_map, values) {
-    return values.map(v => _map[v]);
-}
-
-function propagateFields(fieldMap, newFields) {
-    return Object.fromEntries(
-        Object.keys(fieldMap).filter(k => k in newFields).map(k => [newFields[k], fieldMap[k]])
-    );
-}
-
-function propagateFieldValues(fieldMap, fields) {
-    return Object.fromEntries(Object.keys(fieldMap).map(k => k in fields ? [k, fields[k]] : [k, fieldMap[k]]));
-}
-
-function propagateAggregation(node, aggregations) {
-    let { table: _table } = node;
-    for (const [aggregation, map] of aggregations) {
-        const { query } = aggregation;
-        _table = query.evaluate(_table);
-
-        const groupKeys = applyMap(invertFields(map), Array.from(_table._group.keys)).map(d => Number(d));
-        _table = _table.assign(table({ [tableGroupIndexField]: groupKeys }));
-    }
-
-    return _table.ungroup();
-}
-
-function removeDuplicateRows(_table) {
-    return _table;
-}
-
-function propagateMapSelection(source, target, _map) {
-    const indices = source.array(tableIndexField).map(i => _map[i]);
-    return [source.assign({ [tableIndexField]: indices }), target.filter(escape(d => indices.includes(d[tableIndexField]))).reify()]
-        .map(t => t.filter(escape(d => d[tableIndexField] != null)));
-}
-
-function walkQueryPath(roots, rootPredicates, append = false) {
-    const visited = new Map();
-
-    function walkDownPath(node, data) {
-        if (visited.has(node)) return;
-        visited.set(node, true);
-
-        const { active, table: TABLE } = node;
-        active.selected = data;
-
-        const { children } = node;
-        for (const child of children) {
-            const { next, map, aggregation, fields, type } = child;
-            let NEXT_TABLE = next.table; let _data;
-            next.active.type = type;
-
-            if (aggregation) {
-                const { query, assignTable } = aggregation;
-                const idMap = Object.fromEntries(TABLE.array(tableIndexField).map(d => [d, d]));
-
-                [, _data] = propagateMapSelection(data, TABLE.assign(assignTable), idMap);
-                _data = query.evaluate(_data.rename({ [tableGroupIndexField]: tableIndexField }));
-
-                [_data, NEXT_TABLE] = propagateMapSelection(_data, NEXT_TABLE, map);
-                NEXT_TABLE = NEXT_TABLE.orderby(tableIndexField).assign(
-                    _data.rename(fields).orderby(tableIndexField)
-                ).unorder();
-            } else {
-                [, NEXT_TABLE] = propagateMapSelection(data, NEXT_TABLE, map);
-            }
-
-            walkDownPath(next, NEXT_TABLE);
-        }
-    }
-
-    function clearPath(node) {
-        if (visited.has(node)) return;
-        visited.set(node, true);
-
-        const { active, children } = node;
-        active.selected = active.table;
-
-        for (const child of children) {
-            const { next } = child;
-            next.active.type = LINK_TYPES.NONE;
-            clearPath(next);
-        }
-    }
-
-    for (const root of roots) {
-        const [node, startTable, fieldMap] = root;
-        const { active } = node;
-        if (rootPredicates) {
-            rootPredicates = rootPredicates.map(r => {
-                r = propagateFields(r, fieldMap);
-
-                if (getFields(startTable, true).includes(tableGroupIndexField) && tableIndexField in r) {
-                    r[tableGroupIndexField] = r[tableIndexField];
-                    delete r[tableIndexField];
-                }
-
-                return r;
-            });
-
-            let _table = active.selected.numRows() < active.table.numRows() && !append ? active.selected : null;
-            generateQuery(rootPredicates).forEach(q => { _table = q.evaluate(_table || startTable); });
-
-            if (append) _table = removeDuplicateRows(node.active.selected.concat(_table));
-            walkDownPath(node, _table);
-        } else {
-            clearPath(node);
-        }
-    }
-}
-
-function getRootNodes(startNode) {
-    function walkUpPath(node, aggregations, fieldMap) {
-        if (visited.has(node)) return [];
-        visited.set(node, true);
-
-        const { parents } = node;
-        if (!parents.length) {
-            return [[node, aggregations, fieldMap]];
-        }
-
-        let paths = [];
-        for (const parent of parents) {
-            const { next, aggregation, map, fields } = parent;
-            paths = [...paths, ...walkUpPath(next, [...aggregations, [aggregation, map]], propagateFieldValues(fieldMap, fields))];
-        }
-
-        return paths;
-    }
-
-    const visited = new Map(); const startFields = Object.fromEntries(getFields(startNode.table, true).map(c => [c, c]));
-    const roots = walkUpPath(startNode, [], startFields);
-    return roots.map(([root, aggregations, fieldMap]) => [root, propagateAggregation(root, aggregations), fieldMap]);
-}
-
-function setOpacity(marks, opacity) {
-    selectAll(marks).attr('opacity', opacity);
-}
-
-function setSelection(marks, opacity) {
-    setOpacity(marks, opacity);
-}
-
-function selectAllMarks(marks) {
-    setSelection(marks, marks[0][OpacityField] || SelectOpacity);
-}
-
-function unselectAllMarks(marks) {
-    setSelection(marks, UnselectOpacity);
-}
-
-function selectMarks(allMarks, marks) {
-    unselectAllMarks(allMarks);
-    setSelection(marks, SelectOpacity);
-}
-
-function selectLegends(legends, data) {
-    for (const legend of legends) {
-        if (!legend.title) continue;
-        const attr = legend.title.innerHTML.toLowerCase();
-        const attrData = data.array(attr);
-        if (attr === 'precipitation') continue;
-        const _marks = legend.marks
-            .filter(d => attrData.includes(d.mark[DataAttr][attr]))
-            .map(d => d.mark);
-
-        selectMarks(legend.marks.map(d => d.mark), _marks);
-    }
-}
-
-function drawAggregates(id, selected, xAxis) {
-    const marks = selected.array(tableMarkField);
-    selectAll('.' + id + '.AGGREGATE_LAYER').remove();
-    const newMarks = [];
-
-    for (let i = 0; i < marks.length; ++i) {
-        const markRect = marks[i]._getBBox();
-        const newMark = select(marks[i].parentElement).append('path').classed(id, true)
-            .classed('AGGREGATE_LAYER', true)
-            .attr('fill', window.getComputedStyle(marks[i]).fill);
-
-        if (marks[i].tagName === Path) {
-            const x = marks[i].contour[0].x; //, y = marks[i].contour[0].y;
-            // if (marks[i].globalPosition.translate.y) {
-            // var y = marks[i].globalPosition.translate.y - marks[i].globalPosition.translate.y / 2;
-            // console.log(x, y)
-            // } else {
-            const y = marks[i].contour[0].y - marks[i]._getBBox().height;
-            // const lx = marks[i].globalPosition.translate.x - marks[i].globalPosition.translate.x / 2,
-            //     ly = marks[i].globalPosition.translate.y - marks[i].globalPosition.translate.y / 2;
-            // const t = marks[i].localTransform;
-            // const x =
-            // }
-            const h = markRect.height;
-            const w = xAxis.scale(selected.array(xAxis.title.innerHTML.toLowerCase())[i]) - xAxis.range[0];
-
-            const p = path();
-            p.rect(x, y, w, h);
-            newMark.attr('d', p.toString());
-            newMarks.push(newMark);
-        }
-    }
-
-    selectAll([...marks, ...newMarks]).raise();
-}
-
-function applySelections(states) {
-    for (const state of states) {
-        const { data, legends, xAxis } = state;
-        const { table, active } = data;
-        const { selected, type } = active;
-
-        let selectedMarks = selected.array(tableMarkField);
-
-        if (type === LINK_TYPES.AGGREGATE) {
-            selectedMarks = drawAggregates(state.svg.id, selected, xAxis);
-        } else {
-            selectAll('.' + state.svg.id + 'AGGREGATE_LAYER').remove();
-        }
-        selectMarks(table.array(tableMarkField), selectedMarks);
-        selectLegends(legends, selected);
-    }
-}
-
-function selectPoint(state, target) {
-    if (target[RoleProperty] === MarkRole) {
-        return generatePredicates(tableIndexField, target, SELECT_TYPE.POINT);
-    } else if (target[RoleProperty] === LegendRole) {
-        return generatePredicates(Object.keys(target[DataAttr])[0], target[DataAttr], SELECT_TYPE.POINT);
-    } else {
-        selectAllMarks(state.svgMarks);
-        state.legends.forEach(d => selectAllMarks(d.marks.map(e => e.mark)));
-        return null;
-    }
-}
-
-// function getLegendFields(state, mark) {
-//     const legend = mark.legend;
-
-//     if (legend.type === CategoricalColorLegend) {
-//         const val = legend.scale.domain()[legend.scale.range().indexOf(window.getComputedStyle(mark)[legend.matchingAttr])];
-//         var condition = [val];
-//     } else {
-//         const val = legend.scale.invert(mark._getBBox().width);
-//         var condition = [val, val];
-//     }
-
-//     const candidateMarks = state.svgMarks.filter(function(d) {
-//         const data = d.__inferred__data__[legend.title.innerHTML];
-//         return typeof condition[0] === 'string' ? condition.includes(data) : data >= condition[0] && data <= condition[1];
-//     });
-
-//     selectMarks(legend.marks.map(d => d.mark), [mark]);
-//     selectMarks(state.svgMarks, candidateMarks);
-// }
-
-function identity(x) {
-    return x;
-}
-
-function isMetaKey(event) {
-    return event.metaKey || event.ctrlKey || event.altKey || event.shiftKey;
-}
-
-function copyElement(element) {
-    const newElement = element.cloneNode(true);
-    for (const [key, value] of Object.entries(element)) {
-        newElement[key] = value;
-    }
-
-    return newElement;
-}
-
-function computeCenterPos(element, orient) {
-    const clientRect = element._getBBox();
-    const offset = orient === Right || orient === Left ? clientRect.width / 2 : clientRect.height / 2;
-    return clientRect[orient] + (orient === Left || orient === Top ? offset : -offset);
-}
-
-function convertPtToPx(pt) {
-    if (!pt || !pt.includes('pt')) return pt;
-    return +pt.split('pt')[0] * 4 / 3;
-}
-
-function SVGToScreen(svg, element, svgX, svgY) {
-    const p = svg.createSVGPoint();
-    p.x = svgX;
-    p.y = svgY;
-    return p.matrixTransform(element.getScreenCTM());
-}
-
-function sortByViewPos(field, objects, useField = false) {
-    const comparator = (dim) => (a, b) => field == null
-        ? (a._getBBox()[dim] - b._getBBox()[dim])
-        : useField
-            ? a[field] - b[field]
-            : ((a[field] ? a[field] : a.marks[0])._getBBox()[dim] - (b[field] ? b[field] : b.marks[0])._getBBox()[dim]);
-    objects.sort(comparator(CenterX));
-    objects.sort(comparator(CenterY));
-}
-
-class Transform {
-    constructor(...args) {
-        if (args[0] instanceof Transform) {
-            const [other] = args;
-            this.translate = { ...other.translate };
-            this.scale = { ...other.scale };
-            this.rotate = other.rotate;
-        } else {
-            const [tx, ty, sx, sy, r] = args;
-            this.translate = { x: tx || 0, y: ty || 0 };
-            this.scale = { x: sx || 1, y: sy || 1 };
-            this.rotate = r || 0;
-        }
-    }
-
-    addTransform(appendTransform) {
-        this.translate.x += appendTransform.translate.x;
-        this.translate.y += appendTransform.translate.y;
-        this.scale.x *= appendTransform.scale.x;
-        this.scale.y *= appendTransform.scale.y;
-        this.rotate += appendTransform.rotate;
-
-        return this;
-    }
-
-    getTransform(appendTransform = new Transform()) {
-        return 'translate(' + (this.translate.x + appendTransform.translate.x) + ',' +
-            (this.translate.y + appendTransform.translate.y) + ') scale(' +
-            (this.scale.x * appendTransform.scale.x) + ',' +
-            (this.scale.y * appendTransform.scale.y) + ') rotate(' +
-            (this.rotate + appendTransform.rotate) + ')';
-    }
-}
-
-const top = 1;
-const right = 2;
-const bottom = 3;
-const left = 4;
-
-function number(scale) {
-    return d => +scale(d);
-}
-
-function center(scale, offset) {
-    offset = Math.max(0, scale.bandwidth() - offset * 2) / 2;
-    if (scale.round()) offset = Math.round(offset);
-    return d => +scale(d) + offset;
-}
-
-function axis(orient, scale, state) {
-    let tickArguments = [];
-    let tickValues = null;
-    let tickFormat = null;
-    let tickSizeInner = 6;
-    let tickSizeOuter = 6;
-    let tickPadding = 3;
-    let offset = typeof window !== 'undefined' && window.devicePixelRatio > 1 ? 0 : 0.5;
-    const svgAxis = orient === top || orient === bottom ? state.xAxis : state.yAxis;
-    const ticks = svgAxis.ticks;
-
-    function axis() {
-        let values = tickValues == null ? (scale.ticks ? scale.ticks.apply(scale, tickArguments) : scale.domain()) : tickValues;
-        const format = tickFormat == null ? (scale.tickFormat ? scale.tickFormat.apply(scale, tickArguments) : identity) : tickFormat;
-        const position = (scale.bandwidth ? center : number)(scale.copy(), offset);
-        values = orient === left || orient === right ? values.reverse() : values;
-
-        function updateTick(tick, value) {
-            tick.value = value;
-            const label = tick.label; const tickMarks = tick.marks;
-            label.innerHTML = svgAxis.ordinal.length || label.value === format(value) ? label.value : format(value);
-
-            const lx = label.globalPosition.translate.x; const ly = label.globalPosition.translate.y;
-            const translateX = orient === bottom ? position(value) - lx : 0;
-            const translateY = orient === left ? position(value) - ly : 0;
-            label.setAttribute('transform', label.localTransform.getTransform(new Transform(translateX, translateY)));
-
-            for (const mark of tickMarks) {
-                const tx = mark.globalPosition.translate.x; const ty = mark.globalPosition.translate.y;
-                const translateX = orient === bottom ? position(value) - tx : 0;
-                const translateY = orient === left ? position(value) - ty : 0;
-
-                mark.setAttribute('transform', mark.localTransform.getTransform(new Transform(translateX, translateY)));
-            }
-        }
-
-        let counter;
-        for (counter = 0; counter < values.length && counter < ticks.length; ++counter) {
-            updateTick(ticks[counter], svgAxis.ordinal.length ? svgAxis.ordinal[counter] : values[counter]);
-        }
-
-        for (; counter < values.length; ++counter) {
-            const newTick = {
-                label: copyElement(ticks[0].label),
-                marks: ticks[0].marks.map(tick => copyElement(tick)),
-                value: 0
-            };
-
-            updateTick(newTick, values[counter]);
-            ticks[0].label.parentElement.appendChild(newTick.label);
-            ticks[0].marks.forEach((d, i) => d.parentElement.insertBefore(newTick.marks[i], d));
-            ticks.push(newTick);
-        }
-
-        const length = ticks.length;
-        for (; counter < length; ++counter) {
-            const pos = ticks.length - 1;
-            if (ticks[pos].label) ticks[pos].label.remove();
-            ticks[pos].marks.forEach(d => d.remove());
-            ticks.pop();
-        }
-    }
-
-    axis.applyTransform = function(_) {
-        return arguments.length ? (scale_transform = _, axis) : axis;
-    };
-
-    axis.scale = function(_) {
-        return arguments.length ? (scale = _, axis) : scale;
-    };
-
-    axis.ticks = function() {
-        return tickArguments = Array.from(arguments), axis;
-    };
-
-    axis.tickArguments = function(_) {
-        return arguments.length ? (tickArguments = _ == null ? [] : Array.from(_), axis) : tickArguments.slice();
-    };
-
-    axis.tickValues = function(_) {
-        return arguments.length ? (tickValues = _ == null ? null : Array.from(_), axis) : tickValues && tickValues.slice();
-    };
-
-    axis.tickFormat = function(_) {
-        return arguments.length ? (tickFormat = _, axis) : tickFormat;
-    };
-
-    axis.tickSize = function(_) {
-        return arguments.length ? (tickSizeInner = tickSizeOuter = +_, axis) : tickSizeInner;
-    };
-
-    axis.tickSizeInner = function(_) {
-        return arguments.length ? (tickSizeInner = +_, axis) : tickSizeInner;
-    };
-
-    axis.tickSizeOuter = function(_) {
-        return arguments.length ? (tickSizeOuter = +_, axis) : tickSizeOuter;
-    };
-
-    axis.tickPadding = function(_) {
-        return arguments.length ? (tickPadding = +_, axis) : tickPadding;
-    };
-
-    axis.offset = function(_) {
-        return arguments.length ? (offset = +_, axis) : offset;
-    };
-
-    return axis;
-}
-
-function axisBottom(scale, SVG) {
-    return axis(bottom, scale, SVG);
-}
-
-function axisLeft(scale, SVG) {
-    return axis(left, scale, SVG);
-}
-
-function invertBand(scale, value) {
-    const step = scale.step();
-    const start = scale(scale.domain()[0]) + scale.paddingOuter() * step;
-    const bandwidth = scale.bandwidth();
-
-    let index = Math.round(Math.abs((value - start - bandwidth / 2)) / step);
-    index = max([0, min([scale.domain().length - 1, index])]);
-    return scale.domain()[scale.domain().length - 1 - index];
-}
-
-function invertOrdinal(scale, value) {
-    return scale.domain()[scale.range().indexOf(value)];
-}
-
-function bindLegendData(legend) {
-    const { scale, title, type, matchingAttr } = legend;
-    for (const { mark } of legend.marks) {
-        const style = type === CategoricalColorLegend
-            ? window.getComputedStyle(mark)[matchingAttr]
-            : mark._getBBox().width ** 2;
-
-        const data = invertOrdinal(scale, style);
-        mark[DataAttr] = { [title ? title.innerHTML.toLowerCase() : 'legend-0']: data };
-    }
-}
-
-function parseLegends(state, legends) {
-    let scale;
-    function inferScale(legend) {
-        if (legend.type === CategoricalColorLegend) { // Ordinal legends
-            const domain = legend.marks.map(d => d.label.innerHTML);
-            const range = legend.marks.map(d => window.getComputedStyle(d.mark)[legend.matchingAttr]);
-            scale = ordinal().domain(domain).range(range);
-        } else { // Size legend
-            const domain = legend.marks.map(d => +d.label.innerHTML);
-            const range = legend.marks.map(d => d.mark._getBBox().width ** 2);
-            scale = linear().domain(domain).range(range);
-        }
-
-        legend.scale = scale;
-    }
-
-    function formatLegend(legend) {
-        const group = Array.from(legend.group[0][0]);
-        return {
-            title: null,
-            marks: group.map(([text, mark]) => {
-                return { label: text, mark };
-            })
-        };
-    }
-
-    for (let legend of legends) {
-        legend = formatLegend(legend);
-        const mark1Style = window.getComputedStyle(legend.marks[0].mark);
-        const mark2Style = window.getComputedStyle(legend.marks[1].mark);
-        let matchingAttr = null;
-
-        if (mark1Style.stroke !== mark2Style.stroke) {
-            matchingAttr = StrokeAttr;
-        } else if (mark1Style.color !== mark2Style.color) {
-            matchingAttr = ColorAttr;
-        } else if (mark1Style.fill !== mark2Style.fill) {
-            matchingAttr = FillAttr;
-        }
-
-        if (matchingAttr) {
-            legend.type = CategoricalColorLegend;
-            legend.matchingAttr = matchingAttr;
-        } else {
-            const widths = []; const heights = [];
-            for (let i = 1; i < legend.marks.length; ++i) {
-                const bbox1 = legend.marks[i - 1].mark._getBBox();
-                const bbox2 = legend.marks[i].mark._getBBox();
-                widths.push(Math.abs(bbox1.width - bbox2.width));
-                heights.push(Math.abs(bbox1.height - bbox2.height));
-            }
-
-            if (mean(widths) > 2 || mean(heights) > 2) {
-                legend.type = SizeLegend;
-            } else {
-                legends.splice(legends.indexOf(legend), 1);
-                return;
-            }
-        }
-
-        for (const { label, mark } of legend.marks) {
-            label[RoleProperty] = mark[RoleProperty] = LegendRole;
-            mark.style['pointer-events'] = 'fill';
-            mark.legend = legend;
-            mark[OpacityField] = mark.hasAttribute('opacity')
-                ? +mark.getAttribute('opacity')
-                : window.getComputedStyle(mark).opacity || SelectOpacity;
-        }
-
-        inferScale(legend);
-        sortByViewPos('label', legend.marks, legend.type === SizeLegend);
-        state.legends.push(legend);
-    }
-}
-
-function parseTransform(element, transforms = new Transform()) {
-    if (!element.transform) return;
-    const transformList = element.transform.baseVal;
-
-    for (let i = 0; i < transformList.numberOfItems; ++i) {
-        const transform = transformList.getItem(i);
-        const matrix = transform.matrix;
-
-        transforms.translate.x += matrix.e;
-        transforms.translate.y += matrix.f;
-        transforms.scale.x *= matrix.a;
-        transforms.scale.y *= matrix.d;
-        transforms.rotate += transform.angle;
-    }
-
-    return transforms;
-}
-
-function inferMarkAttributes(state) {
-    // function getData() {
-
-    // }
-
-    state.svgMarks = state.svgMarks.filter(d => d.type !== Line);
-    // console.log(state.xAxis.scale.domain(), state.yAxis.scale.domain())
-    for (let i = 0; i < state.svgMarks.length; ++i) {
-        const mark = state.svgMarks[i]; const svgRect = state.svg._getBBox();
-        const markRect = mark._getBBox();
-
-        if (mark.type === Line) continue;
-        if (mark.type === Polyline) {
-            const points = mark.getAttribute('points').split(' ').map(d => d.split(',').map(e => Number(e)));
-            mark[DataAttr] = [];
-
-            for (const point of points) {
-                let [x, y] = point;
-                x = x - svgRect.left;
-                y = y - svgRect.top;
-
-                const iterable = { };
-                iterable[state.xAxis.title ? state.xAxis.title.innerHTML.toLowerCase() : 'x'] = state.xAxis.scale.invert(x);
-                iterable[state.yAxis.title ? state.yAxis.title.innerHTML.toLowerCase() : 'y'] = state.yAxis.scale.invert(y);
-
-                for (let j = 0; j < state.legends.length; ++j) {
-                    const legend = state.legends[j];
-                    const val = legend.type === CategoricalColorLegend
-                        ? legend.scale.domain()[legend.scale.range().indexOf(window.getComputedStyle(mark)[legend.matchingAttr])]
-                        : legend.scale.invert(markRect.width ** 2);
-
-                    iterable[legend.title ? legend.title.innerHTML.toLowerCase() : 'legend-' + j] = val;
-                }
-
-                mark[DataAttr].push(iterable);
-            }
-
-            continue;
-        }
-        const markX = state.xAxis.ordinal.length
-            ? i
-            : state.yAxis.ordinal.length || mark.type === Rect
-                ? markRect.right - svgRect.left
-                : markRect.centerX - svgRect.left;
-        const markY = state.yAxis.ordinal.length
-            ? i
-            : state.xAxis.ordinal.length
-                ? markRect.top - svgRect.top
-                : markRect.centerY - svgRect.top;
-
-        // console.log(state.xAxis.scale.domain()[markX])
-        const iterable = { };
-        // console.log(markX, markY)
-        // console.log(state.xAxis.scale.invert(markX), state.yAxis.scale.invert(markY))
-        iterable[state.xAxis.title ? state.xAxis.title.innerHTML.toLowerCase() : 'x'] = state.xAxis.ordinal.length ? invertBand(state.xAxis.scale, markRect.centerX - svgRect.left) : state.xAxis.scale.invert(markX);
-        iterable[state.yAxis.title ? state.yAxis.title.innerHTML.toLowerCase() : 'y'] = state.yAxis.ordinal.length
-            ? invertBand(state.yAxis.scale, markRect.centerY - svgRect.top)
-            : mark.type === 'rect'
-                ? String(Math.round(state.yAxis.scale.invert(markY)))
-                : state.yAxis.scale.invert(markY);
-        // if (!state.yAxis.ordinal.length && state.yAxis.scale.invert(markY) <= 1 && state.yAxis.scale.invert(markY) >= 0) {
-        //     console.log(mark, mark.getBBox(), mark.getBoundingClientRect(), markY)
-        // }
-        for (let j = 0; j < state.legends.length; ++j) {
-            const legend = state.legends[j];
-            const val = legend.type === CategoricalColorLegend
-                ? legend.scale.domain()[legend.scale.range().indexOf(window.getComputedStyle(mark)[legend.matchingAttr])]
-                : legend.scale.invert(markRect.width ** 2);
-
-            iterable[legend.title ? legend.title.innerHTML.toLowerCase() : 'legend-' + j] = val;
-        }
-
-        mark.style['pointer-events'] = 'fill';
-        mark[DataAttr] = iterable;
-        mark[OpacityField] = mark.hasAttribute('opacity')
-            ? +mark.getAttribute('opacity')
-            : window.getComputedStyle(mark).opacity || SelectOpacity;
-    }
-}
-
-function getDate(d) {
-    // function levelLookup(value) {
-    //     value = value.toLowerCase();
-
-    //     if (value.includes('%y')) {
-    //         return '%Y %m %d %H:%M:%S';
-    //     }
-
-    //     if (value.includes('%m') || value.includes('%b')) {
-    //         return '%m %d %H:%M:%S';
-    //     }
-
-    //     if (value.includes('%a') || value.includes('%d')) {
-    //         return '%d %H:%M:%S';
-    //     }
-
-    //     if (value.includes('%h')) {
-    //         return '%H:%M:%S';
-    //     }
-    // }
-
-    // function toFormattedDate(date, specifier) {
-    //     return timeParse(specifier)(timeFormat(specifier)(date));
-    // }
-
-    function checkSubsets(subsets) {
-        function checkSubset(formats, priorFormat) {
-            if (!formats || !formats.length) return null;
-
-            for (const format of formats[0]) {
-                const f = priorFormat.length ? priorFormat + ' ' + format : format;
-                const parsedVal = timeParse(f)(d);
-
-                if (f !== '%m' && f !== '%d' && parsedVal) { // Skip conflicts with ints
-                    console.log(f, d, parsedVal);
-                    return { format: timeFormat(f), value: parsedVal };
-                }
-
-                const others = checkSubset(formats.slice(1), f);
-                if (others) return others;
-            }
-
-            return null;
-        }
-
-        for (const subset of subsets) {
-            const format = checkSubset(subset, '');
-            if (format) return format;
-        }
-    }
-
-    const dayFormats = ['%d'];
-    const weekFormats = ['%a', '%A'];
-    const monthFormats = ['%b', '%B', '%m'];
-    const yearFormats = ['%Y', '\'%y'];
-    const subsets = [
-        [yearFormats, monthFormats, dayFormats],
-        [monthFormats, dayFormats, yearFormats],
-        [monthFormats, yearFormats],
-        [dayFormats, monthFormats, yearFormats],
-        [weekFormats, monthFormats, dayFormats, yearFormats],
-        [weekFormats, dayFormats, monthFormats, yearFormats]
-    ];
-
-    const fullFormats = ['%Y-%m-%d', '%Y %m %d %H:%M:%S', '%Y-%m-%d% %H:%M:%S', '%Y %m %d %H:%M', '%Y-%m-%d% %H:%M',
-        '%H:%M:%S', '%H:%M'];
-
-    for (const format of fullFormats) {
-        const parsedVal = timeParse(format)(d);
-        if (parsedVal) return { format: timeFormat(format), value: parsedVal };
-    }
-
-    return checkSubsets(subsets);
-}
-
-// function getIntType() {
-//     const transformations = {
-//         Y: 1e24,
-//         Z: 1e21,
-//         E: 1e18,
-//         P: 1e15,
-//         T: 1e12,
-//         G: 1e9,
-//         M: 1e6,
-//         k: 1e3,
-//         h: 1e2,
-//         da: 1e1,
-//         d: 1e-1,
-//         c: 1e-2,
-//         m: 1e-3,
-//         μ: 1e-6,
-//         n: 1e-9,
-//         p: 1e-12,
-//         f: 1e-15,
-//         a: 1e-18,
-//         z: 1e-21,
-//         y: 1e-24,
-//         '%': 1e-2
-//     };
-
-//     const regexVals = {
-//         $: /£|\$/g,
-//         '+': /\+/g,
-//         ',': /,/g,
-//         '.': /./g
-//     };
-//     const formats = ['.0%', '.2%'];
-//     const currencies = /£|\$/g;
-// }
-
-function getFormatVal(element, isDate) {
-    if (!element) return null;
-
-    const elData = element.innerHTML.replace(/–/g, '-').replace(/−/g, '-') // Replace with hyphen for parsing
-        .replace(/,/g, ''); // Replace commas
-    // if (format) return format(element.innerHTML);
-
-    const int = parseFloat(elData);
-    const date = getDate(elData);
-
-    return isNaN(int) || (elData.includes('-') && elData.charAt(0) !== '-') || elData.includes('/')
-        ? (date && isDate
-            ? date
-            : elData)
-        : int;
-}
-
-// import { selectAll } from 'd3-selection';
-
-const epsilon = 3;
-let viewEpsilon = 25;
-
-function parseChart(state) {
-    let [candidateTextGroups, candidateTickGroups, candidateLegendGroups] = collectCandidateGroups(state.textMarks, state.svgMarks);
-    let axes = pruneGroups(candidateTextGroups, candidateTickGroups);
-    axes = axes.sort((a, b) => {
-        const t1 = a.text[0]._getBBox()[CenterX];
-        const t2 = b.text[0]._getBBox()[CenterY];
-        return t1 - t2;
-    });
-
-    if (axes.length >= 2) {
-        axes = [axes[0], axes[1]];
-        groupAxes(axes);
-        candidateTextGroups = candidateTextGroups.filter(d => !axes.map(a => a.text).includes(d.marks));
-    }
-    // console.log(candidateLegendGroups)
-    const legends = pruneGroups(candidateTextGroups, candidateLegendGroups, false).filter(d => d.dist < viewEpsilon * 5);
-    if (legends.length) {
-        parseLegends(state, legends);
-        candidateTextGroups = candidateTextGroups.filter(d => !legends.map(l => l.text).includes(d.marks));
-    }
-    assignTitles(candidateTextGroups.map(d => d.marks).flat());
-    state.legends.forEach(d => bindLegendData(d));
-
-    function assignTitles(titles) {
-        const titleAssignment = new Map();
-
-        function calculatePos(el) {
-            const elBBox = el._getBBox();
-            return [elBBox.centerX, elBBox.centerY];
-        }
-
-        function getClosestTitle(x, y) {
-            let closestTitle = { title: null, dist: Number.MAX_SAFE_INTEGER };
-            for (const title of titles) {
-                const [titleX, titleY] = calculatePos(title);
-                const posDiff = Math.abs(titleX - x) + Math.abs(titleY - y);
-
-                if (posDiff < closestTitle.dist) {
-                    closestTitle = { title, dist: posDiff };
-                }
-            }
-
-            return closestTitle;
-        }
-
-        const groups = [state.xAxis, state.yAxis, ...state.legends];
-        for (const group of groups) {
-            const _g = 'ticks' in group ? group.ticks : group.marks;
-            const pos = _g.filter(d => d.label).map(mark => calculatePos(mark.label));
-            const x = mean(pos.map(d => d[0])); const y = mean(pos.map(d => d[1]));
-
-            const titleGroup = getClosestTitle(x, y);
-            const { title, dist } = titleGroup;
-            if (!title) continue;
-
-            if (!titleAssignment.has(title) || dist < titleAssignment.get(title).dist) {
-                group.title = title;
-                title[RoleProperty] = TitleRole;
-                titleAssignment.set(title, titleGroup);
-            }
-        }
-
-        state.title = titles.filter(d => !d[RoleProperty])[0];
-    }
-
-    function groupAxes(axes) {
-        const axisMap = new Map();
-        const orphanTicks = [];
-
-        function addTicks(text, alignment, ticks) {
-            if (alignment === Top || alignment === Bottom) {
-                state.xAxis.ticks.push({ label: text, marks: ticks });
-            } else {
-                state.yAxis.ticks.push({ label: text, marks: ticks });
-            }
-            ticks.forEach(tick => { text ? tick[RoleProperty] = Tick : tick[RoleProperty] = OrphanTickRole; });
-        }
-
-        for (const { alignment, group } of axes) {
-            for (const g of group) {
-                const [axis, allTicks] = g;
-                const seen = new Map();
-
-                for (const [text, tick] of axis) {
-                    seen.set(tick, true);
-                    axisMap.has(text)
-                        ? axisMap.get(text).ticks.push(tick)
-                        : axisMap.set(text, { alignment, ticks: [tick] });
-                }
-
-                allTicks.filter(d => !seen.has(d)).forEach(d => {
-                    orphanTicks.push({ alignment, tick: d });
-                });
-            }
-        }
-
-        for (const [text, { alignment, ticks }] of axisMap) {
-            addTicks(text, alignment, ticks);
-        }
-
-        for (const { alignment, tick } of orphanTicks) {
-            addTicks(null, alignment, [tick]);
-        }
-
-        [state.xAxis, state.yAxis].forEach(axis => sortByViewPos('label', axis.ticks));
-    }
-
-    function mergeArray(array) { // Assumes [key, mark] structure
-        array.sort((a, b) => a[0] - b[0]);
-        const groups = [[array[0][0], [array[0][1]]]];
-
-        for (let i = 1; i < array.length; ++i) {
-            const index = groups[groups.length - 1][0];
-
-            if (Math.abs(index - array[i][0]) < epsilon) {
-                groups[groups.length - 1][1].push(array[i][1]);
-            } else {
-                groups.push([array[i][0], [array[i][1]]]);
-            }
-        }
-
-        return groups.map(d => d[1]);
-    }
-
-    function pruneGroups(candidateTextGroups, candidateMarkGroups, append = true) {
-        // const t = selectAll('#test').nodes();
-        // console.log(t)
-        // for (const g of candidateMarkGroups) {
-        //     for (const _t of t) {
-        //         if (g.marks.includes(_t)) {
-        //             console.log(g)
-        //         }
-        //     }
-        // }
-        function _sort(alignment, group) {
-            group.sort((a, b) => {
-                const aBox = a._getBBox(); const bBox = b._getBBox();
-                return hs.includes(alignment) ? aBox[CenterX] - bBox[CenterX] : aBox[CenterY] - bBox[CenterY];
-            });
-        }
-
-        function getGroupDistance(groupA, groupB, alignment) {
-            const distsA = [0, 0, 0]; const distsB = [0, 0, 0];
-
-            function addVal(obj, mark, length) {
-                const bbox = mark._getBBox();
-                const keys = vs.includes(alignment) ? vs : hs;
-                for (let i = 0; i < keys.length; ++i) {
-                    obj[i] = obj[i] + (bbox[keys[i]] / length);
-                }
-            }
-
-            groupA.forEach(d => addVal(distsA, d, groupA.length));
-            groupB.forEach(d => addVal(distsB, d, groupB.length));
-
-            return min([
-                min(distsA) - min(distsB),
-                min(distsA) - max(distsB),
-                max(distsA) - min(distsB),
-                max(distsA) - max(distsB)
-            ].map(d => Math.abs(d)));
-        }
-
-        function matchGroup(alignment, textGroup, tickGroup) {
-            let i = 0; let distance = 0; const textMap = new Map();
-
-            for (const text of textGroup) {
-                const textBB = text._getBBox();
-                let prevDist = Number.MAX_SAFE_INTEGER;
-
-                if (i === tickGroup.length) return [Number.MAX_SAFE_INTEGER, null];
-
-                while (i <= tickGroup.length) {
-                    const tickBB = tickGroup[min([i, tickGroup.length - 1])]._getBBox();
-                    const key = hs.includes(alignment) ? CenterX : CenterY;
-                    const dist = Math.abs(tickBB[key] - textBB[key]);
-
-                    if (dist >= prevDist) {
-                        textMap.set(text, tickGroup[i - 1]);
-                        distance += prevDist;
-                        break;
-                    }
-
-                    prevDist = dist;
-                    ++i;
-                }
-            }
-
-            return [distance / textGroup.length, textMap];
-        }
-
-        const groups = []; const vs = [Left, Right, CenterX]; const hs = [Top, Bottom, CenterY];
-        for (const { alignment, marks: textGroup } of candidateTextGroups) {
-            if (textGroup.length === 1) {
-                continue;
-            }
-
-            let minGroup = { dist: Number.MAX_SAFE_INTEGER, group: null };
-            _sort(alignment, textGroup);
-
-            for (const { alignment: markAlignment, marks: markGroup } of candidateMarkGroups) {
-                if (markGroup.length < textGroup.length) continue;
-                if ((vs.includes(alignment) && !vs.includes(markAlignment)) ||
-                    (hs.includes(alignment) && !hs.includes(markAlignment))) continue;
-                if (getGroupDistance(textGroup, markGroup, alignment) > viewEpsilon) continue;
-
-                _sort(alignment, markGroup);
-                const [_dist, textMap] = matchGroup(alignment, textGroup, markGroup);
-                if (_dist === Number.MAX_SAFE_INTEGER) continue;
-
-                const withinEp = Math.abs(_dist - minGroup.dist) < epsilon;
-                if (append && withinEp) {
-                    minGroup.group.push([textMap, markGroup]);
-                } else if ((!append && withinEp && markGroup.length < minGroup.group[0][1].length) || _dist < minGroup.dist) {
-                    minGroup = { alignment, dist: _dist, group: [[textMap, markGroup]], text: textGroup };
-                }
-            }
-
-            if (minGroup.group) groups.push(minGroup);
-        }
-
-        groups.sort((a, b) => a.dist - b.dist);
-        return groups;
-    }
-
-    function collectCandidateGroups(textMarks, svgMarks) {
-        function getPositions(allMarks, useCenters = true) {
-            const positions = { [Left]: [], [Right]: [], [Top]: [], [Bottom]: [] };
-            if (useCenters) {
-                positions[CenterX] = [];
-                positions[CenterY] = [];
-            }
-
-            // Detect text groups
-            for (const mark of allMarks) {
-                const bbox = mark._getBBox();
-                for (const [position, array] of Object.entries(positions)) {
-                    const offset = bbox[position];
-                    array.push([offset, mark]);
-                }
-            }
-
-            return positions;
-        }
-
-        function mergePositions(positions, useStyle = false) {
-            const _positions = [];
-            if (useStyle) {
-                const keys = [CenterX, CenterY];
-                for (const key of keys) {
-                    const array = positions[key];
-                    const styles = { };
-                    array.forEach(([key, d]) => {
-                        const bbox = d._getBBox();
-                        const style = window.getComputedStyle(d);
-                        const styleKey = [bbox.width, bbox.height, style.fill, style.color, style.stroke].join(',');
-                        styleKey in styles ? styles[styleKey].push([key, d]) : styles[styleKey] = [[key, d]];
-                    });
-
-                    Object.values(styles).forEach(d => _positions.push([key, mergeArray(d)]));
-                }
-            } else {
-                for (const [key, array] of Object.entries(positions)) {
-                    _positions.push([key, mergeArray(array)]);
-                }
-            }
-
-            return _positions;
-        }
-
-        function assignGroups(allMarks, positions) {
-            // Assign each text element to its largest found group
-            const markAssignment = new Map();
-            const alignmentMap = new Map();
-            for (const [alignment, candidateGroups] of positions) {
-                for (const group of candidateGroups) {
-                    for (const mark of group) {
-                        const assignment = markAssignment.get(mark);
-
-                        if (!assignment || group.length > assignment.length) {
-                            markAssignment.set(mark, group);
-                            alignmentMap.set(group, alignment);
-                        }
-                    }
-                }
-            }
-
-            // Compute all candidate groups
-            const candidateGroups = [];
-            for (let i = 0; i < allMarks.length; ++i) {
-                const mark = allMarks[i];
-                const marks = markAssignment.get(mark);
-
-                if (!candidateGroups.includes(marks)) {
-                    candidateGroups.push(marks);
-                }
-            }
-
-            // Remove duplicates
-            for (let i = 0; i < candidateGroups.length; ++i) {
-                for (const mark of [...candidateGroups[i]]) {
-                    if (markAssignment.get(mark) !== candidateGroups[i]) {
-                        // Array.filter(...)
-                        candidateGroups[i].splice(candidateGroups[i].indexOf(mark), 1);
-                    }
-                }
-            }
-
-            return candidateGroups.map(d => {
-                return { alignment: alignmentMap.get(d), marks: d };
-            });
-        }
-
-        const textGroups = assignGroups(textMarks, mergePositions(getPositions(textMarks, false)));
-        const markPositions = getPositions(svgMarks);
-        const tickGroups = assignGroups(svgMarks, mergePositions(markPositions, true));
-        const legendGroups = mergePositions(markPositions).map(([k, v]) => v.map(d => { return { alignment: k, marks: d }; })).flat();
-
-        return [textGroups, tickGroups, legendGroups];
-    }
-}
-
-function cleanMarks(state) {
-    for (const mark of state.svgMarks) {
-        const clientRect = mark._getBBox();
-        if (clientRect.width >= state.xAxis.range[1] - state.xAxis.range[0] &&
-            clientRect.height >= state.yAxis.range[0] - state.yAxis.range[1]) {
-            mark[RoleProperty] = ViewportRole;
-            continue;
-        }
-        const svgR = state.svg._getBBox();
-        const [xLeft, xRight] = state.xAxis.range;
-        const [yBottom, yTop] = state.yAxis.range.map(d => d + svgR.top);
-        // if ((clientRect.left <= xLeft && clientRect.right >= xRight && clientRect.bottom <= yTop) ||
-        //     (clientRect.left <= xLeft && clientRect.right >= xRight && clientRect.top >= yBottom) )
-        if ((clientRect.top <= yTop && clientRect.bottom >= yBottom && clientRect.left <= xLeft) ||
-            (clientRect.top <= yTop && clientRect.bottom >= yBottom && clientRect.right >= xRight) ||
-            !(clientRect.right >= xLeft && clientRect.left <= xRight && clientRect.bottom >= yTop && clientRect.top <= yBottom)) {
-            mark[RoleProperty] = AxisDomainRole;
-        }
-        for (const legend of state.legends) {
-            for (const { mark } of legend.marks) {
-                mark[RoleProperty] = LegendRole;
-            }
-        }
-    }
-
-    state.svgMarks = state.svgMarks.filter(d => !d[RoleProperty]);
-    state.svgMarks.forEach(d => { d[RoleProperty] = MarkRole; });
-    sortByViewPos(null, state.svgMarks, false);
-}
-
-function computeDomain(axis) {
-    let isDate = true;
-    for (const [, value] of Object.entries(axis.ticks)) {
-        if (value.label == null) continue;
-        if (Object.prototype.toString.call(getFormatVal(value.label, true).value) !== '[object Date]') {
-            isDate = false;
-            break;
-        }
-    }
-
-    for (const [, value] of Object.entries(axis.ticks)) {
-        if (!value.label) continue;
-
-        let formatVal = getFormatVal(value.label, isDate);
-        if (formatVal.value) {
-            axis.formatter = { format: formatVal.format };
-            formatVal = formatVal.value;
-        }
-        value.value = formatVal;
-
-        if (typeof formatVal === 'string') {
-            axis.ordinal.push(formatVal);
-        } else {
-            axis.domain[0] = axis.domain[0] === null ? formatVal : min([axis.domain[0], formatVal]);
-            axis.domain[1] = axis.domain[1] === null ? formatVal : max([axis.domain[1], formatVal]);
-        }
-    }
-}
-
-function configureAxes(state) {
-    const svgClientRect = state.svg._getBBox();
-
-    if (state.xAxis.scale && !state.xAxis.ordinal.length) {
-        // Infer original X-axis domains
-
-        const tickLeft = computeCenterPos(
-            state.xAxis.ticks.filter(d => d.value === state.xAxis.domain[0])[0].marks[0], Left
-        );
-        const tickRight = computeCenterPos(
-            state.xAxis.ticks.filter(d => d.value === state.xAxis.domain[1])[0].marks[0], Left
-        );
-
-        const ticks = [tickLeft, tickRight].map(d => d - svgClientRect.left);
-        const newDomainX = state.xAxis.range.map(
-            state.xAxis.scale.copy().range(ticks).invert, state.xAxis.scale
-        );
-
-        state.xAxis.scale.domain(newDomainX);
-    }
-
-    if (state.yAxis.scale && !state.yAxis.ordinal.length) {
-        // Infer original Y-axis domain
-        const tickTop = computeCenterPos(
-            state.yAxis.ticks.filter(d => d.value === state.yAxis.domain[0])[0].marks[0], Top
-        );
-        const tickBottom = computeCenterPos(
-            state.yAxis.ticks.filter(d => d.value === state.yAxis.domain[1])[0].marks[0], Top
-        );
-
-        const ticks = [tickTop, tickBottom].map(d => d - svgClientRect.top);
-        const newDomainY = state.yAxis.range.map(
-            state.yAxis.scale.copy().range(ticks).invert, state.yAxis.scale
-        );
-
-        state.yAxis.scale.domain(newDomainY);
-    }
-}
-
-function deconstructChart(state) {
-    viewEpsilon = 1e-1 * max([state.svg._getBBox().width, state.svg._getBBox().height]);
-    parseChart(state);
-    computeDomain(state.xAxis);
-    computeDomain(state.yAxis);
-
-    let width = +convertPtToPx(state.svg.getAttribute('width'));
-    let height = +convertPtToPx(state.svg.getAttribute('height'));
-    if (!width) width = state.svg._getBBox().width;
-    if (!height) height = state.svg._getBBox().height;
-    const svgBBox = state.svg._getBBox();
-
-    if (!state.xAxis.ticks.length && !state.yAxis.ticks.length) {
-        state.xAxis.range = [0, width];
-        state.yAxis.range = [height, 0];
-        cleanMarks(state);
-        return;
-    }
-
-    /* TODO: More robust axis ranges */
-    const yTick = state.yAxis.ticks[0].marks[0];
-    const yTickBB = yTick._getBBox();
-    const xTick = state.xAxis.ticks[0].marks[0];
-    const xTickBB = xTick._getBBox();
-
-    const yTickRange = [yTickBB.left, yTickBB.left + yTickBB.width];
-    const xTickRange = [xTickBB.top + xTickBB.height, xTickBB.top];
-
-    const xMin = max([(yTickBB.width < 10 ? yTickRange[1] : yTickRange[0]) - svgBBox.left, 0]);
-    const xMax = max([min([yTickRange[1] - svgBBox.left, width]), state.xAxis.ticks[state.xAxis.ticks.length - 1].marks[0]._getBBox().right - svgBBox.left]);
-    const yMin = max([(xTickBB.height < 10 ? state.yAxis.ticks[state.yAxis.ticks.length - 1].marks[0]._getBBox().top : xTickRange[1]) - svgBBox.top, 0]);
-    const yMax = min([xTickRange[0] - svgBBox.top, height]);
-
-    state.xAxis.range = [xMin, xMax];
-    state.yAxis.range = [yMax, yMin];
-
-    state.xAxis.scale = (state.xAxis.domain[0] instanceof Date ? time() : (state.xAxis.ordinal.length ? band() : linear()))
-        .domain(state.xAxis.ordinal.length ? state.xAxis.ordinal : state.xAxis.domain)
-        .range(state.xAxis.range);
-    state.xAxis.axis = axisBottom(state.xAxis.scale, state)
-        .ticks(state.xAxis.ticks.length);
-    if (state.xAxis.domain[0] instanceof Date) state.xAxis.axis = state.xAxis.axis.tickFormat(state.xAxis.formatter.format);
-
-    state.yAxis.scale = (state.yAxis.domain[0] instanceof Date ? time() : (state.yAxis.ordinal.length ? band() : linear()))
-        .domain(state.yAxis.ordinal.length ? state.yAxis.ordinal : state.yAxis.domain)
-        .range(state.yAxis.range);
-    state.yAxis.axis = axisLeft(state.yAxis.scale, state)
-        .ticks(state.yAxis.ticks.length);
-    // .tickFormat(d => {
-    // let s = state.y_axis.ticks[0]['label'].innerHTML;
-    //     return s.includes("M") || s.includes("k") ? d3.format(".2s")(d) : d3.format(",")(d);
-    // });
-
-    configureAxes(state);
-    cleanMarks(state);
-
-    // TO-DO: Domain path 0.5 difference.
-    // if (state.hasDomain) {
-    //     let axes = [].slice.call(state.svg.querySelectorAll(".domain")).map((d) => { return d.getBoundingClientRect() });
-    //     let y_axis = axes[0].width < axes[1].width ? axes[0] : axes[1];
-    //     let x_axis = axes[0].height < axes[1].height ? axes[0] : axes[1];
-
-    //     var x_min = x_axis.left - state.svg.getBoundingClientRect().left;
-    //     var x_max = x_axis.right - state.svg.getBoundingClientRect().left;
-
-    //     var y_max = y_axis.bottom - state.svg.getBoundingClientRect().top;
-    //     var y_min = y_axis.top - state.svg.getBoundingClientRect().top;
-    // } else {
-
-    // if (yTick.clientRect.right < xTick.clientRect.left) {
-    //     var x_min = y_tick.right - state.svg.getBoundingClientRect().left;
-    //     var x_max = width;
-    // } else {
-    //     var x_min = y_tick.left - state.svg.getBoundingClientRect().left;
-    //     var x_max = d3.min([y_tick.width + x_min, width]);
-    // }
-
-    // if (x_tick.top > y_tick.bottom) {
-    //     var y_max = x_tick.top - state.svg.getBoundingClientRect().top;
-    //     var y_min = 0;
-    // } else {
-    //     var y_max = x_tick.bottom - state.svg.getBoundingClientRect().top;
-    //     var y_min = d3.max([y_max - x_tick.height, 0]);
-    // }
-    // }
-
-    // state.xAxis.scale = (state.xAxis.domain[0] instanceof Date ? d3.scaleTime() : (state.xAxis.ordinal.length ? d3.scaleBand() : d3.scaleLinear()))
-    // .domain(state.xAxis.ordinal.length ? state.xAxis.ordinal : state.xAxis.domain)
-    // .range(state.xAxis.range)
-    // state.x_axis.scale = (state.x_axis.domain[0] instanceof Date ? d3.scaleTime() : d3.scaleLinear())
-    //     .domain(state.x_axis.ordinal.length ? state.x_axis.range : state.x_axis.domain)
-    //     .range(state.x_axis.range);
-    // state.xAxis.axis = axisBottom(state.x_axis.scale, SVG).ticks(state.x_axis.ticks.length);
-    // state.x_axis.axis(state.x_axis.ticks);
-    // .tickSize(state.x_axis.ticks[1].children[0].getAttribute("y2"))
-    // .ticks(typeof x_axis.ticks[0].__data__ === "string" ? state.x_axis.ordinal.length : state.x_axis.ticks.length);
-
-    // configureAxes();
-
-    // let diff_1_y = +state.y_axis.ticks[1]['label'].innerHTML - +state.y_axis.ticks[0]['label'].innerHTML;
-    // let diff_2_y = +state.y_axis.ticks[2]['label'].innerHTML - +state.y_axis.ticks[1]['label'].innerHTML;
-
-    // let diff_1_x = +state.x_axis.ticks[1]['label'].innerHTML - +state.x_axis.ticks[0]['label'].innerHTML;
-    // if (state.x_axis.ticks.length < 3) {
-    //     var diff_2_x = 0;
-    // } else {
-    //     var diff_2_x = +state.x_axis.ticks[2]['label'].innerHTML - +state.x_axis.ticks[1]['label'].innerHTML;
-    // }
-
-    // let diff_tick_a = state.x_axis.ticks[1]['ticks'][0].getBoundingClientRect().left -
-    //     state.x_axis.ticks[0]['ticks'][0].getBoundingClientRect().left;
-
-    // if (state.x_axis.ticks.length < 3) {
-    //     var diff_tick_b = 0;
-    // } else {
-    //     var diff_tick_b = state.x_axis.ticks[2]['ticks'][0].getBoundingClientRect().left -
-    //         state.x_axis.ticks[1]['ticks'][0].getBoundingClientRect().left;
-    // }
-
-    // if (Math.abs(diff_1_x - diff_2_x) > 5e-1 || Math.abs(diff_tick_a - diff_tick_b) > 5e-1) {
-    //     // let tick_diff_1 = state.x_axis.ticks['ticks'][1].getBoundingClientRect().left -
-    //     //     state.x_axis.ticks['ticks'][0].getBoundingClientRect().left;
-    //     // let tick_diff_2 = state.x_axis.ticks['ticks'][2].getBoundingClientRect().left -
-    //     //     state.x_axis.ticks['ticks'][1].getBoundingClientRect().left;
-
-    //     if (Math.abs(diff_tick_a - diff_tick_b) < 5e-1) {
-    //         let format = state.x_axis.ticks['ticks'][0].childNodes[1].innerHTML;
-    //         if (format != state.x_axis.ticks[0].__data__ && typeof format === "string") {
-    //             var exponent = format.match(/^(e|\d+)\^(e|\d+)$/);
-    //             var superscript = format.match(/^(e|d+)([\u2070-\u209F\u00B2\u00B3\u00B9])$/);
-    //             if (exponent) {
-    //                 var base = exponent[1];
-    //                 base = (base === 'e' ? Math.E : parseInt(base));
-    //             } else if (superscript) {
-    //                 var base = superscript[1];
-    //                 base = (base === 'e' ? Math.E : parseInt(base));
-    //             }
-    //         }
-    //     }
-
-    //     function format(d) {
-    //         function digitToSuperscript(superChar) {
-    //             let table = "⁰¹²³⁴⁵⁶⁷⁸⁹";
-    //             return table[superChar];
-    //         }
-
-    //         let exp = Math.log(d) / Math.log(base);
-    //         return superscript ? 'e' + String(exp).replace(/\d/g, digitToSuperscript) : d + '^' + exp;
-    //     }
-
-    //     state.x_axis.scale = d3.scaleLog()
-    //         .domain(state.x_axis.domain)
-    //         .range(state.x_axis.range);
-    //     state.x_axis.axis = axisBottom(state.x_axis.scale, SVG)
-    //         // .tickSize(state.x_axis.ticks[1].children[0].getAttribute("y2"))
-    //         .ticks(state.x_axis.ticks.filter(d => d['label'].innerHTML).length)
-    //     if (base) {
-    //         state.x_axis.scale = state.x_axis.scale.base(base);
-    //         state.x_axis.axis = state.x_axis.axis.tickFormat(d => exponent || superscript ? format(d) : d);
-    //     }
-    // } else {
-    //     state.x_axis.scale = (state.x_axis.domain[0] instanceof Date ? d3.scaleTime() : (state.x_axis.ordinal.length ? d3.scaleBand() : d3.scaleLinear()))
-    //         .domain(state.x_axis.ordinal.length ? state.x_axis.ordinal : state.x_axis.domain)
-    //         .range(state.x_axis.range)
-    //     // state.x_axis.scale = (state.x_axis.domain[0] instanceof Date ? d3.scaleTime() : d3.scaleLinear())
-    //     //     .domain(state.x_axis.ordinal.length ? state.x_axis.range : state.x_axis.domain)
-    //     //     .range(state.x_axis.range);
-    //     state.x_axis.axis = axisBottom(state.x_axis.scale, SVG)
-    //         .ticks(state.x_axis.ticks.length);
-    //     // state.x_axis.axis(state.x_axis.ticks);
-    //         // .tickSize(state.x_axis.ticks[1].children[0].getAttribute("y2"))
-    //         // .ticks(typeof x_axis.ticks[0].__data__ === "string" ? state.x_axis.ordinal.length : state.x_axis.ticks.length);
-    // }
-
-    // if (Math.abs(diff_1_y - diff_2_y) > 5e-1) {
-    //     state.y_axis.scale = d3.scaleLog()
-    //         .domain(state.y_axis.domain)
-    //         .range(state.y_axis.range);
-    //     state.y_axis.axis = d3.axisLeft(state.y_axis.scale)
-    //         .tickSize(-state.y_axis.ticks[1].children[0].getAttribute("x2"))
-    //         .ticks(state.y_axis.ticks.length);
-    // } else {
-    //     state.y_axis.scale = (state.y_axis.domain[0] instanceof Date ? d3.scaleTime() : (state.y_axis.ordinal.length ? d3.scaleBand() : d3.scaleLinear()))
-    //         .domain(state.y_axis.ordinal.length ? state.y_axis.ordinal : state.y_axis.domain)
-    //         .range(state.y_axis.range);
-    //     state.y_axis.axis = axisLeft(state.y_axis.scale, SVG)
-    //         .ticks(state.y_axis.ticks.length)
-    //         .tickFormat(d => {
-    //             let s = state.y_axis.ticks[0]['label'].innerHTML;
-    //             return s.includes("M") || s.includes("k") ? d3.format(".2s")(d) : d3.format(",")(d);
-    //         });
-    //     // state.y_axis.axis(state.y_axis.ticks);
-    //         // .tickSize(-state.y_axis.ticks[1].children[0].getAttribute("x2"))
-    //         // .ticks(typeof state.y_axis.ticks[0].__data__ === "string" ? state.y_axis.ordinal.length : state.y_axis.ticks.length);
-    // }
-}
-
-class DataState {
-    constructor(table) {
-        this.table = table;
-        this.active = {
-            table,
-            selected: table,
-            filtered: null,
-            type: LINK_TYPES.NONE
-        };
-        this.children = [];
-        this.parents = [];
-    }
-}
-
-async function parseDataset(options) {
-    if (!options || !Object.keys(options).length) return { };
-    const { url } = options;
-    const type = url.split('.').pop();
-    const _table = await (type === 'json' ? loadJSON(url) : loadCSV(url));
-
-    return new DataState(_table.assign(table({ [tableIndexField]: range(_table.numRows()) })));
-}
-
-function parseDataFromMarks(marks) {
-    const dataset = { };
-    let dataList = marks.map(d => d[DataAttr]);
-    dataList = dataList.flat();
-    const keys = Object.keys(dataList[0]);
-
-    marks.forEach((d, i) => { d[tableIndexField] = i; });
-    keys.forEach(k => { dataset[k.toLowerCase()] = map$1(dataList, d => d[k.toLowerCase()]); });
-    dataset[tableMarkField] = marks;
-    dataset[tableIndexField] = range(marks.length);
-
-    return new DataState(table(dataset));
-}
-
-// import { DataState } from './data-state';
-
-class ViewState {
-    constructor() {
-        this.hasDomain = false;
-        this.svg = null;
-        this.svgMarks = [];
-        this.textMarks = [];
-        this.data = null;
-
-        this.xAxis = {
-            domain: [null, null],
-            ordinal: [],
-            range: [null, null],
-            ticks: [],
-            scale: null,
-            axis: null,
-            title: null
-        };
-        this.yAxis = {
-            domain: [null, null],
-            ordinal: [],
-            range: [null, null],
-            ticks: [],
-            scale: null,
-            axis: null,
-            title: null
-        };
-
-        this.legends = [];
-        this.title = null;
-
-        this.interactions = {
-            selection: true,
-            brush: true,
-            navigate: false,
-            filter: false,
-            sort: false,
-            annotate: false
-        };
-    }
-}
-
 const markTypes = [Circle, Ellipse, Line, Polygon, Polyline, Rect, Path, Use];
 let id = 1;
 
@@ -34236,7 +34829,7 @@ function orchestrate(svg, extState) {
         deconstructChart(state);
         // highlight(state);
         inferMarkAttributes(state);
-        state.data = parseDataFromMarks(state.svgMarks);
+        // state.data = parseDataFromMarks(state.svgMarks);
         return state;
     }
     console.log(extState);
@@ -34380,17 +34973,12 @@ function orchestrate(svg, extState) {
     return states;
 }
 
-async function hydrate$1(svg, options = {}) {
-    console.log('here!');
+async function hydrate(svg, options = {}) {
     if (!svg) return;
     if (!Array.isArray(svg)) svg = [svg];
 
     svg = svg.map(d => typeof d === 'string' ? document.querySelector(d) : d);
     return orchestrate(svg, await parseDataset(options));
-}
-
-async function hydrate(svg, options = {}) {
-    return hydrate$1(svg);
 }
 
 export { hydrate };

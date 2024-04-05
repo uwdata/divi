@@ -1,11 +1,11 @@
 {
-  "name": "uwdata-divi",
+  "name": "@uwdata/divi",
   "version": "0.0.0",
   "description": "Dynamic interaction for SVG visualizations",
   "main": "src/index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/uwdata/DIVI.git"
+    "url": "git+https://github.com/uwdata/DIVI.git"
   },
   "type": "module",
   "author": "Luke Snyder (https://luke-s-snyder.github.io)",
@@ -24,13 +24,12 @@
     "eslint-config-standard": "^17.1.0",
     "eslint-plugin-import": "^2.27.5",
     "eslint-plugin-n": "^16.0.0",
-    "eslint-plugin-promise": "^6.1.1",
-    "rollup": "^3.23.0"
+    "eslint-plugin-promise": "^6.1.1"
   },
   "dependencies": {
     "@rollup/plugin-commonjs": "^25.0.0",
-    "@rollup/plugin-json": "^6.0.0",
-    "arquero": "^5.2.0",
+    "@rollup/plugin-json": "^6.1.0",
+    "arquero": "^5.4.0",
     "babel": "^6.23.0",
     "bootstrap": "^5.2.3",
     "d3-array": "^3.2.3",
@@ -45,6 +44,7 @@
     "d3-transition": "^3.0.1",
     "mocha": "^10.2.0",
     "rimraf": "^5.0.1",
+    "rollup": "^4.12.0",
     "rollup-plugin-bundle-size": "^1.0.3",
     "rollup-plugin-postcss": "^4.0.2",
     "rollup-plugin-svg": "^2.0.0",

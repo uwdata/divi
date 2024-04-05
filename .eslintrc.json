@@ -1,0 +1,23 @@
+{
+    "env": {
+        "browser": false,
+        "es6": true,
+        "node": true,
+        "mocha": true
+    },
+    "extends": "standard",
+    "overrides": [
+    ],
+    "parserOptions": {
+        "ecmaVersion": "latest",
+        "sourceType": "module"
+    },
+    "rules": {
+        "indent": ["error", 4],
+        "semi": ["error", "always"],
+        "space-before-function-paren": ["error", "never"]
+    },
+    "globals": {
+        "chai": "readonly"
+    }
+}
