@@ -28,7 +28,7 @@ export function orchestrate(svg, extState) {
         deconstructChart(state);
         // highlight(state);
         inferMarkAttributes(state);
-        // state.data = parseDataFromMarks(state.svgMarks);
+        state.data = parseDataFromMarks(state.svgMarks);
         return state;
     }
     console.log(extState);

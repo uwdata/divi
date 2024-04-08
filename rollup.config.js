@@ -1,5 +1,5 @@
 import bundleSize from 'rollup-plugin-bundle-size';
-import { terser } from 'rollup-plugin-terser';
+import terser from '@rollup/plugin-terser';
 import nodeResolve from '@rollup/plugin-node-resolve';
 import commonJS from '@rollup/plugin-commonjs';
 import svg from 'rollup-plugin-svg';

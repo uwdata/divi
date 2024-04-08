@@ -16932,7 +16932,7 @@ function formatValue(v, options = {}) {
   }
 }
 
-function map$1(obj, fn, output = {}) {
+function map$2(obj, fn, output = {}) {
   for (const key in obj) {
     output[key] = fn(obj[key], key);
   }
@@ -17043,7 +17043,7 @@ function toHTML(table, options = {}) {
 }
 
 function styles(options) {
-  return map$1(
+  return map$2(
     options.style,
     value => isFunction$1(value) ? value : () => value
   );
@@ -17324,7 +17324,7 @@ class ColumnTable extends Table$1 {
    * @param {Params} [params] An object mapping parameter names to values.
    */
   constructor(columns, names, filter, group, order, params) {
-    map$1(columns, defaultColumnFactory, columns);
+    map$2(columns, defaultColumnFactory, columns);
     names = names || Object.keys(columns);
     const nrows = names.length ? columns[names[0]].length : 0;
     super(names, nrows, columns, filter, group, order, params);
@@ -24463,7 +24463,7 @@ function toObject(value) {
   return value && isFunction$1(value.toObject) ? value.toObject()
     : isFunction$1(value) ? { expr: String(value), func: true }
     : isArray$1(value) ? value.map(toObject)
-    : isObject$1(value) ? map$1(value, _ => toObject(_))
+    : isObject$1(value) ? map$2(value, _ => toObject(_))
     : value;
 }
 
@@ -24500,7 +24500,7 @@ function fromExprObject(value) {
   }
 
   return value === output
-    ? map$1(value, _ => fromObject(_))
+    ? map$2(value, _ => fromObject(_))
     : output;
 }
 
@@ -28168,6 +28168,12 @@ function range(start, stop, step) {
   }
 
   return range;
+}
+
+function map$1(values, mapper) {
+  if (typeof values[Symbol.iterator] !== "function") throw new TypeError("values is not iterable");
+  if (typeof mapper !== "function") throw new TypeError("mapper is not a function");
+  return Array.from(values, (value, index) => mapper(value, index, values));
 }
 
 const SELECT_TYPE = {
@@ -32568,6 +32574,20 @@ async function parseDataset(options) {
     return new DataState(_table.assign(table({ [tableIndexField]: range(_table.numRows()) })));
 }
 
+function parseDataFromMarks(marks) {
+    const dataset = { };
+    let dataList = marks.map(d => d[DataAttr]);
+    dataList = dataList.flat();
+    const keys = Object.keys(dataList[0]);
+
+    marks.forEach((d, i) => { d[tableIndexField] = i; });
+    keys.forEach(k => { dataset[k.toLowerCase()] = map$1(dataList, d => d[k.toLowerCase()]); });
+    dataset[tableMarkField] = marks;
+    dataset[tableIndexField] = range(marks.length);
+
+    return new DataState(table(dataset));
+}
+
 // import { DataState } from './data-state';
 
 class ViewState {
@@ -34829,7 +34849,7 @@ function orchestrate(svg, extState) {
         deconstructChart(state);
         // highlight(state);
         inferMarkAttributes(state);
-        // state.data = parseDataFromMarks(state.svgMarks);
+        state.data = parseDataFromMarks(state.svgMarks);
         return state;
     }
     console.log(extState);
