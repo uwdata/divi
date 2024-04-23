@@ -1,6 +1,6 @@
 import { select } from '../../node_modules/d3-selection/src/index.js';
 import {
-    TEST_MARK,
+    TEST_LEGEND_LABEL, TEST_LEGEND_MARK, TEST_LEGEND_TITLE, TEST_MARK,
     TEST_TITLE, TEST_X_AXIS_LABEL, TEST_X_AXIS_TICK, TEST_X_AXIS_TITLE,
     TEST_Y_AXIS_LABEL, TEST_Y_AXIS_TICK, TEST_Y_AXIS_TITLE
 } from './test-constants.js';
@@ -286,11 +286,66 @@ function testAxes(divi) {
 function testLegends(divi) {
     describe('Legends', function() {
         it('Should infer legend labels', function() {
+            const { metadatas, groundMetadatas } = divi;
 
+            for (let i = 0; i < metadatas.length; ++i) {
+                const metadata = metadatas[i];
+                const groundMetadata = groundMetadatas[i];
+
+                const { chart: groundChart } = groundMetadata;
+                const groundLegendLabels = select(groundChart).selectAll('.' + TEST_LEGEND_LABEL);
+
+                const { legends } = metadata;
+                const legendLabels = legends.map(d => d.marks.map(m => m.label)).flat();
+
+                if (groundLegendLabels.empty()) {
+                    chai.assert.strictEqual(legendLabels.length, 0);
+                } else {
+                    chai.assert.deepEqual(groundLegendLabels.nodes(), legendLabels);
+                }
+            }
         });
 
         it('Should infer legend marks', function() {
+            const { metadatas, groundMetadatas } = divi;
 
+            for (let i = 0; i < metadatas.length; ++i) {
+                const metadata = metadatas[i];
+                const groundMetadata = groundMetadatas[i];
+
+                const { chart: groundChart } = groundMetadata;
+                const groundLegendMarks = select(groundChart).selectAll('.' + TEST_LEGEND_MARK);
+
+                const { legends } = metadata;
+                const legendMarks = legends.map(d => d.marks.map(m => m.mark)).flat();
+
+                if (groundLegendMarks.empty()) {
+                    chai.assert.strictEqual(legendMarks.length, 0);
+                } else {
+                    chai.assert.deepEqual(groundLegendMarks.nodes(), legendMarks);
+                }
+            }
+        });
+
+        it('Should infer legend title', function() {
+            const { metadatas, groundMetadatas } = divi;
+
+            for (let i = 0; i < metadatas.length; ++i) {
+                const metadata = metadatas[i];
+                const groundMetadata = groundMetadatas[i];
+
+                const { chart: groundChart } = groundMetadata;
+                const groundTitles = select(groundChart).selectAll('.' + TEST_LEGEND_TITLE);
+
+                const { legends } = metadata;
+                const legendTitles = legends.map(d => d.title);
+
+                if (groundTitles.empty()) {
+                    chai.assert.strictEqual(legendTitles.length, 0);
+                } else {
+                    chai.assert.deepEqual(groundTitles.nodes(), legendTitles);
+                }
+            }
         });
     });
 }
