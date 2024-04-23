@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="https://unpkg.com/mocha/mocha.css" />
     <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6"></script>
   </head>
   
   <body>
@@ -21,8 +22,14 @@
       mocha.checkLeaks();
     </script>
 
-    <script type="module" src="/test/browser/d3/d3-bar-chart.js"></script>
-    <script type="module" src="/test/browser/d3/d3-scatter-plot.js"></script>
+    <!-- D3 chart tests -->
+    <script type="module" src="/test/browser/d3/bar-chart-test.js"></script>
+    <script type="module" src="/test/browser/d3/scatter-plot-test.js"></script>
+
+    <!-- Observable Plot chart tests -->
+    <script type="module" src="/test/browser/observable-plot/scatter-plot-test.js"></script>
+
+    <!-- Vega-Lite chart tests -->
 
     <script type="module" class="mocha-exec">
       mocha.run();
