@@ -31,7 +31,7 @@ export function orchestrate(svg, extState) {
         state.data = parseDataFromMarks(state.svgMarks);
         return state;
     }
-    console.log(extState);
+    // console.log(extState);
     // function highlight(state) {
     //     state.xAxis.ticks.forEach(d => select(d.label).style('color', '#e15759'));
     //     state.xAxis.ticks.forEach(d => d.marks.forEach(e => select(e).style('color', '#e15759')));

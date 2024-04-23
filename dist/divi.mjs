@@ -28434,7 +28434,7 @@ function LinkIterator(sourceTable, targetTable, candidateBins, epsilons, useAggr
                 if (foundIndices.includes(i)) continue;
 
                 tableA = tableA.orderby(sortA.length ? [...sortA, fieldsA[i]] : fieldsA[i]);
-                const dataA = tableA.array(fieldsA[i]); 
+                const dataA = tableA.array(fieldsA[i]);
                 const A_I = tableA.array(tableIndexField);
                 const dataB = tableB.array(fieldsB[j]);
 
@@ -31836,7 +31836,7 @@ function getDate(d) {
                 const parsedVal = timeParse(f)(d);
 
                 if (f !== '%m' && f !== '%d' && parsedVal) { // Skip conflicts with ints
-                    console.log(f, d, parsedVal);
+                    // console.log(f, d, parsedVal);
                     return { format: timeFormat(f), value: parsedVal };
                 }
 
@@ -32267,11 +32267,11 @@ function cleanMarks(state) {
         const svgR = state.svg._getBBox();
         const [xLeft, xRight] = state.xAxis.range;
         const [yBottom, yTop] = state.yAxis.range.map(d => d + svgR.top);
-        // if ((clientRect.left <= xLeft && clientRect.right >= xRight && clientRect.bottom <= yTop) ||
-        //     (clientRect.left <= xLeft && clientRect.right >= xRight && clientRect.top >= yBottom) )
-        if ((clientRect.top <= yTop && clientRect.bottom >= yBottom && clientRect.left <= xLeft) ||
-            (clientRect.top <= yTop && clientRect.bottom >= yBottom && clientRect.right >= xRight) ||
-            !(clientRect.right >= xLeft && clientRect.left <= xRight && clientRect.bottom >= yTop && clientRect.top <= yBottom)) {
+        if ((clientRect.left <= xLeft && clientRect.right >= xRight && clientRect.bottom <= yTop) ||
+            (clientRect.left <= xLeft && clientRect.right >= xRight && clientRect.top >= yBottom)) {
+        // if ((clientRect.top <= yTop && clientRect.bottom >= yBottom && clientRect.left <= xLeft) ||
+            // (clientRect.top <= yTop && clientRect.bottom >= yBottom && clientRect.right >= xRight) ||
+            // !(clientRect.right >= xLeft && clientRect.left <= xRight && clientRect.bottom >= yTop && clientRect.top <= yBottom)) {
             mark[RoleProperty] = AxisDomainRole;
         }
         for (const legend of state.legends) {
@@ -34852,7 +34852,7 @@ function orchestrate(svg, extState) {
         state.data = parseDataFromMarks(state.svgMarks);
         return state;
     }
-    console.log(extState);
+    // console.log(extState);
     // function highlight(state) {
     //     state.xAxis.ticks.forEach(d => select(d.label).style('color', '#e15759'));
     //     state.xAxis.ticks.forEach(d => d.marks.forEach(e => select(e).style('color', '#e15759')));

@@ -12,10 +12,10 @@
   "license": "BSD-3-Clause",
   "scripts": {
     "prebuild": "rimraf dist && mkdir dist",
-    "build": "rollup -c",
+    "build": "rollup -c -w",
     "lint": "eslint src test --ext .js",
     "test": "mocha 'test/node/**/*-test.js'",
-    "start": "npm run test && npm run lint && npm run build",
+    "prepublishOnly": "npm run test && npm run lint && npm run build",
     "serve": "wds --watch"
   },
   "devDependencies": {

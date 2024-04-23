@@ -165,7 +165,7 @@ function LinkIterator(sourceTable, targetTable, candidateBins, epsilons, useAggr
                 if (foundIndices.includes(i)) continue;
 
                 tableA = tableA.orderby(sortA.length ? [...sortA, fieldsA[i]] : fieldsA[i]);
-                const dataA = tableA.array(fieldsA[i]); 
+                const dataA = tableA.array(fieldsA[i]);
                 const A_I = tableA.array(tableIndexField);
                 const dataB = tableB.array(fieldsB[j]);
 
@@ -554,9 +554,3 @@ export function getRootNodes(startNode) {
     const roots = walkUpPath(startNode, [], startFields);
     return roots.map(([root, aggregations, fieldMap]) => [root, propagateAggregation(root, aggregations), fieldMap]);
 }
-
-// if (process.env['NODE_ENV'] === 'test') {
-//     console.log('here')
-// }
-
-export const exportedForTesting = { getSubset };

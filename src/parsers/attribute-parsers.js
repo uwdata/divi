@@ -136,7 +136,7 @@ function getDate(d) {
                 const parsedVal = timeParse(f)(d);
 
                 if (f !== '%m' && f !== '%d' && parsedVal) { // Skip conflicts with ints
-                    console.log(f, d, parsedVal);
+                    // console.log(f, d, parsedVal);
                     return { format: timeFormat(f), value: parsedVal };
                 }
 

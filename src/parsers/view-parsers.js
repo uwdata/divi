@@ -347,11 +347,11 @@ export function cleanMarks(state) {
         const svgR = state.svg._getBBox();
         const [xLeft, xRight] = state.xAxis.range;
         const [yBottom, yTop] = state.yAxis.range.map(d => d + svgR.top);
-        // if ((clientRect.left <= xLeft && clientRect.right >= xRight && clientRect.bottom <= yTop) ||
-        //     (clientRect.left <= xLeft && clientRect.right >= xRight && clientRect.top >= yBottom) )
-        if ((clientRect.top <= yTop && clientRect.bottom >= yBottom && clientRect.left <= xLeft) ||
-            (clientRect.top <= yTop && clientRect.bottom >= yBottom && clientRect.right >= xRight) ||
-            !(clientRect.right >= xLeft && clientRect.left <= xRight && clientRect.bottom >= yTop && clientRect.top <= yBottom)) {
+        if ((clientRect.left <= xLeft && clientRect.right >= xRight && clientRect.bottom <= yTop) ||
+            (clientRect.left <= xLeft && clientRect.right >= xRight && clientRect.top >= yBottom)) {
+        // if ((clientRect.top <= yTop && clientRect.bottom >= yBottom && clientRect.left <= xLeft) ||
+            // (clientRect.top <= yTop && clientRect.bottom >= yBottom && clientRect.right >= xRight) ||
+            // !(clientRect.right >= xLeft && clientRect.left <= xRight && clientRect.bottom >= yTop && clientRect.top <= yBottom)) {
             mark[RoleProperty] = AxisDomainRole;
         }
         for (const legend of state.legends) {
