@@ -9,8 +9,8 @@
         <div id="container"></div>
         <script>
             createBarChart().then(function(svg) {
-                d3.select('#container').node().appendChild(svg.node());
-                divi.hydrate(svg.node());
+                d3.select('#container').node().appendChild(svg);
+                divi.hydrate(svg);
             });
         </script>
     </body>

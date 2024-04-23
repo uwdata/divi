@@ -53,5 +53,5 @@ async function createBarChart() {
         .attr('height', function(d) { return height - y(d.Value); })
         .attr('fill', '#69b3a2');
 
-    return r;
+    return r.node();
 }

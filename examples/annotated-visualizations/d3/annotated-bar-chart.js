@@ -64,5 +64,5 @@ export async function createBarChart() {
         .attr('fill', '#69b3a2')
         .classed(TEST_MARK, true); // Mark annotations
 
-    return r;
+    return r.node();
 }

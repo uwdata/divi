@@ -84,5 +84,5 @@ export async function createScatterPlot() {
         .style('fill', function(d) { return color(d.Species); })
         .classed(TEST_MARK, true); // Mark annotations
 
-    return r;
+    return r.node();
 }

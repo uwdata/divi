@@ -73,5 +73,5 @@ async function createScatterPlot() {
         .attr('r', 5)
         .style('fill', function(d) { return color(d.Species); });
 
-    return r;
+    return r.node();
 }

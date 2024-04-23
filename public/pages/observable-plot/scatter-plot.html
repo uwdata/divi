@@ -9,7 +9,7 @@
     <body>
         <div id="container"></div>
         <script>
-            createScatterPlot();
+            createScatterPlot().then(function(svg) { d3.select('#container').node().appendChild(svg) });
         </script>
     </body>
 </html>
