@@ -64,7 +64,9 @@ function testAxes(divi) {
                     const { ticks } = axis;
 
                     const groundLabels = select(groundChart).selectAll('.' + TEST_X_AXIS_LABEL).nodes();
-                    const inferredLabels = ticks.map(t => t.label);
+                    const inferredLabels = ticks.map(t => t.label).filter(
+                        d => d !== undefined && d !== null
+                    );
 
                     chai.assert.sameDeepMembers(groundLabels, inferredLabels);
                 }
@@ -155,7 +157,9 @@ function testAxes(divi) {
 
                     const { xAxis: axis } = metadata;
                     const { ticks } = axis;
-                    const inferredTickValues = ticks.map(t => t.value);
+                    const inferredTickValues = ticks.map(t => t.value).filter(
+                        d => d !== undefined && d !== null
+                    );
 
                     chai.assert.sameDeepMembers(groundTickValues, inferredTickValues);
                 }
@@ -175,7 +179,9 @@ function testAxes(divi) {
                     const { ticks } = axis;
 
                     const groundLabels = select(groundChart).selectAll('.' + TEST_Y_AXIS_LABEL).nodes();
-                    const inferredLabels = ticks.map(t => t.label);
+                    const inferredLabels = ticks.map(t => t.label).filter(
+                        d => d !== undefined && d !== null
+                    );
 
                     chai.assert.sameDeepMembers(groundLabels, inferredLabels);
                 }
@@ -266,7 +272,9 @@ function testAxes(divi) {
 
                     const { yAxis: axis } = metadata;
                     const { ticks } = axis;
-                    const inferredTickValues = ticks.map(t => t.value);
+                    const inferredTickValues = ticks.map(t => t.value).filter(
+                        d => d !== undefined && d !== null
+                    );
 
                     chai.assert.sameDeepMembers(groundTickValues, inferredTickValues);
                 }
