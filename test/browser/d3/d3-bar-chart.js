@@ -1,32 +1,39 @@
-// import { select } from 'd3-selection';
 import { hydrate } from '../../../dist/divi.mjs';
-import { select } from 'https://cdn.skypack.dev/d3-selection@3';
-import { createBarChart } from '../../../examples/visualizations/d3/bar-chart.js';
+import { select } from '../../../node_modules/d3-selection/src/index.js';
+import { createBarChart } from '../../../examples/annotated-visualizations/d3/annotated-bar-chart.js';
+import { testChartMetadata } from '../../util/test-functions.js';
 
-// const divi = await hydrate(shadowRoot.node());
-
-// const { xAxis } = divi;
-// const { xDomain } = xAxis;
-describe('Array', function() {
-    let divi, shadowRoot;
+describe('D3 Bar Chart', function() {
+    const divi = { };
+    let root;
 
     before(async function() {
         const chart = (await createBarChart()).node();
-        shadowRoot = select('#root').node().attachShadow({ mode: 'closed' });
-        shadowRoot.appendChild(chart);
-        divi = await hydrate(chart);
+        root = select('#root').append('div');
+        root.node().appendChild(chart);
+
+        divi.groundMetadatas = [{
+            chart,
+            xAxis: {
+                domain: [null, null],
+                ordinal: ['United States', 'Russia', 'France', 'Germany (FRG)', 'Israel',
+                    'United Kingdom', 'Netherlands', 'China', 'Spain', 'Italy'],
+                tickValues: ['United States', 'Russia', 'France', 'Germany (FRG)', 'Israel',
+                    'United Kingdom', 'Netherlands', 'China', 'Spain', 'Italy']
+            },
+            yAxis: {
+                domain: [0, 13000],
+                ordinal: [],
+                tickValues: [0, 1000, 2000, 3000, 4000, 5000, 6000,
+                    7000, 8000, 9000, 10000, 11000, 12000, 13000]
+            }
+        }];
+        divi.metadatas = await hydrate(chart);
     });
 
-    describe('#indexOf()', function() {
-        it('should return -1 when the value is not set', function() {
-            console.log('hello');
-            console.log(divi);
-            const arr = [1, 2, 3];
-            chai.expect(arr.indexOf(4)).to.equal(-1);
-        });
-    });
+    describe('Chart Metadata', function() { testChartMetadata(divi); });
 
     after(function() {
-        shadowRoot.innerHTML = '';
+        root.remove();
     });
 });
