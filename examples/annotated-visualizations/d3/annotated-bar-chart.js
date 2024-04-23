@@ -1,6 +1,7 @@
 /* eslint-disable no-undef */
-// eslint-disable-next-line no-unused-vars
-async function createBarChart() {
+import { TEST_MARK, TEST_X_AXIS_LABEL, TEST_X_AXIS_TICK, TEST_Y_AXIS_LABEL, TEST_Y_AXIS_TICK } from '../../../test/util/test-constants.js';
+
+export async function createBarChart() {
     // set the dimensions and margins of the graph
     const margin = { top: 30, right: 30, bottom: 70, left: 60 };
     const width = 720 - margin.left - margin.right;
@@ -28,19 +29,28 @@ async function createBarChart() {
         .range([0, width])
         .domain(data.map(function(d) { return d.Country; }))
         .padding(0.2);
-    svg.append('g')
+
+    const xAxis = svg.append('g')
         .attr('transform', 'translate(0,' + height + ')')
-        .call(d3.axisBottom(x))
-        .selectAll('text')
+        .call(d3.axisBottom(x));
+    xAxis.selectAll('text')
         .attr('transform', 'translate(-10,0)rotate(-45)')
         .style('text-anchor', 'end');
+
+    // x-axis annotations
+    xAxis.selectAll('text').classed(TEST_X_AXIS_LABEL, true);
+    xAxis.selectAll('line').classed(TEST_X_AXIS_TICK, true);
 
     // Add Y axis
     const y = d3.scaleLinear()
         .domain([0, 13000])
         .range([height, 0]);
-    svg.append('g')
+    const yAxis = svg.append('g')
         .call(d3.axisLeft(y));
+
+    // y-axis annotations
+    yAxis.selectAll('text').classed(TEST_Y_AXIS_LABEL, true);
+    yAxis.selectAll('line').classed(TEST_Y_AXIS_TICK, true);
 
     // Bars
     svg.selectAll('mybar')
@@ -51,7 +61,8 @@ async function createBarChart() {
         .attr('y', function(d) { return y(d.Value); })
         .attr('width', x.bandwidth())
         .attr('height', function(d) { return height - y(d.Value); })
-        .attr('fill', '#69b3a2');
+        .attr('fill', '#69b3a2')
+        .classed(TEST_MARK, true); // Mark annotations
 
     return r;
 }

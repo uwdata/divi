@@ -8,7 +8,10 @@
     <body>
         <div id="container"></div>
         <script>
-            createBarChart();
+            createBarChart().then(function(svg) {
+                d3.select('#container').node().appendChild(svg.node());
+                divi.hydrate(svg.node());
+            });
         </script>
     </body>
 </html>

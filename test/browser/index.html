@@ -7,11 +7,12 @@
     <link rel="stylesheet" href="https://unpkg.com/mocha/mocha.css" />
     <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
   </head>
+  
   <body>
     <div id="mocha"></div>
     <div id="root"></div>
 
-    <script src="https://unpkg.com/chai/chai.js"></script>
+    <script src="https://www.chaijs.com/chai.js"></script>
     <script src="https://unpkg.com/mocha/mocha.js"></script>
 
     <script class="mocha-init">
@@ -21,6 +22,7 @@
     </script>
 
     <script type="module" src="/test/browser/d3/d3-bar-chart.js"></script>
+    <script type="module" src="/test/browser/d3/d3-scatter-plot.js"></script>
 
     <script type="module" class="mocha-exec">
       mocha.run();

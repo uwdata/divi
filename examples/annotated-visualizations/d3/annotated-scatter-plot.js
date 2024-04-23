@@ -1,6 +1,7 @@
 /* eslint-disable no-undef */
-// eslint-disable-next-line no-unused-vars
-async function createScatterPlot() {
+import { TEST_MARK, TEST_X_AXIS_LABEL, TEST_X_AXIS_TICK, TEST_X_AXIS_TITLE, TEST_Y_AXIS_LABEL, TEST_Y_AXIS_TICK, TEST_Y_AXIS_TITLE } from '../../../test/util/test-constants.js';
+
+export async function createScatterPlot() {
     // set the dimensions and margins of the graph
     const margin = { top: 10, right: 30, bottom: 40, left: 50 };
     const width = 720 - margin.left - margin.right;
@@ -27,6 +28,9 @@ async function createScatterPlot() {
         .attr('transform', 'translate(0,' + height + ')')
         .call(d3.axisBottom(x).tickSize(-height * 1.3).ticks(10));
 
+    // x-axis annotations
+    xAxis.selectAll('text').classed(TEST_X_AXIS_LABEL, true);
+    xAxis.selectAll('line').classed(TEST_X_AXIS_TICK, true);
     xAxis.select('.domain').remove();
 
     // Add Y axis
@@ -35,9 +39,13 @@ async function createScatterPlot() {
         .range([height, 0])
         .nice();
 
-    svg.append('g')
-        .call(d3.axisLeft(y).tickSize(-width * 1.3).ticks(7))
-        .select('.domain').remove();
+    const yAxis = svg.append('g')
+        .call(d3.axisLeft(y).tickSize(-width * 1.3).ticks(7));
+
+    // y-axis annotations
+    yAxis.selectAll('text').classed(TEST_Y_AXIS_LABEL, true);
+    yAxis.selectAll('line').classed(TEST_Y_AXIS_TICK, true);
+    yAxis.select('.domain').remove();
 
     // Customization
     svg.selectAll('.tick line').attr('stroke', 'black').attr('opacity', 0.3);
@@ -47,7 +55,8 @@ async function createScatterPlot() {
         .attr('text-anchor', 'end')
         .attr('x', width / 2 + margin.left)
         .attr('y', height + margin.top + 20)
-        .text('Sepal Length');
+        .text('Sepal Length')
+        .classed(TEST_X_AXIS_TITLE, true); // x-axis title annotation
 
     // Y axis label:
     svg.append('text')
@@ -55,7 +64,8 @@ async function createScatterPlot() {
         .attr('transform', 'rotate(-90)')
         .attr('y', -margin.left + 20)
         .attr('x', -margin.top - height / 2 + 20)
-        .text('Petal Length');
+        .text('Petal Length')
+        .classed(TEST_Y_AXIS_TITLE, true); // y-axis title annotation
 
     // Color scale: give me a specie name, I return a color
     const color = d3.scaleOrdinal()
@@ -71,7 +81,8 @@ async function createScatterPlot() {
         .attr('cx', function(d) { return x(d.Sepal_Length); })
         .attr('cy', function(d) { return y(d.Petal_Length); })
         .attr('r', 5)
-        .style('fill', function(d) { return color(d.Species); });
+        .style('fill', function(d) { return color(d.Species); })
+        .classed(TEST_MARK, true); // Mark annotations
 
     return r;
 }
