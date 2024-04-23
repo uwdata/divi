@@ -22,9 +22,9 @@ function testProperties(divi) {
                 const groundMetadata = groundMetadatas[i];
 
                 const { chart: groundChart } = groundMetadata;
-                const { svg: inferredSVG } = metadata;
+                const { svg: inferredChart } = metadata;
 
-                chai.assert.deepEqual(groundChart, inferredSVG);
+                chai.assert.deepEqual(groundChart, inferredChart);
             }
         });
 
@@ -101,12 +101,12 @@ function testAxes(divi) {
                     const groundTitle = select(groundChart).select('.' + TEST_X_AXIS_TITLE);
 
                     const { xAxis: axis } = metadata;
-                    const { title } = axis;
+                    const { title: inferredTitle } = axis;
 
                     if (groundTitle.empty()) {
-                        chai.should(title).equal(undefined);
+                        chai.should(inferredTitle).equal(undefined);
                     } else {
-                        chai.assert.deepEqual(groundTitle.node(), title);
+                        chai.assert.deepEqual(groundTitle.node(), inferredTitle);
                     }
                 }
             });
@@ -122,9 +122,9 @@ function testAxes(divi) {
                     const { domain: groundDomain } = groundAxis;
 
                     const { xAxis: axis } = metadata;
-                    const { domain } = axis;
+                    const { domain: inferredDomain } = axis;
 
-                    chai.assert.sameDeepMembers(groundDomain, domain);
+                    chai.assert.sameDeepMembers(groundDomain, inferredDomain);
                 }
             });
 
@@ -139,9 +139,9 @@ function testAxes(divi) {
                     const { ordinal: groundOrdinal } = groundAxis;
 
                     const { xAxis: axis } = metadata;
-                    const { ordinal } = axis;
+                    const { ordinal: inferredOrdinal } = axis;
 
-                    chai.assert.sameDeepMembers(ordinal, groundOrdinal);
+                    chai.assert.sameDeepMembers(groundOrdinal, inferredOrdinal);
                 }
             });
 
@@ -216,12 +216,12 @@ function testAxes(divi) {
                     const groundTitle = select(groundChart).select('.' + TEST_Y_AXIS_TITLE);
 
                     const { yAxis: axis } = metadata;
-                    const { title } = axis;
+                    const { title: inferredTitle } = axis;
 
                     if (groundTitle.empty()) {
-                        chai.should(title).equal(undefined);
+                        chai.should(inferredTitle).equal(undefined);
                     } else {
-                        chai.assert.deepEqual(groundTitle.node(), title);
+                        chai.assert.deepEqual(groundTitle.node(), inferredTitle);
                     }
                 }
             });
@@ -237,9 +237,9 @@ function testAxes(divi) {
                     const { domain: groundDomain } = groundAxis;
 
                     const { yAxis: axis } = metadata;
-                    const { domain } = axis;
+                    const { domain: inferredDomain } = axis;
 
-                    chai.assert.sameDeepMembers(groundDomain, domain);
+                    chai.assert.sameDeepMembers(groundDomain, inferredDomain);
                 }
             });
 
@@ -296,12 +296,12 @@ function testLegends(divi) {
                 const groundLegendLabels = select(groundChart).selectAll('.' + TEST_LEGEND_LABEL);
 
                 const { legends } = metadata;
-                const legendLabels = legends.map(d => d.marks.map(m => m.label)).flat();
+                const inferredLegendLabels = legends.map(d => d.marks.map(m => m.label)).flat();
 
                 if (groundLegendLabels.empty()) {
-                    chai.assert.strictEqual(legendLabels.length, 0);
+                    chai.assert.strictEqual(inferredLegendLabels.length, 0);
                 } else {
-                    chai.assert.deepEqual(groundLegendLabels.nodes(), legendLabels);
+                    chai.assert.deepEqual(groundLegendLabels.nodes(), inferredLegendLabels);
                 }
             }
         });
@@ -317,12 +317,12 @@ function testLegends(divi) {
                 const groundLegendMarks = select(groundChart).selectAll('.' + TEST_LEGEND_MARK);
 
                 const { legends } = metadata;
-                const legendMarks = legends.map(d => d.marks.map(m => m.mark)).flat();
+                const inferredLegendMarks = legends.map(d => d.marks.map(m => m.mark)).flat();
 
                 if (groundLegendMarks.empty()) {
-                    chai.assert.strictEqual(legendMarks.length, 0);
+                    chai.assert.strictEqual(inferredLegendMarks.length, 0);
                 } else {
-                    chai.assert.deepEqual(groundLegendMarks.nodes(), legendMarks);
+                    chai.assert.deepEqual(groundLegendMarks.nodes(), inferredLegendMarks);
                 }
             }
         });
@@ -338,12 +338,12 @@ function testLegends(divi) {
                 const groundTitles = select(groundChart).selectAll('.' + TEST_LEGEND_TITLE);
 
                 const { legends } = metadata;
-                const legendTitles = legends.map(d => d.title);
+                const inferredLegendTitles = legends.map(d => d.title);
 
                 if (groundTitles.empty()) {
-                    chai.assert.strictEqual(legendTitles.length, 0);
+                    chai.assert.strictEqual(inferredLegendTitles.length, 0);
                 } else {
-                    chai.assert.deepEqual(groundTitles.nodes(), legendTitles);
+                    chai.assert.deepEqual(groundTitles.nodes(), inferredLegendTitles);
                 }
             }
         });
