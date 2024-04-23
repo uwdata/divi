@@ -8,7 +8,7 @@ describe('D3 Scatter Plot', function() {
     let root;
 
     before(async function() {
-        const chart = (await createScatterPlot()).node();
+        const chart = await createScatterPlot();
         root = select('#root').append('div');
         root.node().appendChild(chart);
 

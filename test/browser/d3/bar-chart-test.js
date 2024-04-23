@@ -8,7 +8,7 @@ describe('D3 Bar Chart', function() {
     let root;
 
     before(async function() {
-        const chart = (await createBarChart()).node();
+        const chart = await createBarChart();
         root = select('#root').append('div');
         root.node().appendChild(chart);
 
