@@ -20,6 +20,7 @@
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-terser": "^0.4.4",
     "@web/dev-server": "^0.2.1",
     "eslint": "^8.41.0",
@@ -30,10 +31,11 @@
     "mocha": "^10.4.0",
     "rimraf": "^5.0.5",
     "rollup": "^4.16.4",
-    "rollup-plugin-bundle-size": "^1.0.3"
+    "rollup-plugin-bundle-size": "^1.0.3",
+    "rollup-plugin-postcss": "^4.0.2",
+    "rollup-plugin-svg": "^2.0.0"
   },
   "dependencies": {
-    "@rollup/plugin-json": "^6.1.0",
     "arquero": "^5.4.0",
     "bootstrap": "^5.2.3",
     "d3-array": "^3.2.3",
@@ -46,8 +48,6 @@
     "d3-svg-annotation": "^0.0.0",
     "d3-time-format": "^4.1.0",
     "d3-transition": "^3.0.1",
-    "rollup-plugin-postcss": "^4.0.2",
-    "rollup-plugin-svg": "^2.0.0",
     "svg-path-parser": "^1.1.0"
   }
 }
