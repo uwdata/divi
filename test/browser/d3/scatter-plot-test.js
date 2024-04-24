@@ -3,7 +3,20 @@ import { select } from '../../../node_modules/d3-selection/src/index.js';
 import { createScatterPlot } from '../../../examples/annotated-visualizations/d3/annotated-scatter-plot.js';
 import { testChartMetadata } from '../../util/test-functions.js';
 
-describe('D3 Scatter Plot', function() {
+const groundMetadatas = {
+    xAxis: {
+        domain: [4, 8],
+        ordinal: [],
+        tickValues: [4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8]
+    },
+    yAxis: {
+        domain: [0, 10],
+        ordinal: [],
+        tickValues: [0, 2, 4, 6, 8, 10]
+    }
+};
+
+export function testScatterPlot() {
     const divi = { };
     let root;
 
@@ -12,20 +25,8 @@ describe('D3 Scatter Plot', function() {
         root = select('#root').append('div');
         root.node().appendChild(chart);
 
-        divi.groundMetadatas = [{
-            chart,
-            xAxis: {
-                domain: [4, 8],
-                ordinal: [],
-                tickValues: [4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8]
-            },
-            yAxis: {
-                domain: [0, 10],
-                ordinal: [],
-                tickValues: [0, 2, 4, 6, 8, 10]
-            }
-        }];
         divi.metadatas = await hydrate(chart);
+        divi.groundMetadatas = [{ ...groundMetadatas, chart }];
     });
 
     describe('Chart Metadata', function() { testChartMetadata(divi); });
@@ -33,4 +34,4 @@ describe('D3 Scatter Plot', function() {
     after(function() {
         root.remove();
     });
-});
+}

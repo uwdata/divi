@@ -3,7 +3,20 @@ import { select } from '../../../node_modules/d3-selection/src/index.js';
 import { createLineChart } from '../../../examples/annotated-visualizations/ggplot2/annotated-line-chart.js';
 import { testChartMetadata } from '../../util/test-functions.js';
 
-describe('ggplot2 Line Chart', function() {
+const groundMetadatas = {
+    xAxis: {
+        domain: [new Date(0, 0, 1), new Date(0, 3, 1)],
+        ordinal: [],
+        tickValues: [new Date(0, 0, 1), new Date(0, 3, 1)]
+    },
+    yAxis: {
+        domain: [-30, 20],
+        ordinal: [],
+        tickValues: [-30, -20, -10, 0, 10, 20]
+    }
+};
+
+export function testLineChart() {
     const divi = { };
     let root;
 
@@ -12,20 +25,8 @@ describe('ggplot2 Line Chart', function() {
         root = select('#root').append('div');
         root.node().appendChild(chart);
 
-        divi.groundMetadatas = [{
-            chart,
-            xAxis: {
-                domain: [new Date(0, 0, 1), new Date(0, 3, 1)],
-                ordinal: [],
-                tickValues: [new Date(0, 0, 1), new Date(0, 3, 1)]
-            },
-            yAxis: {
-                domain: [-30, 20],
-                ordinal: [],
-                tickValues: [-30, -20, -10, 0, 10, 20]
-            }
-        }];
         divi.metadatas = await hydrate(chart);
+        divi.groundMetadatas = [{ ...groundMetadatas, chart }];
     });
 
     describe('Chart Metadata', function() { testChartMetadata(divi); });
@@ -33,4 +34,4 @@ describe('ggplot2 Line Chart', function() {
     after(function() {
         root.remove();
     });
-});
+}
