@@ -6,6 +6,12 @@ import svg from 'rollup-plugin-svg';
 import postcss from 'rollup-plugin-postcss';
 import json from '@rollup/plugin-json';
 
+function onwarn(warning, defaultHandler) {
+    if (warning.code !== 'CIRCULAR_DEPENDENCY') {
+        defaultHandler(warning);
+    }
+}
+
 export default [
     {
         input: 'src/index.js',
@@ -19,6 +25,7 @@ export default [
             postcss({ extensions: ['.css'] }),
             json()
         ],
+        onwarn,
         output: [
             {
                 file: 'dist/divi.mjs',
