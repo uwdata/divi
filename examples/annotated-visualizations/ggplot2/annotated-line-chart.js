@@ -1,6 +1,10 @@
 /* eslint-disable no-undef */
 
-import { TEST_LEGEND_LABEL, TEST_LEGEND_MARK, TEST_LEGEND_TITLE, TEST_MARK, TEST_X_AXIS_LABEL, TEST_X_AXIS_TICK, TEST_X_AXIS_TITLE, TEST_Y_AXIS_LABEL, TEST_Y_AXIS_TICK, TEST_Y_AXIS_TITLE } from '../../../test/util/test-constants.js';
+import {
+    TEST_LEGEND_LABEL, TEST_LEGEND_MARK, TEST_LEGEND_TITLE, TEST_MARK,
+    TEST_X_AXIS_LABEL, TEST_X_AXIS_TICK, TEST_X_AXIS_TITLE, TEST_Y_AXIS_LABEL,
+    TEST_Y_AXIS_TICK, TEST_Y_AXIS_TITLE
+} from '../../../test/util/test-constants.js';
 
 const baseID = 'svg_c9f6953f-273d-40cc-a962-d74ae6872c72_';
 
