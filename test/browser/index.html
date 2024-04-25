@@ -1,40 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>Mocha Tests</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="https://unpkg.com/mocha/mocha.css" />
-    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6"></script>
-  </head>
-  
-  <body>
-    <div id="mocha"></div>
-    <div id="root"></div>
+    <head>
+        <meta charset="utf-8" />
+        <title>Mocha Tests</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="stylesheet" href="https://unpkg.com/mocha/mocha.css" />
+        <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6"></script>
+    </head>
 
-    <script src="https://www.chaijs.com/chai.js"></script>
-    <script src="https://unpkg.com/mocha/mocha.js"></script>
+    <body>
+        <div id="mocha"></div>
+        <div id="root"></div>
 
-    <script class="mocha-init">
-      mocha.setup('bdd');
-      mocha.setup({globals: ['__WDS_WEB_SOCKET__']});
-      mocha.checkLeaks();
-    </script>
+        <script src="https://www.chaijs.com/chai.js"></script>
+        <script src="https://unpkg.com/mocha/mocha.js"></script>
 
-    <!-- D3 chart tests -->
-    <script type="module" src="/test/browser/d3/tests.js"></script>
+        <script class="mocha-init">
+            mocha.setup('bdd');
+            mocha.setup({globals: ['__WDS_WEB_SOCKET__']});
+            mocha.checkLeaks();
+        </script>
 
-    <!-- Observable Plot chart tests -->
-    <script type="module" src="/test/browser/observable-plot/tests.js"></script>
+        <!-- D3 chart tests -->
+        <script type="module" src="/test/browser/d3/tests.js"></script>
 
-    <!-- Vega-Lite chart tests -->
+        <!-- Vega-Lite chart tests -->
+        <script type="module" src="/test/browser/vega-lite/tests.js"></script>
 
-    <!-- ggplot2 chart tests -->
-    <script type="module" src="/test/browser/ggplot2/tests.js"></script>
+        <!-- Matplotlib chart tests -->
+        <script type="module" src="/test/browser/matplotlib/tests.js"></script>
 
-    <script type="module" class="mocha-exec">
-      mocha.run();
-    </script>
-  </body>
+        <!-- Observable Plot chart tests -->
+        <script type="module" src="/test/browser/observable-plot/tests.js"></script>
+
+        <!-- ggplot2 chart tests -->
+        <script type="module" src="/test/browser/ggplot2/tests.js"></script>
+
+        <!-- Mutli-view chart tests -->
+        <script type="module" src="/test/browser/multi-view/tests.js"></script>
+
+        <script type="module" class="mocha-exec">
+            mocha.run();
+        </script>
+    </body>
 </html>

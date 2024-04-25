@@ -1,7 +1,7 @@
 import { hydrate } from '../../../dist/divi.mjs';
 import { select } from '../../../node_modules/d3-selection/src/index.js';
 import { createLineChart } from '../../../examples/annotated-visualizations/ggplot2/annotated-line-chart.js';
-import { testChartMetadata } from '../../util/test-functions.js';
+import { testChartMetadata } from '../../util/core-structure-test-functions.js';
 
 const groundMetadatas = {
     xAxis: {
