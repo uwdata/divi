@@ -8,9 +8,8 @@ import { Transform } from '../util/transform.js';
 import { ViewState } from '../state/view-state.js';
 import { parseTransform } from '../parsers/attribute-parsers.js';
 import * as parser from 'svg-path-parser';
-import { SVGToScreen } from '../util/util.js';
+import { SVGToScreen, containsLines } from '../util/util.js';
 import { select } from 'd3-selection';
-import { path } from 'd3-path';
 
 const markTypes = [Circle, Ellipse, Line, Polygon, Polyline, Rect, Path, Use];
 let id = 1;
@@ -43,30 +42,14 @@ function extractElementInformation(svg, element, transform, parent = false) {
             };
         };
 
-    element.globalPosition = new Transform(element._getBBox()[CenterX] - svg._getBBox()[Left], element._getBBox()[CenterY] - svg._getBBox()[Top]);
+    element.globalPosition = new Transform(
+        element._getBBox()[CenterX] - svg._getBBox()[Left],
+        element._getBBox()[CenterY] - svg._getBBox()[Top]
+    );
     element.localTransform = parseTransform(element);
-    // element.globalPosition = new Transform(element.localTransform).addTransform(new Transform(element.globalPosition));
 }
 
 function inferTypeFromPath(element, state, transform) {
-    function containsLines(commands) {
-        if (commands.length <= 2 || commands.length % 2 !== 0) return [];
-
-        const lines = [];
-        for (let i = 0; i < commands.length; i += 2) {
-            if (commands[i].code !== 'M' || commands[i + 1].code !== 'L') {
-                return [];
-            }
-
-            const p = path();
-            p.moveTo(commands[i].x, commands[i].y);
-            p.lineTo(commands[i + 1].x, commands[i + 1].y);
-            lines.push(p.toString());
-        }
-
-        return lines;
-    }
-
     const commands = parser.parseSVG(element.getAttribute('d'));
     if (!commands.length) return;
 
@@ -75,11 +58,12 @@ function inferTypeFromPath(element, state, transform) {
     const relCommands = ['v', 'h'];
     const lineCandidates = containsLines(commands);
 
-    if (commands.length === 3 && commands[1].code === 'A' && endCmd.code === 'A') {
+    if (commands.length === 3 && commands[1].code === 'A' && endCmd.code === 'A') { // Check for ellipse shape
         element.type = Ellipse;
-    } else if (lineCandidates.length) {
+    } else if (lineCandidates.length) { // Check for extracted gridlines
         const p = select(element.parentElement);
 
+        // Create new elements for each gridline
         lineCandidates.forEach(lc => {
             const style = window.getComputedStyle(element);
             const el = p.append('path').attr('d', lc)
@@ -92,45 +76,45 @@ function inferTypeFromPath(element, state, transform) {
         });
 
         select(element).remove();
-    } else if (endCmd.code !== 'Z') {
+    } else if (endCmd.code !== 'Z') { // Check for line shape
         element.type = Line;
     } else if (commands.length === 5 && relCommands.includes(commands[1].code) && relCommands.includes(commands[2].code) &&
-        relCommands.includes(commands[3].code)) {
+        relCommands.includes(commands[3].code)) { // Check for rectangular shape
         element.type = Rect;
-    } else {
+    } else { // Check for polygonal shape
         element.type = Polygon;
     }
 }
 
 function analyzeDomTree(element, state, transform, parent = false) {
     if (!element) return;
-    if (element.nodeName.toLowerCase() === Style) return;
-    if (element.className && (element.className.baseVal === Background ||
+    if (element.nodeName.toLowerCase() === Style) return; // Ignore style elements
+    if (element.className && (element.className.baseVal === Background || // Ignore background elements
         element.className.baseVal === Foreground)) return;
+    // TODO: Ignore clip elements
 
-    if (parent || element.nodeName === SvgContainer) {
+    if (parent || element.nodeName === SvgContainer) { // Store base SVG element
         state.svg = element;
         extractElementInformation(state.svg, element, transform, parent);
         if (!element.id) element.id = DefaultSvgId + '-' + id++;
-    } else if (element.nodeName === SvgGroup) {
+    } else if (element.nodeName === SvgGroup) { // Maintain <g> element transforms
         parseTransform(element, transform);
-    } else if (element.nodeName === TextRef && element.textContent.trim() !== '') {
+    } else if (element.nodeName === TextRef && element.textContent.trim() !== '') { // Instantiate text elements for non-empty references
         let el = element.parentElement;
         if (el.nodeName !== Text) {
             el = select(el).append('text').html(element.textContent).node();
             select(element).remove();
         }
-        // } else if (window.getComputedStyle(el).opacity === 0 || +el.getAttribute('opacity') === 0) return;
 
         extractElementInformation(state.svg, el, transform);
         el.removeAttribute('textLength');
         state.textMarks.push(el);
         el.style['pointer-events'] = 'none';
         el.style['user-select'] = 'none';
-    } else if (markTypes.includes(element.nodeName)) {
+    } else if (markTypes.includes(element.nodeName)) { // Process base SVG marks
         const markType = element.nodeName;
 
-        if (markType === Path) {
+        if (markType === Path) { // Infer path element type
             inferTypeFromPath(element, state, transform);
             element.setAttribute('vector-effect', 'non-scaling-stroke');
         } else if (markType === Polyline || markType === Polygon || markType === Line) {
@@ -140,7 +124,7 @@ function analyzeDomTree(element, state, transform, parent = false) {
 
         extractElementInformation(state.svg, element, transform);
         element.setAttribute(MarkRole, 'true');
-        if (!state.svgMarks.includes(element)) state.svgMarks.push(element);
+        if (!state.svgMarks.includes(element)) state.svgMarks.push(element); // Prevent duplicate references
     }
 
     for (const child of element.childNodes) {
