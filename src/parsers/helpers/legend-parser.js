@@ -5,7 +5,7 @@ import {
     SelectOpacity, SizeLegend
 } from '../../state/constants.js';
 import { sortByViewPos } from '../../util/util.js';
-import { pairGroups } from '../engine/parser-helpers.js';
+import { pairGroups } from '../engine/parser-groups.js';
 
 // Invert band scale (categorical as position encoding).
 export function invertBand(scale, value) {

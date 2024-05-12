@@ -1,11 +1,9 @@
-import { inferAxes } from '../structures/axis-parser.js';
-import { collectCandidateMarkGroups } from './parser-helpers.js';
-import { inferLegends } from '../structures/legend-parser.js';
-import { inferMarks } from '../structures/mark-parser.js';
-import { inferTitles } from '../structures/text-parser.js';
-import { inferMarkAttributes } from '../data/attribute-parser.js';
-import { parseDataFromMarks } from '../data/dataset-parser.js';
-// import { selectAll } from 'd3-selection';
+import { inferAxes } from '../helpers/axis-parser.js';
+import { collectCandidateMarkGroups } from './parser-groups.js';
+import { inferLegends } from '../helpers/legend-parser.js';
+import { inferMarks } from '../helpers/mark-parser.js';
+import { inferTitles } from '../helpers/title-parser.js';
+import { inferMarkAttributes, parseDataFromMarks } from '../helpers/data-parser.js';
 
 export function parseChart(state) {
     const { textMarks, svgMarks } = state;

@@ -5,7 +5,7 @@ import {
 
 import { Transform } from '../util/transform.js';
 import { ViewState } from '../state/view-state.js';
-import { parseTransform } from '../parsers/data/attribute-parser.js';
+import { parseTransform } from '../parsers/helpers/data-parser.js';
 import * as parser from 'svg-path-parser';
 import { SVGToScreen, containsLines } from '../util/util.js';
 import { select } from 'd3-selection';

@@ -1,8 +1,8 @@
 import { max, min } from 'd3-array';
 import { CenterX, CenterY, OrphanTickRole, RoleProperty, Tick, horizAlign } from '../../state/constants.js';
 import { sortByViewPos } from '../../util/util.js';
-import { getFormatVal } from '../data/attribute-parser.js';
-import { pairGroups } from '../engine/parser-helpers.js';
+import { getFormatVal } from './data-parser.js';
+import { pairGroups } from '../engine/parser-groups.js';
 import { scaleBand, scaleLinear, scaleTime } from 'd3-scale';
 import { axisBottom, axisLeft } from '../../_d3/axis.js';
 

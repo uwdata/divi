@@ -1,6 +1,6 @@
 import { path } from 'd3-path';
 import { select, selectAll } from 'd3-selection';
-import { LINK_TYPES } from '../parsers/linking/link-parser.js';
+import { LINK_TYPES } from '../parsers/multi-view/link-parser.js';
 // import { parseTransform } from '../parsers/attribute-parsers';
 import {
     DataAttr, LegendRole, MarkRole, OpacityField, RoleProperty,

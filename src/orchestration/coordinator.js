@@ -5,7 +5,7 @@ import { applySelections, selectPoint } from '../handlers/select.js';
 // import { annotate } from '../handlers/annotate.js';
 
 import { inspect } from './inspect.js';
-import { getRootNodes, link, walkQueryPath } from '../parsers/linking/link-parser.js';
+import { getRootNodes, link, walkQueryPath } from '../parsers/multi-view/link-parser.js';
 import { isMetaKey } from '../util/util.js';
 import { pointer } from 'd3-selection';
 // import { zoom } from '../handlers/zoom.js';
