@@ -39,10 +39,11 @@ export function SVGToScreen(svg, element, svgX, svgY) {
 
 export function sortByViewPos(field, objects, useField = false) {
     const comparator = (dim) => (a, b) => field == null
-        ? (a._getBBox()[dim] - b._getBBox()[dim])
+        ? (a.getBBoxCustom()[dim] - b.getBBoxCustom()[dim])
         : useField
             ? a[field] - b[field]
-            : ((a[field] ? a[field] : a.marks[0])._getBBox()[dim] - (b[field] ? b[field] : b.marks[0])._getBBox()[dim]);
+            : ((a[field] ? a[field] : a.marks[0]).getBBoxCustom()[dim] -
+               (b[field] ? b[field] : b.marks[0]).getBBoxCustom()[dim]);
     objects.sort(comparator(CenterX));
     objects.sort(comparator(CenterY));
 }

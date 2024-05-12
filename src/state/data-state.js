@@ -1,4 +1,4 @@
-import { LINK_TYPES } from '../orchestration/link.js';
+import { LINK_TYPES } from '../parsers/link-parsers.js';
 
 export class DataState {
     constructor(table) {
