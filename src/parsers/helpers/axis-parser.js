@@ -35,12 +35,12 @@ function describeAxis(axis, container) {
         });
     }
 
-    for (const [text, { alignment, ticks }] of axisMap) {
-        addTicks(text, alignment, ticks);
+    for (const [text, { ticks }] of axisMap) {
+        addTicks(text, ticks);
     }
 
-    for (const { alignment, tick } of orphanTicks) {
-        addTicks(null, alignment, [tick]);
+    for (const { tick } of orphanTicks) {
+        addTicks(null, [tick]);
     }
 
     sortByViewPos('label', container.ticks);
@@ -81,7 +81,7 @@ function computeAxisDomain(axis) {
 
 function computeAxisRange(axis, isX) {
     const axisTicks = axis.ticks;
-    const firstTickBBox = axisTicks.marks[0].getBBoxCustom();
+    const firstTickBBox = axisTicks[0].marks[0].getBBoxCustom();
     const lastTickBBox = axisTicks[axisTicks.length - 1].marks[0].getBBoxCustom();
     axis.range = isX ? [firstTickBBox[CenterX], lastTickBBox[CenterX]] : [lastTickBBox[CenterY], firstTickBBox[CenterY]];
 }
