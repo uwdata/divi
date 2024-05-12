@@ -40,7 +40,7 @@ function extractElementInformation(svg, element, parent = false) {
                 right: (left + width) - containerRect.left,
                 bottom: (top + height) - containerRect.top,
                 [CenterX]: (left + width / 2) - containerRect.left,
-                [CenterY]: (top + height / 2) - containerRect.right
+                [CenterY]: (top + height / 2) - containerRect.top
             };
         };
 
