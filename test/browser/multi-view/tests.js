@@ -1,7 +1,8 @@
 import { todo } from '../../util/helper-functions.js';
+import { testVegaLiteMultiView } from './vega-lite-weather-test.js';
 
 describe('Multi-view', function() {
-    describe.skip('Vega-Lite - weather', todo);
+    describe('Vega-Lite - weather', testVegaLiteMultiView);
     describe.skip('Vega-Lite + Observable Plot - cars', todo);
     describe.skip('Vega-Lite crossfiltering - cars', todo);
     describe.skip('Vega-Lite crossfiltering - flights', todo);
