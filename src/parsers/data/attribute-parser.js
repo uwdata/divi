@@ -1,7 +1,7 @@
 import { timeFormat, timeParse } from 'd3-time-format';
-import { CategoricalColorLegend, DataAttr, Line, OpacityField, Polyline, Rect, SelectOpacity } from '../state/constants.js';
-import { Transform } from '../util/transform.js';
-import { invertBand } from './legend-parsers.js';
+import { CategoricalColorLegend, DataAttr, OpacityField, SelectOpacity } from '../../state/constants.js';
+import { Transform } from '../../util/transform.js';
+import { invertBand } from '../structures/legend-parser.js';
 
 export function parseTransform(element, transforms = new Transform()) {
     if (!element.transform) return;
@@ -26,14 +26,14 @@ export function inferMarkAttributes(state) {
 
     // }
 
-    state.svgMarks = state.svgMarks.filter(d => d.type !== Line);
+    state.svgMarks = state.svgMarks.filter(d => d.type !== 'line');
     // console.log(state.xAxis.scale.domain(), state.yAxis.scale.domain())
     for (let i = 0; i < state.svgMarks.length; ++i) {
         const mark = state.svgMarks[i]; const svgRect = state.svg._getBBox();
         const markRect = mark._getBBox();
 
-        if (mark.type === Line) continue;
-        if (mark.type === Polyline) {
+        if (mark.type === 'line') continue;
+        if (mark.type === 'polyline') {
             const points = mark.getAttribute('points').split(' ').map(d => d.split(',').map(e => Number(e)));
             mark[DataAttr] = [];
 
@@ -63,7 +63,7 @@ export function inferMarkAttributes(state) {
 
         const markX = state.xAxis.ordinal.length
             ? i
-            : state.yAxis.ordinal.length || mark.type === Rect
+            : state.yAxis.ordinal.length || mark.type === 'rect'
                 ? markRect.right - svgRect.left
                 : markRect.centerX - svgRect.left;
         const markY = state.yAxis.ordinal.length

@@ -1,7 +1,7 @@
 import { escape, op, query, table } from 'arquero';
 import { range } from 'd3-array';
-import { generateQuery } from '../handlers/query.js';
-import { SizeLegend, tableGroupIndexField, tableIndexField, tableMarkField } from '../state/constants.js';
+import { generateQuery } from '../../handlers/query.js';
+import { SizeLegend, tableGroupIndexField, tableIndexField, tableMarkField } from '../../state/constants.js';
 
 const epsilon = 2;
 export const AGGREGATIONS = {

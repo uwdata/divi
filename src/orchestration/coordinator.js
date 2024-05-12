@@ -4,33 +4,21 @@ import { applySelections, selectPoint } from '../handlers/select.js';
 // import { sort } from '../handlers/sort.js';
 // import { annotate } from '../handlers/annotate.js';
 
-import { deconstructChart } from '../parsers/parser-engine.js';
-import { inferMarkAttributes } from '../parsers/attribute-parsers.js';
-// import { createMenu } from '../toolbar/menu.js';
-import { parseDataFromMarks } from '../parsers/dataset-parser.js';
 import { inspect } from './inspect.js';
-import { getRootNodes, link, walkQueryPath } from '../parsers/link-parsers.js';
+import { getRootNodes, link, walkQueryPath } from '../parsers/linking/link-parser.js';
 import { isMetaKey } from '../util/util.js';
 import { pointer } from 'd3-selection';
 // import { zoom } from '../handlers/zoom.js';
 import { brushEnd, brushMove, brushStart } from '../handlers/brush.js';
 import { generateBrushPredicates } from '../handlers/query.js';
+import { parseChart } from '../parsers/engine/parser-engine.js';
 
 export function coordinate(svg, extState) {
-    const states = svg.map(d => initialize(inspect(d)));
+    const states = svg.map(d => parseChart(inspect(d)));
     link(states, extState);
     // createMenu(states);
     states.forEach(d => coordinateInteractions(d));
 
-    function initialize(state) {
-        // state.svg.style.cursor = 'crosshair';
-        // Infer view information
-        deconstructChart(state);
-        // highlight(state);
-        inferMarkAttributes(state);
-        state.data = parseDataFromMarks(state.svgMarks);
-        return state;
-    }
     // console.log(extState);
     // function highlight(state) {
     //     state.xAxis.ticks.forEach(d => select(d.label).style('color', '#e15759'));

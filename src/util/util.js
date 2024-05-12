@@ -1,4 +1,4 @@
-import { Right, Left, Top, CenterX, CenterY } from '../state/constants.js';
+import { CenterX, CenterY } from '../state/constants.js';
 import { sum } from 'd3-array';
 import { path } from 'd3-path';
 
@@ -17,8 +17,8 @@ export function copyElement(element) {
 
 export function computeCenterPos(element, orient) {
     const clientRect = element._getBBox();
-    const offset = orient === Right || orient === Left ? clientRect.width / 2 : clientRect.height / 2;
-    return clientRect[orient] + (orient === Left || orient === Top ? offset : -offset);
+    const offset = orient === 'right' || orient === 'left' ? clientRect.width / 2 : clientRect.height / 2;
+    return clientRect[orient] + (orient === 'left' || orient === 'top' ? offset : -offset);
 }
 
 export function flattenRGB(rgb) {

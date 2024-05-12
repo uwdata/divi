@@ -1,9 +1,9 @@
 import { path } from 'd3-path';
 import { select, selectAll } from 'd3-selection';
-import { LINK_TYPES } from '../parsers/link-parsers.js';
+import { LINK_TYPES } from '../parsers/linking/link-parser.js';
 // import { parseTransform } from '../parsers/attribute-parsers';
 import {
-    DataAttr, LegendRole, MarkRole, OpacityField, Path, RoleProperty,
+    DataAttr, LegendRole, MarkRole, OpacityField, RoleProperty,
     SelectOpacity, tableIndexField, tableMarkField, UnselectOpacity
 } from '../state/constants.js';
 // import { Transform } from '../util/transform';
@@ -55,7 +55,7 @@ function drawAggregates(id, selected, xAxis) {
             .classed('AGGREGATE_LAYER', true)
             .attr('fill', window.getComputedStyle(marks[i]).fill);
 
-        if (marks[i].tagName === Path) {
+        if (marks[i].tagName === 'path') {
             const x = marks[i].contour[0].x; //, y = marks[i].contour[0].y;
             // if (marks[i].globalPosition.translate.y) {
             // var y = marks[i].globalPosition.translate.y - marks[i].globalPosition.translate.y / 2;

@@ -3,6 +3,8 @@ import { collectCandidateMarkGroups } from './parser-helpers.js';
 import { inferLegends } from '../structures/legend-parser.js';
 import { inferMarks } from '../structures/mark-parser.js';
 import { inferTitles } from '../structures/text-parser.js';
+import { inferMarkAttributes } from '../data/attribute-parser.js';
+import { parseDataFromMarks } from '../data/dataset-parser.js';
 // import { selectAll } from 'd3-selection';
 
 export function parseChart(state) {
@@ -19,4 +21,10 @@ export function parseChart(state) {
     candidateTextMarkGroups = candidateTextMarkGroups.filter(d => !legends.map(l => l.text).includes(d.marks));
     inferMarks(state);
     inferTitles(state, candidateTextMarkGroups.map(d => d.marks).flat());
+
+    // Infer data.
+    inferMarkAttributes(state);
+    state.data = parseDataFromMarks(state.svgMarks);
+
+    return state;
 }

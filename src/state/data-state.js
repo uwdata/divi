@@ -1,4 +1,4 @@
-import { LINK_TYPES } from '../parsers/link-parsers.js';
+import { LINK_TYPES } from '../parsers/linking/link-parser.js';
 
 export class DataState {
     constructor(table) {

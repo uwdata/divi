@@ -1,7 +1,7 @@
 import { loadCSV, loadJSON, table } from 'arquero';
 import { map, range } from 'd3-array';
-import { DataAttr, tableIndexField, tableMarkField } from '../state/constants.js';
-import { DataState } from '../state/data-state.js';
+import { DataAttr, tableIndexField, tableMarkField } from '../../state/constants.js';
+import { DataState } from '../../state/data-state.js';
 
 export async function parseDataset(options) {
     if (!options || !Object.keys(options).length) return { };
