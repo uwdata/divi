@@ -1,7 +1,6 @@
 import {
-    SvgContainer, SvgGroup, Background, Foreground, Circle, Ellipse, Line, Polygon,
-    Polyline, Rect, Path, Text, DefaultSvgId, MarkRole, Use, Width, Height, Left, Right,
-    Top, Bottom, CenterX, CenterY, TextRef, Style
+    Background, Foreground, DefaultSvgId, MarkRole, CenterX, CenterY,
+    markTypes
 } from '../state/constants.js';
 
 import { Transform } from '../util/transform.js';
@@ -11,14 +10,14 @@ import * as parser from 'svg-path-parser';
 import { SVGToScreen, containsLines } from '../util/util.js';
 import { select } from 'd3-selection';
 
-const markTypes = [Circle, Ellipse, Line, Polygon, Polyline, Rect, Path, Use];
 let id = 1;
 
-function extractElementInformation(svg, element, transform, parent = false) {
-    element._getBBox = parent
+function extractElementInformation(svg, element, parent = false) {
+    element.getBBoxCustom = parent
         ? function() { return this.getBoundingClientRect(); }
         : function() {
-            const clientRect = this.getBoundingClientRect(); const svgRect = this.getBBox ? this.getBBox() : clientRect;
+            const clientRect = this.getBoundingClientRect();
+            const svgRect = this.getBBox ? this.getBBox() : clientRect;
 
             const p1 = this.getBBox
                 ? SVGToScreen(svg, this, svgRect.x, svgRect.y)
@@ -26,25 +25,27 @@ function extractElementInformation(svg, element, transform, parent = false) {
             const p2 = this.getBBox
                 ? SVGToScreen(svg, this, svgRect.x + svgRect.width, svgRect.y + svgRect.height)
                 : { x: svgRect.x + svgRect.width, y: svgRect.y + svgRect.height };
-            const width = Math.abs(p1.x - p2.x); const height = Math.abs(p1.y - p2.y);
+
+            const width = Math.abs(p1.x - p2.x);
+            const height = Math.abs(p1.y - p2.y);
             const left = clientRect.left + clientRect.width / 2 - width / 2;
             const top = clientRect.top + clientRect.height / 2 - height / 2;
 
             return {
-                [Width]: width,
-                [Height]: height,
-                [Left]: left,
-                [Right]: left + width,
-                [Top]: top,
-                [Bottom]: top + height,
+                width,
+                height,
+                left,
+                top,
+                right: left + width,
+                bottom: top + height,
                 [CenterX]: left + width / 2,
                 [CenterY]: top + height / 2
             };
         };
 
     element.globalPosition = new Transform(
-        element._getBBox()[CenterX] - svg._getBBox()[Left],
-        element._getBBox()[CenterY] - svg._getBBox()[Top]
+        element.getBBoxCustom()[CenterX] - svg.getBBoxCustom().left,
+        element.getBBoxCustom()[CenterY] - svg.getBBoxCustom().top
     );
     element.localTransform = parseTransform(element);
 }
@@ -58,12 +59,12 @@ function inferTypeFromPath(element, state, transform) {
     const relCommands = ['v', 'h'];
     const lineCandidates = containsLines(commands);
 
-    if (commands.length === 3 && commands[1].code === 'A' && endCmd.code === 'A') { // Check for ellipse shape
-        element.type = Ellipse;
-    } else if (lineCandidates.length) { // Check for extracted gridlines
+    if (commands.length === 3 && commands[1].code === 'A' && endCmd.code === 'A') { // Check for ellipse shape.
+        element.type = 'ellipse';
+    } else if (lineCandidates.length) { // Check for extracted gridlines.
         const p = select(element.parentElement);
 
-        // Create new elements for each gridline
+        // Create new elements for each gridline.
         lineCandidates.forEach(lc => {
             const style = window.getComputedStyle(element);
             const el = p.append('path').attr('d', lc)
@@ -76,55 +77,55 @@ function inferTypeFromPath(element, state, transform) {
         });
 
         select(element).remove();
-    } else if (endCmd.code !== 'Z') { // Check for line shape
-        element.type = Line;
+    } else if (endCmd.code !== 'Z') { // Check for line shape.
+        element.type = 'line';
     } else if (commands.length === 5 && relCommands.includes(commands[1].code) && relCommands.includes(commands[2].code) &&
-        relCommands.includes(commands[3].code)) { // Check for rectangular shape
-        element.type = Rect;
-    } else { // Check for polygonal shape
-        element.type = Polygon;
+        relCommands.includes(commands[3].code)) { // Check for rectangular shape.
+        element.type = 'rect';
+    } else { // Check for polygonal shape.
+        element.type = 'polygon';
     }
 }
 
 function analyzeDomTree(element, state, transform, parent = false) {
     if (!element) return;
-    if (element.nodeName.toLowerCase() === Style) return; // Ignore style elements
-    if (element.className && (element.className.baseVal === Background || // Ignore background elements
+    if (element.nodeName.toLowerCase() === 'style') return; // Ignore style elements.
+    if (element.className && (element.className.baseVal === Background || // Ignore background elements.
         element.className.baseVal === Foreground)) return;
     // TODO: Ignore clip elements
 
-    if (parent || element.nodeName === SvgContainer) { // Store base SVG element
+    if (parent || element.nodeName === 'svg') { // Store base SVG element.
         state.svg = element;
-        extractElementInformation(state.svg, element, transform, parent);
+        extractElementInformation(state.svg, element, parent);
         if (!element.id) element.id = DefaultSvgId + '-' + id++;
-    } else if (element.nodeName === SvgGroup) { // Maintain <g> element transforms
+    } else if (element.nodeName === 'g') { // Maintain <g> element transforms.
         parseTransform(element, transform);
-    } else if (element.nodeName === TextRef && element.textContent.trim() !== '') { // Instantiate text elements for non-empty references
+    } else if (element.nodeName === '#text' && element.textContent.trim() !== '') { // Instantiate text elements for non-empty references.
         let el = element.parentElement;
-        if (el.nodeName !== Text) {
+        if (el.nodeName !== 'text') {
             el = select(el).append('text').html(element.textContent).node();
             select(element).remove();
         }
 
-        extractElementInformation(state.svg, el, transform);
+        extractElementInformation(state.svg, el);
         el.removeAttribute('textLength');
         state.textMarks.push(el);
         el.style['pointer-events'] = 'none';
         el.style['user-select'] = 'none';
-    } else if (markTypes.includes(element.nodeName)) { // Process base SVG marks
+    } else if (markTypes.includes(element.nodeName)) { // Process base SVG marks.
         const markType = element.nodeName;
 
-        if (markType === Path) { // Infer path element type
+        if (markType === 'path') { // Infer path element type.
             inferTypeFromPath(element, state, transform);
             element.setAttribute('vector-effect', 'non-scaling-stroke');
-        } else if (markType === Polyline || markType === Polygon || markType === Line) {
+        } else if (markType === 'polygline' || markType === 'polygon' || markType === 'line') {
             element.type = markType;
             element.setAttribute('vector-effect', 'non-scaling-stroke');
         }
 
-        extractElementInformation(state.svg, element, transform);
+        extractElementInformation(state.svg, element);
         element.setAttribute(MarkRole, 'true');
-        if (!state.svgMarks.includes(element)) state.svgMarks.push(element); // Prevent duplicate references
+        if (!state.svgMarks.includes(element)) state.svgMarks.push(element); // Prevent duplicate references.
     }
 
     for (const child of element.childNodes) {
