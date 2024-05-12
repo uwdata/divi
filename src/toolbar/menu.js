@@ -1,41 +1,45 @@
 import { select } from 'd3-selection';
 import navigateIcon from './icons/navigate.svg';
-// import annotateIcon from './icons/annotate.svg';
+import annotateIcon from './icons/annotate.svg';
 import filterIcon from './icons/filter.svg';
 import linkIcon from './icons/link.svg';
-// import downloadIcon from './icons/download.svg';
 import brushIcon from './icons/brush.svg';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { SelectOpacity, UnselectOpacity } from '../state/constants.js';
 
 export function createMenu(states) {
-    const { svg } = states[states.length - 1];
-    const svgRect = svg._getBBox();
-    const div = select(document.body)
-        .append('div')
+    const { svg } = states[0];
+    const container = select(svg.parentElement);
+    const menu = container.append('div')
         .attr('id', 'menu')
         .classed('card', 'true')
         .classed('bg-light', true)
-        .style('position', 'absolute')
-        .style('vertical-align', 'middle')
-        .style('top', (svgRect.top + 20) + 'px')
-        .style('left', (svgRect.left - 20) + 'px');
+        .style('position', 'relative')
+        .style('display', 'inline-block')
+        .style('margin-top', '10px')
+        .style('margin-bottom', '10px')
+        .style('margin-left', '10px')
+        .style('margin-right', '10px');
+    container.node().appendChild(svg);
 
-    const nav = div.append('div')
+    const nav = menu.append('div')
         .html(navigateIcon)
         .style('opacity', UnselectOpacity);
 
-    const brush = div.append('div')
+    const brush = menu.append('div')
         .html(brushIcon);
 
-    div.append('div')
+    menu.append('div')
         .html(filterIcon);
 
-    div.append('div')
+    menu.append('div')
+        .html(annotateIcon);
+
+    menu.append('div')
         .classed('btn-secondary', true)
         .html(linkIcon);
 
-    div.selectAll('div')
+    menu.selectAll('div')
         .classed('btn', true)
         .classed('m-1', true)
         .selectAll('svg')

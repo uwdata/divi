@@ -12,11 +12,12 @@ import { pointer } from 'd3-selection';
 import { brushEnd, brushMove, brushStart } from '../handlers/brush.js';
 import { generateBrushPredicates } from '../handlers/query.js';
 import { parseChart } from '../parsers/engine/parser-engine.js';
+import { createMenu } from '../toolbar/menu.js';
 
 export function coordinate(svg, extState) {
     const states = svg.map(d => parseChart(inspect(d)));
     link(states, extState);
-    // createMenu(states);
+    createMenu(states);
     states.forEach(d => coordinateInteractions(d));
 
     // console.log(extState);
