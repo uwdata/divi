@@ -146,13 +146,13 @@ export function pairGroups(svg, candidateTextGroups, candidateMarkGroups, append
     }
 
     // Compute Euclidean distance between mean position of groups.
-    function getGroupDistance(groupA, groupB) {
+    function getGroupDistance(groupA, groupB, alignment) {
         const meansA = [0, 0];
         const meansB = [0, 0];
 
         function addVal(obj, mark, length) {
             const bbox = mark.getBBoxCustom();
-            const keys = [CenterX, CenterY];
+            const keys = horizAlign.includes(alignment) ? ['top', 'bottom'] : ['left', 'right'];
             for (let i = 0; i < keys.length; ++i) {
                 obj[i] += bbox[keys[i]] / length;
             }
@@ -162,7 +162,10 @@ export function pairGroups(svg, candidateTextGroups, candidateMarkGroups, append
         groupA.forEach(d => addVal(meansA, d, groupA.length));
         groupB.forEach(d => addVal(meansB, d, groupB.length));
 
-        return Math.sqrt((meansA[0] - meansB[0]) ** 2 + (meansA[1] - meansB[1]) ** 2);
+        return min([
+            Math.abs(meansA[0] - meansB[1]),
+            Math.abs(meansA[1] - meansB[0])
+        ]);
     }
 
     // Try matching each candidate text element with a candidate tick element.
@@ -226,7 +229,7 @@ export function pairGroups(svg, candidateTextGroups, candidateMarkGroups, append
 
             // Pre-emptively ignore text / mark groups that are too far apart.
             // This also helps reduce the search space.
-            if (getGroupDistance(textGroup, markGroup) > viewEpsilon) continue;
+            if (getGroupDistance(textGroup, markGroup, alignment) > viewEpsilon) continue;
 
             _sort(alignment, markGroup);
             const [_dist, textMap] = matchGroup(alignment, textGroup, markGroup);
@@ -246,8 +249,7 @@ export function pairGroups(svg, candidateTextGroups, candidateMarkGroups, append
         if (minGroup.group) groups.push(minGroup);
     }
 
-    groups.sort((a, b) => a.dist - b.dist);
-    return groups;
+    return groups.filter(g => g.dist < epsilon);
 }
 
 // Infer candidate groups for (1) text marks, (2) tick marks, and (3) legend marks.
