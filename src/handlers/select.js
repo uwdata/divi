@@ -1,20 +1,14 @@
 import { path } from 'd3-path';
 import { select, selectAll } from 'd3-selection';
 import { LINK_TYPES } from '../parsers/multi-view/link-parser.js';
-// import { parseTransform } from '../parsers/attribute-parsers';
 import {
     DataAttr, LegendRole, MarkRole, OpacityField, RoleProperty,
     SelectOpacity, tableIndexField, tableMarkField, UnselectOpacity
 } from '../state/constants.js';
-// import { Transform } from '../util/transform';
 import { generatePredicates, SELECT_TYPE } from './query.js';
 
-function setOpacity(marks, opacity) {
-    selectAll(marks).attr('opacity', opacity);
-}
-
 function setSelection(marks, opacity) {
-    setOpacity(marks, opacity);
+    selectAll(marks).attr('opacity', opacity);
 }
 
 function selectAllMarks(marks) {
