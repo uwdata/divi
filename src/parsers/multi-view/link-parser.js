@@ -550,7 +550,8 @@ export function getRootNodes(startNode) {
         return paths;
     }
 
-    const visited = new Map(); const startFields = Object.fromEntries(getFields(startNode.table, true).map(c => [c, c]));
+    const visited = new Map();
+    const startFields = Object.fromEntries(getFields(startNode.table, true).map(c => [c, c]));
     const roots = walkUpPath(startNode, [], startFields);
     return roots.map(([root, aggregations, fieldMap]) => [root, propagateAggregation(root, aggregations), fieldMap]);
 }
