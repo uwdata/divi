@@ -43,7 +43,7 @@ function inferScale(legend) {
         scale = scaleOrdinal().domain(domain).range(range);
     } else { // Size legend
         const domain = legend.marks.map(d => +d.label.innerHTML);
-        const range = legend.marks.map(d => d.mark._getBBox().width ** 2);
+        const range = legend.marks.map(d => d.mark.getBBoxCustom().width ** 2);
         scale = scaleLinear().domain(domain).range(range);
     }
 
@@ -113,10 +113,11 @@ function parseLegends(state, legends) {
 }
 
 export function inferLegends(state, textGroups, markGroups) {
-    const legends = pairGroups(textGroups, markGroups, false);
+    const { svg } = state;
+    const legends = pairGroups(svg, textGroups, markGroups, false);
     if (legends.length) {
         parseLegends(state, legends);
-        legends.forEach(l => bindLegendData(l));
+        state.legends.forEach(l => bindLegendData(l));
     }
     return legends;
 }

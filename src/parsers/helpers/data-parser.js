@@ -58,8 +58,8 @@ export function inferMarkAttributes(state) {
     state.svgMarks = state.svgMarks.filter(d => d.type !== 'line');
     // console.log(state.xAxis.scale.domain(), state.yAxis.scale.domain())
     for (let i = 0; i < state.svgMarks.length; ++i) {
-        const mark = state.svgMarks[i]; const svgRect = state.svg._getBBox();
-        const markRect = mark._getBBox();
+        const mark = state.svgMarks[i]; const svgRect = state.svg.getBBoxCustom();
+        const markRect = mark.getBBoxCustom();
 
         if (mark.type === 'line') continue;
         if (mark.type === 'polyline') {
