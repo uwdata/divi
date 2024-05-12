@@ -16,6 +16,7 @@ function extractElementInformation(svg, element, parent = false) {
     element.getBBoxCustom = parent
         ? function() { return this.getBoundingClientRect(); }
         : function() {
+            const containerRect = svg.getBBoxCustom();
             const clientRect = this.getBoundingClientRect();
             const svgRect = this.getBBox ? this.getBBox() : clientRect;
 
@@ -34,12 +35,12 @@ function extractElementInformation(svg, element, parent = false) {
             return {
                 width,
                 height,
-                left,
-                top,
-                right: left + width,
-                bottom: top + height,
-                [CenterX]: left + width / 2,
-                [CenterY]: top + height / 2
+                left: left - containerRect.left,
+                top: top - containerRect.top,
+                right: (left + width) - containerRect.left,
+                bottom: (top + height) - containerRect.top,
+                [CenterX]: (left + width / 2) - containerRect.left,
+                [CenterY]: (top + height / 2) - containerRect.right
             };
         };
 
