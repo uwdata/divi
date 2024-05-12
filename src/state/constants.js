@@ -41,7 +41,6 @@ export const LegendRole = 'legend';
 export const AxisDomainRole = 'axis-domain';
 export const TitleRole = 'title';
 export const OrphanTickRole = 'orphan-tick';
-export const ViewportRole = 'viewport';
 export const MarkRole = 'mark';
 
 export const tableMarkField = '_mark_';
