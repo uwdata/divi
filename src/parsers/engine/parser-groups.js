@@ -145,7 +145,7 @@ export function pairGroups(svg, candidateTextGroups, candidateMarkGroups, append
         });
     }
 
-    // Compute Euclidean distance between mean position of groups.
+    // Compute min distance between top-bottom or left-right position of groups.
     function getGroupDistance(groupA, groupB, alignment) {
         const meansA = [0, 0];
         const meansB = [0, 0];
