@@ -7,7 +7,7 @@ hero:
     Dynamically Interactive Visualization
   tagline: |
     DIVI automatically orchestrates interactions within and across SVG visualizations. 
-    NOTE: This page is in the process of being updated.
+    NOTE: This page is being actively updated.
   actions:
     - theme: brand
       text: What is DIVI?
