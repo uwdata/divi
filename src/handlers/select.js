@@ -19,7 +19,7 @@ function unselectAllMarks(marks) {
     setSelection(marks, UnselectOpacity);
 }
 
-function selectMarks(allMarks, marks) {
+export function selectMarks(allMarks, marks) {
     unselectAllMarks(allMarks);
     setSelection(marks, SelectOpacity);
 }

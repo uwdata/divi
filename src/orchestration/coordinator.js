@@ -9,7 +9,7 @@ import { zoom } from '../handlers/zoom.js';
 export function coordinate(svg, extState) {
     const states = svg.map(d => parseChart(inspect(d)));
     link(states, extState);
-    createMenu(states);
+    // createMenu(states);
     coordinateInteractions(states);
     return states;
 }
@@ -27,6 +27,6 @@ function coordinateInteractions(states) {
     for (const state of states) {
         const { svg } = state;
         svg.addEventListener('click', select(state));
-        zoom(state);
+        // zoom(state);
     }
 }
