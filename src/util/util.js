@@ -16,7 +16,7 @@ export function copyElement(element) {
 }
 
 export function computeCenterPos(element, orient) {
-    const clientRect = element._getBBox();
+    const clientRect = element.getBBoxCustom();
     const offset = orient === 'right' || orient === 'left' ? clientRect.width / 2 : clientRect.height / 2;
     return clientRect[orient] + (orient === 'left' || orient === 'top' ? offset : -offset);
 }

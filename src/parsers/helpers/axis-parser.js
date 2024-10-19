@@ -1,6 +1,6 @@
 import { max, min } from 'd3-array';
 import { CenterX, CenterY, OrphanTickRole, RoleProperty, Tick, horizAlign } from '../../state/constants.js';
-import { sortByViewPos } from '../../util/util.js';
+import { computeCenterPos, sortByViewPos } from '../../util/util.js';
 import { getFormatVal } from './data-parser.js';
 import { pairGroups } from '../engine/parser-groups.js';
 import { scaleBand, scaleLinear, scaleTime } from 'd3-scale';
@@ -101,16 +101,35 @@ function computeScale(state, axis, isX) {
     if (axis.domain[0] instanceof Date) axis.axis = axis.axis.tickFormat(state.xAxis.formatter.format);
 
     // Reconfigure axis to prevent tick / gridline change.
-    // const tickLeft = computeCenterPos(
-    //     state.xAxis.ticks.filter(d => d.value === state.xAxis.domain[0])[0].marks[0], Left
-    // );
-    // const tickRight = computeCenterPos(
-    //     state.xAxis.ticks.filter(d => d.value === state.xAxis.domain[1])[0].marks[0], Left
-    // );
-    // const newDomain = axis.range.map(
-    //     axis.scale.copy().range(ticks).invert, axis.scale
-    // );
-    // axis.scale.domain(newDomain);
+    if (isX && !axis.ordinal.length) {
+        const tickLeft = computeCenterPos(
+            axis.ticks.filter(d => d.value === axis.domain[0])[0].marks[0], 'left'
+        );
+        const tickRight = computeCenterPos(
+            axis.ticks.filter(d => d.value === axis.domain[1])[0].marks[0], 'left'
+        );
+
+        const ticks = [tickLeft, tickRight].map(d => d - state.svg.getBBoxCustom().left);
+        const newDomainX = axis.range.map(
+            axis.scale.copy().range(ticks).invert, axis.scale
+        );
+
+        axis.scale.domain(newDomainX);
+    } else if (!isX && !axis.ordinal.length) {
+        const tickTop = computeCenterPos(
+            axis.ticks.filter(d => d.value === axis.domain[0])[0].marks[0], 'top'
+        );
+        const tickBottom = computeCenterPos(
+            axis.ticks.filter(d => d.value === axis.domain[1])[0].marks[0], 'top'
+        );
+
+        const ticks = [tickTop, tickBottom].map(d => d - state.svg.getBBoxCustom().top);
+        const newDomainY = axis.range.map(
+            axis.scale.copy().range(ticks).invert, axis.scale
+        );
+
+        axis.scale.domain(newDomainY);
+    }
 }
 
 export function inferAxes(state, textGroups, markGroups) {

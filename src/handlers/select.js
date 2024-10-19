@@ -11,7 +11,7 @@ function setSelection(marks, opacity) {
     selectAll(marks).attr('opacity', opacity);
 }
 
-function selectAllMarks(marks) {
+export function selectAllMarks(marks) {
     setSelection(marks, marks[0][OpacityField] || SelectOpacity);
 }
 

@@ -105,9 +105,9 @@ export function inferMarkAttributes(state) {
         const iterable = { };
         // console.log(markX, markY)
         // console.log(state.xAxis.scale.invert(markX), state.yAxis.scale.invert(markY))
-        iterable[state.xAxis.title ? state.xAxis.title.innerHTML.toLowerCase() : 'x'] = state.xAxis.ordinal.length ? invertBand(state.xAxis.scale, markRect.centerX - svgRect.left) : state.xAxis.scale.invert(markX);
+        iterable[state.xAxis.title ? state.xAxis.title.innerHTML.toLowerCase() : 'x'] = state.xAxis.ordinal.length ? invertBand(state.xAxis.scale, markRect.centerX) : state.xAxis.scale.invert(markX);
         iterable[state.yAxis.title ? state.yAxis.title.innerHTML.toLowerCase() : 'y'] = state.yAxis.ordinal.length
-            ? invertBand(state.yAxis.scale, markRect.centerY - svgRect.top)
+            ? invertBand(state.yAxis.scale, markRect.centerY)
             : mark.type === 'rect'
                 ? String(Math.round(state.yAxis.scale.invert(markY)))
                 : state.yAxis.scale.invert(markY);
