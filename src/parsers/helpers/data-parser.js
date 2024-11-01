@@ -93,13 +93,13 @@ export function inferMarkAttributes(state) {
         const markX = state.xAxis.ordinal.length
             ? i
             : state.yAxis.ordinal.length || mark.type === 'rect'
-                ? markRect.right - svgRect.left
-                : markRect.centerX - svgRect.left;
+                ? markRect.right
+                : markRect.centerX;
         const markY = state.yAxis.ordinal.length
             ? i
             : state.xAxis.ordinal.length
-                ? markRect.top - svgRect.top
-                : markRect.centerY - svgRect.top;
+                ? markRect.top
+                : markRect.centerY;
 
         // console.log(state.xAxis.scale.domain()[markX])
         const iterable = { };

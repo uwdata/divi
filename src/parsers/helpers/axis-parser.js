@@ -93,7 +93,7 @@ function computeScale(state, axis, isX) {
         : axis.ordinal.length
             ? scaleBand()
             : scaleLinear())
-        .domain(axis.ordinal.length ? axis.ordinal : axis.domain)
+        .domain(axis.ordinal.length ? axis.ordinal.reverse() : axis.domain)
         .range(axis.range);
 
     const axisFn = isX ? axisBottom : axisLeft;
@@ -109,7 +109,7 @@ function computeScale(state, axis, isX) {
             axis.ticks.filter(d => d.value === axis.domain[1])[0].marks[0], 'left'
         );
 
-        const ticks = [tickLeft, tickRight].map(d => d - state.svg.getBBoxCustom().left);
+        const ticks = [tickLeft, tickRight].map(d => d);
         const newDomainX = axis.range.map(
             axis.scale.copy().range(ticks).invert, axis.scale
         );
@@ -123,7 +123,7 @@ function computeScale(state, axis, isX) {
             axis.ticks.filter(d => d.value === axis.domain[1])[0].marks[0], 'top'
         );
 
-        const ticks = [tickTop, tickBottom].map(d => d - state.svg.getBBoxCustom().top);
+        const ticks = [tickTop, tickBottom].map(d => d);
         const newDomainY = axis.range.map(
             axis.scale.copy().range(ticks).invert, axis.scale
         );
