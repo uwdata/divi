@@ -41,7 +41,6 @@ export function brushEnd(event) {
     brush.remove();
 }
 
-
 function brusher(event) {
     let x1, x2, y1, y2;
     function bMove(event) {

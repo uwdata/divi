@@ -13,7 +13,12 @@ export async function parseDataset(options) {
     if (!options || !Object.keys(options).length) return { };
     const { url } = options;
     const type = url.split('.').pop();
-    const _table = await (type === 'json' ? loadJSON(url) : loadCSV(url));
+    const _table = await (type === 'json'
+        ? loadJSON(url)
+        : type === 'tsv'
+            ? loadCSV(url, { delimiter: '\t' })
+            : loadCSV(url)
+    );
 
     return new DataState(_table.assign(table({ [tableIndexField]: range(_table.numRows()) })));
 }
@@ -68,8 +73,8 @@ export function inferMarkAttributes(state) {
 
             for (const point of points) {
                 let [x, y] = point;
-                x = x - svgRect.left;
-                y = y - svgRect.top;
+                // x = x - svgRect.left;
+                // y = y - svgRect.top;
 
                 const iterable = { };
                 iterable[state.xAxis.title ? state.xAxis.title.innerHTML.toLowerCase() : 'x'] = state.xAxis.scale.invert(x);

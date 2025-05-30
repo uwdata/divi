@@ -10,7 +10,7 @@
         <script>
             createScatterPlot().then(function(svg) {
                 d3.select('#container').node().appendChild(svg);
-                divi.hydrate(svg);
+                divi.hydrate(svg, { url: 'https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/iris.csv' });
             });
         </script>
     </body>

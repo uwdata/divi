@@ -343,6 +343,7 @@ function storeLink(type, link, to, from, storeTable = false) {
 }
 
 function linkExternalDatasets(states, extState, aggregated) {
+    console.log(extState)
     const { table: extTable } = extState;
     if (!extTable) return;
     const stored = new Map();

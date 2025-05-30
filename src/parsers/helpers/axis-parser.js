@@ -46,7 +46,7 @@ function describeAxis(axis, container) {
     sortByViewPos('label', container.ticks);
 }
 
-// Computer axis domain (data space) extents.
+// Compute axis domain (data space) extents.
 function computeAxisDomain(axis) {
     let isDate = true;
 
