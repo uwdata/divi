@@ -79,7 +79,7 @@ function computeAxisDomain(axis) {
     }
 }
 
-function computeAxisRange(axis, isX) {
+function computeAxisRange(axis, svg, isX) {
     const axisTicks = axis.ticks;
     const firstTickBBox = axisTicks[0].marks[0].getBBoxCustom();
     const lastTickBBox = axisTicks[axisTicks.length - 1].marks[0].getBBoxCustom();
@@ -142,7 +142,7 @@ export function inferAxes(state, textGroups, markGroups) {
 
         describeAxis(a, axisContainer);
         computeAxisDomain(axisContainer);
-        computeAxisRange(axisContainer, isX);
+        computeAxisRange(axisContainer, svg, isX);
         computeScale(state, axisContainer, isX);
     });
 

@@ -15,11 +15,11 @@
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",
     "prebuild": "rimraf dist && mkdir dist",
-    "build": "rollup -c",
+    "build": "rollup -c -w",
     "lint": "eslint src test --ext .js",
     "test": "mocha 'test/node/**/*-test.js'",
     "prepublishOnly": "npm run test && npm run lint && npm run build",
-    "serve": "wds --watch"
+    "serve": "wds --watch --open public"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^25.0.7",
@@ -37,7 +37,7 @@
     "rollup-plugin-bundle-size": "^1.0.3",
     "rollup-plugin-postcss": "^4.0.2",
     "rollup-plugin-svg": "^2.0.0",
-    "vitepress": "^1.1.4"
+    "vitepress": "^1.6.3"
   },
   "dependencies": {
     "arquero": "^5.4.0",
@@ -49,7 +49,6 @@
     "d3-path": "^3.1.0",
     "d3-scale": "^4.0.2",
     "d3-selection": "^3.0.0",
-    "d3-svg-annotation": "^2.5.1",
     "d3-time-format": "^4.1.0",
     "d3-transition": "^3.0.1",
     "svg-path-parser": "^1.1.0"

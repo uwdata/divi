@@ -1,28 +1,48 @@
 import { zoomTransform, zoom as _zoom, zoomIdentity } from '../_d3/zoom';
 import { select, selectAll } from 'd3-selection';
 import { Transform } from '../util/transform.js';
+import { MarkRole } from '../state/constants.js';
 
 function addClipping(svg, marks, xAxis, yAxis) {
+    const nodes = marks.nodes();
+    if (nodes.length === 0) return;
+
+    // Find shared parent of all nodes
+    let sharedParent = nodes[0].parentElement;
+    if (!sharedParent) return;
+
+    for (let i = 1; i < nodes.length; ++i) {
+        const current = nodes[i].parentElement;
+        if (!current) continue;
+
+        if (current.contains(sharedParent)) {
+            sharedParent = current;
+        } else {
+            while (!sharedParent.contains(current)) {
+                sharedParent = sharedParent.parentElement;
+            }
+        }
+    }
+
+    xAxis.range = xAxis.range.map(d => d - (sharedParent.localTransform?.translate.x || 0));
+    yAxis.range = yAxis.range.map(d => d - (sharedParent.localTransform?.translate.y || 0));
+
     svg.append('defs')
         .append('clipPath')
         .attr('id', 'clip-' + svg.node().id)
         .append('rect')
-        .attr('x', 0)
-        .attr('y', 0)
-        .attr('width', Math.abs(xAxis.range[1] - xAxis.range[0]))
-        .attr('height', Math.abs(yAxis.range[0] - yAxis.range[1]));
+        .attr('x', xAxis.range[0])
+        .attr('y', yAxis.range[1])
+        .attr('width', xAxis.range[1] - xAxis.range[0])
+        .attr('height', yAxis.range[0] - yAxis.range[1]);
 
-    for (const node of marks.nodes()) {
-        if (node.parentElement.hasAttribute('clip-path')) continue;
-        let container = node.parentElement;
-        if (container.id !== '_g_clip') {
-            container = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-            container.id = '_g_clip';
-            container.setAttribute('clip-path', 'url(#clip-' + svg.node().id + ')');
+    const container = select(sharedParent).append('g');
+    container.attr('clip-path', 'url(#clip-' + svg.node().id + ')');
 
-            node.parentElement.appendChild(container);
+    for (const child of [...sharedParent.children]) {
+        if (child.hasAttribute(MarkRole)) {
+            container.node().appendChild(child);
         }
-        container.appendChild(node);
     }
 }
 
@@ -70,8 +90,6 @@ export function zoom(state) {
     svg = select(svg);
     marks = selectAll(marks);
 
-    xAxis.axis.scale(xAxis.scale).ticks(xAxis.ticks.length)();
-    yAxis.axis.scale(yAxis.scale).ticks(yAxis.ticks.length)();
     addClipping(svg, marks, xAxis, yAxis);
 
     const gXAxis = svg.append('g').attr('id', 'x-axis-zoom-accessor');

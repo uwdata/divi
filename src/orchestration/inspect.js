@@ -44,10 +44,7 @@ function extractElementInformation(svg, element, parent = false) {
             };
         };
 
-    element.globalPosition = new Transform(
-        element.getBBoxCustom()[CenterX] - svg.getBBoxCustom().left,
-        element.getBBoxCustom()[CenterY] - svg.getBBoxCustom().top
-    );
+    element.globalPosition = new Transform(element.getBBoxCustom()[CenterX], element.getBBoxCustom()[CenterY]);
     element.localTransform = parseTransform(element);
 }
 
@@ -101,6 +98,7 @@ function analyzeDomTree(element, state, transform, parent = false) {
         if (!element.id) element.id = DefaultSvgId + '-' + id++;
     } else if (element.nodeName === 'g') { // Maintain <g> element transforms.
         parseTransform(element, transform);
+        element.localTransform = transform;
     } else if (element.nodeName === '#text' && element.textContent.trim() !== '') { // Instantiate text elements for non-empty references.
         let el = element.parentElement;
         if (el.nodeName !== 'text') {
